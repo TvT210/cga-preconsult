@@ -326,6 +326,15 @@ export interface AssessmentListItem {
   finished_at?: string;
   created_at?: string;
   updated_at?: string;
+  /** 判读结果（/patients/{id}/assessments 会带回 score） */
+  score?: {
+    total?: number;
+    level?: string;
+    interpretation?: string;
+    abnormal?: boolean;
+    severity?: string;
+    needs_manual_review?: boolean;
+  } | null;
 }
 
 export interface ScaleScore {
@@ -369,6 +378,8 @@ export interface ReportListItem {
   version?: number;
   locked?: boolean;
   title?: string;
+  /** 使用的报告模板编码（导出文件名会带上模板名） */
+  template_code?: string;
   created_at?: string;
 }
 
@@ -390,6 +401,7 @@ export interface ReportDetail {
   version?: number;
   locked?: boolean;
   title?: string;
+  template_code?: string;
   created_at?: string;
   sections: ReportSections;
   disclaimer?: string;
@@ -416,27 +428,90 @@ export interface DiseaseListResponse {
 export interface MatchSymptom {
   code: string;
   term: string;
-  weight?: number;
+  /** 命中权重：core / secondary / history（后端也可能是数字权重） */
+  weight?: number | string;
+  /** 该症状贡献的得分 */
+  points?: number;
+  /** 区分度系数 0.5~2.0，越大说明该症状说明力越强 */
+  distinctive?: number;
+  /** 该症状同时命中的其它候选病种编码 */
+  shared_with?: string[];
+  note?: string;
+}
+
+/** 症状组合命中（医生初诊看的是组合） */
+export interface MatchPatternHit {
+  code?: string;
+  term?: string;
+  weight?: string;
+  points?: number;
+  /** 组合内命中的症状编码 */
+  symptoms?: string[];
+}
+
+/** 命中依据条目（区分性症状 / 共享症状 / 红旗征 / 保护性征象） */
+export interface MatchEvidenceItem {
+  code?: string;
+  term?: string;
+  weight?: string;
+  distinctive?: number;
+  shared_with?: string[];
+  note?: string;
+}
+
+/** 鉴别排除理由（points 为负值，表示扣分） */
+export interface MatchExclusion {
+  vs_code?: string;
+  reason?: string;
+  points?: number;
+}
+
+/** 就医建议 */
+export interface MatchAdvice {
+  department?: string;
+  urgency?: string;
+  text?: string;
 }
 
 export interface MatchCandidate {
+  /** 规则引擎给出的排序（1 起） */
+  rank?: number;
   disease_code: string;
   disease_name: string;
   /** 匹配度 0~100 */
   match_score: number;
-  /** 参考概率 0~100 */
+  /** 参考概率 0~100（候选间相对可能性，非患病概率） */
   ref_probability: number;
   hit_symptoms?: MatchSymptom[];
   missing_symptoms?: MatchSymptom[];
-  excluded_reasons?: string[];
+  /** 只命中本候选的症状 = 支持本病的关键线索 */
+  distinctive_symptoms?: MatchEvidenceItem[];
+  /** 多个候选共有的症状 = 区分度低 */
+  shared_symptoms?: MatchEvidenceItem[];
+  /** 症状组合命中 */
+  pattern_hits?: MatchPatternHit[];
+  /** 命中的急症红旗征 */
+  red_flags?: MatchEvidenceItem[];
+  /** 命中的保护性征象（已扣分） */
+  protective_signs?: MatchEvidenceItem[];
+  /** 该老人已具备的高危因素 */
+  risk_factor_hits?: { factor?: string; detail?: string }[];
+  /** 该病的完整高危因素清单（仅供医护阅读，不参与打分） */
+  risk_factors?: { factor?: string; detail?: string }[];
+  excluded_reasons?: (MatchExclusion | string)[];
   risk_level?: string;
-  advice?: string;
+  advice?: MatchAdvice | string;
+  /** true 表示证据不足、补位展示，前端应弱化 */
+  evidence_insufficient?: boolean;
 }
 
 export interface MatchAlert {
+  id?: string | number;
   level: string;
   message: string;
   department?: string;
+  status?: string;
+  red_flags?: MatchEvidenceItem[];
   disclaimer: string;
 }
 
@@ -444,10 +519,64 @@ export interface MatchRunDetail {
   id: string;
   patient_id: string;
   created_at?: string;
-  thresholds?: MatchThreshold[];
+  rule_version?: string;
+  thresholds?: Record<string, number> | MatchThreshold[];
   candidates: MatchCandidate[];
   alert?: MatchAlert;
   disclaimer: string;
+  /** POST /matching/run 携带 with_ai_review 时附带 */
+  ai_review?: AiReview;
+}
+
+/* ------------------------------------------------------------------ */
+/* AI 语义复核（契约 §7）                                              */
+/* ------------------------------------------------------------------ */
+
+/** AI 建议排序中的单项 */
+export interface AiRerankItem {
+  disease_code: string;
+  disease_name?: string;
+  /** AI 建议的排序（1 起），与规则排序并列展示，由医护裁决 */
+  ai_rank?: number;
+  rationale?: string;
+  /** high / medium / low */
+  confidence?: string;
+}
+
+/** AI 建议的追问 */
+export interface AiFollowUp {
+  question?: string;
+  reason?: string;
+  /** high / medium / low */
+  priority?: string;
+}
+
+/** 规则排序与 AI 判断的分歧 */
+export interface AiDisagreement {
+  disease_code?: string;
+  rule_view?: string;
+  ai_view?: string;
+  note?: string;
+}
+
+/**
+ * AI 语义复核结果。
+ * 红线：AI 只给建议，不修改匹配度 / 参考概率 / 阈值 / 提醒等级。
+ */
+export interface AiReview {
+  rerank?: AiRerankItem[];
+  follow_ups?: AiFollowUp[];
+  /** 按病种编码给出通俗解释 */
+  explanations?: Record<string, string>;
+  disagreements?: AiDisagreement[];
+  model?: string;
+  prompt_version?: string;
+  latency_ms?: number;
+  notice?: string;
+  id?: string | number;
+  run_id?: string | number;
+  patient_id?: string | number;
+  created_at?: string;
 }
 
 export interface MatchRunListItem {
@@ -527,6 +656,10 @@ export interface AlertItem {
   created_at?: string;
   handled_by?: string;
   handled_at?: string;
+  handle_comment?: string;
+  disclaimer?: string;
+  /** 是否已被标记为误报（仅 POST /alerts/{id}/handle 的响应会带回） */
+  is_false_positive?: boolean;
 }
 
 export interface FollowUpPlan {
@@ -565,13 +698,61 @@ export interface AdminUser {
   created_at?: string;
 }
 
+/** 单个量表的评估统计 */
+export interface ScaleStatBucket {
+  total?: number;
+  abnormal?: number;
+  pending?: number;
+}
+
+/**
+ * 质控指标（契约 §10）。
+ * 注意：`match_accuracy` / `match_recall` 需要人工标注集，暂无数据时为 `null`，
+ * 前端必须渲染成「暂无数据（需标注集）」，**不得**当作 0。
+ */
 export interface QualityMetrics {
-  scoring_consistency?: number;
-  match_accuracy?: number;
-  false_alert_rate?: number;
-  alert_response_rate?: number;
-  pending_reviews?: number;
+  /* 评估过程 */
+  assessment_completion_rate?: number | null;
+  review_rate?: number | null;
+  abnormal_detection_rate?: number | null;
+  pending_confirmation_rate?: number | null;
+  /** 计分一致率（由「复核是否改分」喂养） */
+  scoring_consistency?: number | null;
+  scoring_consistency_samples?: number;
+  /* 提醒闭环 */
+  alert_response_rate?: number | null;
+  alert_escalation_rate?: number | null;
+  high_level_alert_ratio?: number | null;
+  /** 误报率（由「标记误报」喂养） */
+  false_alert_rate?: number | null;
+  false_alert_samples?: number;
+  /* 匹配效果 */
+  match_accuracy?: number | null;
+  match_recall?: number | null;
+  top1_match_score_avg?: number | null;
+  /** Top1 与 Top2 匹配度平均差值，越小说明越难区分（难例信号） */
+  top1_top2_gap_avg?: number | null;
+  ai_review_coverage?: number | null;
+  disease_library_coverage?: number | null;
+  disease_library_size?: number;
+  disease_hit_count?: number;
+  /* 分布 */
+  scale_stats?: Record<string, ScaleStatBucket>;
   stats?: Record<string, unknown>;
+  note?: string;
+  generated_at?: string;
+}
+
+/** 报告模板（契约 §6） */
+export interface ReportTemplate {
+  code: string;
+  name: string;
+  version?: string;
+  /** professional / plain */
+  scene?: string;
+  review_status?: ReviewStatus;
+  active?: boolean;
+  created_at?: string;
 }
 
 /** 看板汇总（与后端 /admin/stats/overview 字段一致） */
