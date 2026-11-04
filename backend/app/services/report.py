@@ -764,11 +764,14 @@ def export_docx(sections: dict, title: str, template: dict | None = None) -> byt
 
 
 def export_pdf(sections: dict, title: str, template: dict | None = None) -> bytes:
+    from functools import partial
+
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
     from reportlab.lib.units import mm
     from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+    from reportlab.pdfgen import canvas as pdfcanvas
     from reportlab.platypus import (
         PageBreak,
         Paragraph,
@@ -910,23 +913,42 @@ def export_pdf(sections: dict, title: str, template: dict | None = None) -> byte
     header_text = model.get("header", {})
     footer_text = model.get("footer", {})
 
-    def draw_frame(canvas, doc):
-        canvas.saveState()
-        page = canvas.getPageNumber()
-        if page > 1:
-            if header_text.get("left") or header_text.get("right"):
-                canvas.setFont("STSong-Light", 8)
-                canvas.drawString(20 * mm, A4[1] - 14 * mm, str(header_text.get("left", "")))
-                if header_text.get("right"):
-                    canvas.drawRightString(A4[0] - 20 * mm, A4[1] - 14 * mm, str(header_text.get("right")))
-                canvas.setStrokeColor("#DDDDDD")
-                canvas.line(20 * mm, A4[1] - 16 * mm, A4[0] - 20 * mm, A4[1] - 16 * mm)
-            canvas.setFont("STSong-Light", 8)
-            if footer_text.get("left"):
-                canvas.drawString(20 * mm, 12 * mm, str(footer_text["left"]))
-            right = str(footer_text.get("right", "")).replace("X", str(page)).replace("Y", str(doc.page))
-            canvas.drawRightString(A4[0] - 20 * mm, 12 * mm, right)
-        canvas.restoreState()
+    class ReportCanvas(pdfcanvas.Canvas):
+        """两遍渲染：先统计总页数，再绘制「第 X 页 / 共 Y 页」。"""
 
-    document.build(story, onFirstPage=draw_frame, onLaterPages=draw_frame)
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self._saved_states: list[dict] = []
+
+        def showPage(self):  # noqa: N802
+            self._saved_states.append(dict(self.__dict__))
+            self._startPage()
+
+        def save(self):
+            total = len(self._saved_states)
+            for state in self._saved_states:
+                self.__dict__.update(state)
+                self._draw_frame(total)
+                super().showPage()
+            super().save()
+
+        def _draw_frame(self, total: int) -> None:
+            page = self.getPageNumber()
+            if page <= 1:  # 封面不加页眉页脚
+                return
+            self.saveState()
+            self.setFont("STSong-Light", 8)
+            if header_text.get("left"):
+                self.drawString(20 * mm, A4[1] - 14 * mm, str(header_text["left"]))
+            if header_text.get("right"):
+                self.drawRightString(A4[0] - 20 * mm, A4[1] - 14 * mm, str(header_text["right"]))
+            self.setStrokeColor("#DDDDDD")
+            self.line(20 * mm, A4[1] - 16 * mm, A4[0] - 20 * mm, A4[1] - 16 * mm)
+            if footer_text.get("left"):
+                self.drawString(20 * mm, 12 * mm, str(footer_text["left"]))
+            right = str(footer_text.get("right", "")).replace("X", str(page)).replace("Y", str(total))
+            self.drawRightString(A4[0] - 20 * mm, 12 * mm, right)
+            self.restoreState()
+
+    document.build(story, canvasmaker=partial(ReportCanvas))
     return buffer.getvalue()
