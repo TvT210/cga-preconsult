@@ -1,141 +1,623 @@
-# API 契约（/api/v1）
+# API 契约 v1.1（双人并行开发基线）
 
-> 后端 FastAPI 实现，前端按此契约开发。响应统一 `{"code":0,"message":"ok","data":{...}}` 包装，
-> 错误码 `code != 0`；鉴权头 `Authorization: Bearer <token>`。
-> 开发端口：后端 `http://127.0.0.1:8000`，前端 `http://127.0.0.1:3000`，前端通过 `NEXT_PUBLIC_API_BASE` 指向后端。
+> 依据：`docs/项目构想总需求.md` §5、§7 与根 `AGENT.md` 领域红线。
+> 本版目标：让两名开发者**在不改对方代码的前提下并行推进**，因此对「信封、分页、错误、枚举、字段语义」做了明确约定。
+> 状态标记：✅ 已实现并可联调 · 🟡 契约已定、实现待补 · 🔴 暂不承诺
 
-## 角色
+---
 
-`elder`（老人/家属）、`staff`（评估人员/护士）、`doctor`（医生）、`admin`（系统管理员）。
+## 0. 契约使用与变更规则
 
-## 1. 认证 `/auth`
+### 0.1 三条铁律
+1. **契约先行**：任何一方新增/修改接口前，先改本文件并提「契约变更申请」（见 0.3），对方确认后才写代码。
+2. **契约冻结点**：Sprint 1 第 2 天做一次**契约冻结评审**，评审结论写入 `docs/plan/契约评审记录.md`，之后进入实现期。
+3. **不猜字段**：前端不得凭空假设后端字段；后端不得凭空新增返回字段。字段增加属于契约变更。
 
-| 方法 | 路径 | 说明 | 权限 |
-| --- | --- | --- | --- |
-| POST | `/auth/login` | body `{username, password}` → `{token, user:{id,username,role,full_name,patient_id}}` | 公开 |
-| GET | `/auth/me` | 当前用户 | 登录 |
+### 0.2 版本策略
+- 路径前缀固定 `/api/v1`，破坏性变更不删旧字段，只**新增**并标注 `deprecated: true`。
+- 破坏性变更走 `/api/v2`，并提供 3 个月并行期。
+- 契约版本与后端版本解耦：本文件版本号即接口契约版本。
 
-预置账号（种子脚本）：`admin/admin12345`（admin）、`doctor/doctor12345`（doctor）、`nurse/nurse12345`（staff）、`elder/elder12345`（elder，绑定演示患者 `P0001`）。
+### 0.3 契约变更申请模板
+```markdown
+### 变更申请 CA-YYYYMMDD-NN
+- 提出人 / 接收人：
+- 影响的接口：
+- 变更类型：新增字段 / 新增接口 / 字段语义变更 / 字段废弃
+- 变更前 → 变更后：（贴 JSON 片段）
+- 是否破坏前端现有代码：否 / 是（说明迁移点）
+- 期望生效时间：
+```
 
-## 2. 患者与预问诊 `/patients`
+### 0.4 前端 Mock 约定（后端未就绪时）
+- Mock 数据必须放在 `frontend/src/lib/mock/*.ts`，文件名对应接口模块，**不得**在组件里写死假数据。
+- Mock 形状必须与本文件示例**逐字段一致**，字段名用下划线小写。
+- Mock 开关：`NEXT_PUBLIC_USE_MOCK=1`；联调时关掉。
 
-| 方法 | 路径 | 说明 |
+---
+
+## 1. 通用约定
+
+### 1.1 响应信封 ✅
+所有 `/api/v1` 接口统一返回：
+
+```json
+{ "code": 0, "message": "ok", "data": { } }
+```
+
+| 字段 | 类型 | 说明 |
 | --- | --- | --- |
-| GET | `/patients?keyword=&page=&size=` | 列表（staff/doctor/admin；elder 只能取本人） |
-| POST | `/patients` | 创建：`{name, gender, birth_date, phone, id_card?, address?, emergency_contact?}` |
-| GET | `/patients/{id}` | 详情 |
-| PUT | `/patients/{id}` | 修改基础信息 |
-| GET | `/patients/{id}/preconsult` | 预问诊内容 |
-| PUT | `/patients/{id}/preconsult` | **增量保存**（部分字段即更新），body 为预问诊结构 |
-| POST | `/patients/{id}/consent` | `{agreed: bool, scope?: string, withdraw?: bool}` → 同意记录 |
-| GET | `/patients/{id}/consents` | 同意历史 |
-| GET | `/patients/{id}/timeline` | 时间轴：评估／报告／对话／提醒 |
+| `code` | int | `0` = 成功；非 0 = 失败，**当前取值等于 HTTP 状态码**（v1.1 维持现状，避免打断已写好的前端；v1.2 计划拆出独立业务码 `biz_code`） |
+| `message` | string | 人类可读提示，可直接用于 toast；失败时是错误原因 |
+| `data` | object \| array \| null | 业务数据；失败时为 `null` |
 
-预问诊 body 结构（字段均为可选，增量保存）：
+失败响应示例：
+```json
+{ "code": 403, "message": "无权访问该患者的资料", "data": null }
+```
+
+### 1.2 列表返回形态（⚠️ 重点，v1.1 现状不统一）
+现状有两种形态并存，**前端必须按接口表逐个对齐**：
+
+| 形态 | 出现接口 | 说明 |
+| --- | --- | --- |
+| A：`{items, total, page, size}` | `GET /patients`、`GET /assessments` | 标准分页信封 |
+| B：`{items, total}`（无 page/size） | `GET /patients/{id}/assessments` | 早期实现 |
+| C：裸数组 `[{...}]` | 其余全部列表接口（量表、报告、提醒、随访、定期评估、匹配批次、审计日志、用户、提示词模板、同意记录、时间轴） | 无分页参数 |
+
+> **v1.2 目标**：所有列表统一为形态 A，并支持 `page` / `size` / `sort`。
+> **v1.1 期间规则**：新增接口一律用形态 A；既有接口保持原状不动，避免前端此刻大范围返工。
+> 迁移时前后端需**同一 PR 内**切换，不得只改一端。
+
+### 1.3 分页参数（形态 A 的接口）✅
+| 参数 | 类型 | 默认 | 说明 |
+| --- | --- | --- | --- |
+| `page` | int | 1 | 从 1 开始 |
+| `size` | int | 20 | 建议上限 100 |
+
+### 1.4 错误码与语义 ✅
+| HTTP | code | 何时使用 | 前端应对 |
+| --- | --- | --- | --- |
+| 400 | 400 | 参数缺失/非法/选项无效 | toast 提示，不重试 |
+| 401 | 401 | 未登录、token 失效、账号停用 | 清 token → 跳登录页 |
+| 403 | 403 | 角色无权 / 越权访问他人数据 | 展示 `message`，不重试 |
+| 404 | 404 | 资源不存在 | 展示空态 |
+| 409 | 409 | 状态冲突（如报告已锁定仍要改） | 提示并刷新 |
+| 500 | 500 | 服务端异常 | 友好错误态 + 可重试按钮 |
+
+约定：**401 = 身份问题，403 = 权限问题**，二者前端处理路径不同，不可混用。
+
+### 1.5 鉴权 ✅
+- 头：`Authorization: Bearer <token>`
+- token 为 JWT，HS256，默认有效期 720 分钟（`CGA_ACCESS_TOKEN_EXPIRE_MINUTES`）。
+- 响应体中 `token` 字段即访问令牌，**不得**写入 URL、不得输出到日志。
+
+### 1.6 角色与数据范围 ✅
+| 角色 | key | 可访问范围 |
+| --- | --- | --- |
+| 老人/家属 | `elder` | **仅本人**（`users.patient_id` 绑定的那一条患者数据），越权一律 403 |
+| 评估人员 | `staff` | 患者、评估、预问诊、报告生成、提醒处理 |
+| 医生 | `doctor` | staff 全部 + 评估复核 + 报告审核 + 阈值修改 |
+| 管理员 | `admin` | 全部 + 账号管理 + 审计日志 + 质控指标 |
+
+### 1.7 字段与格式
+| 项 | 约定 |
+| --- | --- |
+| 命名 | 下划线小写（`scale_code`、`match_score`） |
+| 时间 | ISO 8601 字符串，含时区偏移，如 `2026-11-04T10:22:31` |
+| 日期 | `YYYY-MM-DD` |
+| 空值 | 字段缺失 = 键不存在；`null` = 明确为空。**不要用空字符串代替 null** |
+| 布尔 | 真正的 JSON `true` / `false` |
+| 数字 | 分值/比例用 number，比例取值 0~100（已按百分数存，如 `75.0` 表示 75%） |
+
+### 1.8 术语红线（对外文案与字段一律遵守）
+- 只用 **「匹配度」**（`match_score`）、**「参考概率」**（`ref_probability`）。
+- 禁止「确诊概率」「患病概率」「AI 诊断」等表述。
+- 所有匹配结果与就医提醒必须带 `disclaimer`：`"结果仅供参考，不构成诊断，请及时咨询医生。"`
+
+### 1.9 幂等与重试
+- 写操作（`POST`）目前**不保证幂等**；客户端重试前请先 `GET` 确认状态。
+- 评估作答 `POST /assessments/{id}/answers` 对同一 `question_code` 是覆盖语义（幂等），可安全重试。
+- 报告生成 `POST /reports` 每次新建一个版本，**不**幂等；重复点击会生成 v2、v3。
+
+---
+
+## 2. 认证 `/auth`
+
+### POST `/auth/login` ✅
+请求：
+```json
+{ "username": "nurse", "password": "nurse12345" }
+```
+响应 `data`：
+```json
+{
+  "token": "<jwt>",
+  "token_type": "bearer",
+  "user": { "id": 3, "username": "nurse", "full_name": "王护士", "role": "staff", "department": "护理部", "patient_id": null }
+}
+```
+错误：账号或密码不正确 → 401。
+
+### GET `/auth/me` ✅
+返回 `user` 对象（同上），用于前端恢复登录态。
+
+### GET `/auth/me` 的角色码
+`role` 取值仅有 `elder` / `staff` / `doctor` / `admin` 四个，前端按此做路由守卫。
+
+---
+
+## 3. 患者与预问诊 `/patients`
+
+### GET `/patients?keyword=&page=&size=` ✅ → 形态 A
+`keyword` 模糊匹配姓名 / 编号 / 电话。
+
+### POST `/patients` ✅（staff+）
+```json
+{ "name": "张桂芳", "gender": "女", "birth_date": "1948-05-12", "phone": "13800000001",
+  "id_card": "4401...", "address": "…", "emergency_contact": "…" }
+```
+响应 `data`：
+```json
+{ "id": 2, "code": "P0002", "name": "张桂芳", "gender": "女", "birth_date": "1948-05-12",
+  "age": 78, "phone": "13800000001", "id_card_masked": "440***********1234",
+  "address": "…", "emergency_contact": "…", "created_at": "2026-11-04T10:20:00" }
+```
+> `id_card` 入参即掩码存储，响应只回掩码值。
+
+### GET `/patients/{patient_id}` ✅ · PUT `/patients/{patient_id}` ✅（staff+）
+PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
+
+### GET / PUT `/patients/{patient_id}/preconsult` ✅
+**增量保存**：请求体只带要改的字段，服务器做浅合并；顶层键为分区名。
 
 ```json
 {
-  "basic": { "gender": "女", "birth_date": "1948-05-12", "marital_status": "丧偶", "education": "小学", "living_status": "独居", "medical_insurance": "职工医保", "contact_name": "邱某", "contact_phone": "13800000000" },
-  "chief_complaint": { "text": "反复头晕 3 天", "onset": "3天前", "site": "头部", "nature": "昏沉", "severity": 3, "course": "间断", "associated": ["乏力"] },
-  "history": { "conditions": ["高血压", "2型糖尿病"], "medications": [{"name": "氨氯地平", "dose": "5mg qd", "since": "2023"}], "allergies": [{"name": "青霉素", "reaction": "皮疹"}] },
-  "lifestyle": { "smoking": false, "drinking": false, "diet": "普通饮食", "activity": "每日散步20分钟", "sleep": "入睡困难", "falls": [{"time": "2026-10-20", "place": "卫生间", "cause": "地面湿滑", "injury": "轻微擦伤"}] },
-  "proxy": { "is_proxy": true, "proxy_name": "邱某", "proxy_relation": "女儿" }
+  "basic": { "gender": "女", "birth_date": "1948-05-12", "marital_status": "丧偶",
+             "education": "小学", "living_status": "独居", "medical_insurance": "职工医保",
+             "contact_name": "邱某", "contact_phone": "13900000002" },
+  "chief_complaint": { "text": "反复头晕 3 天", "onset": "3天前", "site": "头部",
+                       "nature": "昏沉", "severity": 3, "course": "间断", "associated": ["乏力"] },
+  "history": { "conditions": ["高血压", "2 型糖尿病"],
+               "medications": [{ "name": "氨氯地平", "dose": "5mg qd", "since": "2023-05" }],
+               "allergies": [{ "name": "青霉素", "reaction": "皮疹" }] },
+  "lifestyle": { "smoking": false, "drinking": false, "diet": "普通饮食",
+                 "activity": "每日散步 20 分钟", "sleep": "入睡困难",
+                 "falls": [{ "time": "2026-10-20", "place": "卫生间", "cause": "地面湿滑", "injury": "轻微擦伤" }] },
+  "proxy": { "is_proxy": false, "proxy_name": "", "proxy_relation": "" }
+}
+```
+响应 `data` 为合并后的完整内容（同结构）。
+
+### POST `/patients/{patient_id}/consent` ✅
+```json
+{ "agreed": true, "scope": "评估、报告生成与就医提醒", "ai_involved": true }
+```
+`agreed=false` 记为撤回，`withdrawn_at` 自动写入。
+
+### GET `/patients/{patient_id}/consents` ✅ → 裸数组
+### GET `/patients/{patient_id}/timeline` ✅ → 裸数组
+元素：`{ "time", "type": "assessment|report|alert|followup", "title", "detail" }`
+
+### GET `/patients/{patient_id}/assessments` ✅ → 形态 B
+```json
+{ "items": [ { "id": 1, "scale_code": "B.1", "status": "reviewed", "mode": "staff", "progress": 10,
+               "score": { "total": 45.0, "level": "中度依赖", "interpretation": "…", "abnormal": true,
+                          "severity": "medium", "needs_manual_review": true },
+               "started_at": "…", "finished_at": "…" } ], "total": 1 }
+```
+
+---
+
+## 4. 量表中心 `/scales`
+
+### GET `/scales` ✅ → 裸数组
+```json
+[ { "code": "B.1", "name": "基本日常生活活动能力评估量表", "dimension": "躯体功能",
+    "method": "询问／他评", "review_status": "draft_pending_medical_review",
+    "version": "0.1.0-draft", "item_count": 10, "notes": "…" } ]
+```
+
+### GET `/scales/{code}` ✅
+返回完整量表定义（前端采集页的数据源）：
+
+```json
+{
+  "code": "B.1", "name": "…", "dimension": "躯体功能", "method": "询问／他评",
+  "standard_ref": "WS/T 888—2026 附录B B.1",
+  "review_status": "draft_pending_medical_review", "version": "0.1.0-draft",
+  "summary": "…", "notes": "…",
+  "item_count": 10, "ready_for_scoring": true,
+  "collection": { "support": ["patient","staff"], "proxy_allowed": true, "measured": false },
+  "sections": [ { "code": "B1-S1", "title": "基本日常生活活动",
+    "questions": [ { "code": "B1-01", "text": "进食", "plain_text": "吃饭这件事自己能完全独立完成吗？",
+                    "input_type": "single", "required": true,
+                    "options": [ { "value": "10", "label": "可自行进食", "score": 10 },
+                                 { "value": "5",  "label": "需部分帮助",   "score": 5 },
+                                 { "value": "0",  "label": "需极大帮助或完全依赖", "score": 0 } ] } ] } ],
+  "scoring": { "score": { "rule_type": "sum", "config": { "items": [ { "code": "B1-01", "label": "进食", "max_score": 10 } ] } },
+               "levels": { "rule_type": "level_map", "config": { "levels": [ { "min": 0, "max": 40, "level": "重度依赖", "interpretation": "…", "abnormal": true, "severity": "high" } ] } },
+               "flags": [ { "rule_type": "condition", "config": { "any": [ { "question": "B1-09", "op": "lt", "value": 15 } ] }, "flag": "行走能力受限", "symptom_codes": ["difficulty_walking"], "severity": "medium" } ] },
+  "branches": [ { "code": "B1-B1", "when": { "any": [ { "question": "B1-09", "op": "lt", "value": 15 } ] }, "target_scale": "B.3", "reason": "…" } ]
 }
 ```
 
-## 3. 量表中心 `/scales`
+**题目 `input_type` 约定（前端按此渲染）**：
 
-| 方法 | 路径 | 说明 |
+| input_type | 前端渲染 | 提交值 |
 | --- | --- | --- |
-| GET | `/scales` | 量表清单：`[{code,name,dimension,method,review_status,item_count,version}]` |
-| GET | `/scales/{code}` | 详情：`{code,name,dimension,method,standard_ref,review_status,collection,sections:[{code,title,questions:[{code,text,plain_text,input_type,required,options:[{value,label,score}],unit?}]}],scoring,branches,notes}` |
-| GET | `/scales/{code}/versions` | 版本历史 |
-| POST | `/scales` | 新增量表（admin），body 同详情结构 |
-| PUT | `/scales/{code}/review` | `{review_status: "approved" | "draft_pending_medical_review", reviewer, comment}`（admin/doctor） |
+| `single` | 单选按钮组 | 选项 `value` 字符串 |
+| `multi` | 多选 | 数组或逗号串；后端按选项 `score` 求和 |
+| `number` | 数字输入（实测项） | 数字，**同时**填 `measured` |
 
-`review_status` 取值：`draft_pending_medical_review`（草稿，不可出正式结论）、`approved`（已评审）、`deprecated`。
+**条件算子语义（前端「规则预览」如需展示，须照此解释）**：
+`eq` / `ne` / `in` 比较**选项 value 字符串**；`lt` / `lte` / `gt` / `gte` 比较**选项 score 数值**。
 
-## 4. 评估会话 `/assessments`
+### POST `/scales` 🟡（admin/doctor）
+请求体 = 上面的完整量表定义（`code` 必填）。返回 `{ "code", "id", "review_status" }`。
 
-| 方法 | 路径 | 说明 |
+### PUT `/scales/{code}/review` ✅（admin/doctor）
+```json
+{ "review_status": "approved", "comment": "已按 WS/T 888—2026 附录 B 逐项核对" }
+```
+`review_status` 取值：`draft_pending_medical_review` | `approved` | `deprecated`
+
+### GET `/scales/{code}/versions` ✅ → 裸数组
+元素：`{ id, scale_code, version, reviewer, comment, created_at }`
+
+---
+
+## 5. 评估会话 `/assessments`
+
+### POST `/assessments` ✅
+```json
+{ "patient_id": 2, "scale_code": "B.1", "mode": "staff",
+  "proxy_name": "", "proxy_relation": "" }
+```
+- `mode`：`patient` | `staff`
+- **断点续填**：同一患者 + 同一量表若已有 `in_progress` 会话，返回该会话而非新建（`id` 相同）。
+- 若该量表条目为空（`item_count == 0`）→ 400「题库条目待补录，暂不可采集」。
+
+响应 `data`（会话详情）：
+```json
+{ "id": 1, "patient_id": 2, "scale_code": "B.1", "scale_name": "…", "dimension": "躯体功能",
+  "status": "in_progress", "mode": "staff",
+  "proxy": { "is_proxy": false, "proxy_name": "", "proxy_relation": "" },
+  "progress": 3, "total_questions": 10, "current_question": "B1-04",
+  "scale_version": "0.1.0-draft", "rule_version": "0.1.0-draft",
+  "started_at": "…", "finished_at": "",
+  "sections": [ … ], "questions": [ … ],
+  "answers": [ { "question_code": "B1-01", "value": "10", "score": 10, "skipped": false,
+                 "proxy_flag": false, "answered_by": "" } ] }
+```
+
+### POST `/assessments/{session_id}/answers` ✅
+```json
+{ "question_code": "B1-01", "value": "5", "measured": null, "proxy_flag": false, "answered_by": "王护士" }
+```
+- `single`：`value` = 选项 value；`multi`：`value` = 数组或逗号串；`number`：`value` 或 `measured` 传数字。
+- 同一 `question_code` 重复提交 = 覆盖。
+- `proxy_flag: true` 表示代答，后端会连同 `answered_by` 落库。
+
+响应：
+```json
+{ "answer": { "question_code": "B1-01", "value": "5", "score": 5, "proxy_flag": false, "answered_by": "王护士" },
+  "next_question": "B1-04", "progress": 4, "total_questions": 10 }
+```
+
+### POST `/assessments/{session_id}/skip` ✅
+```json
+{ "question_code": "B1-07", "reason": "老人听不清" }
+```
+记为缺项 → 判读时 `missing_items` 非空、结论标「待人工确认」。
+
+### POST `/assessments/{session_id}/finish` ✅
+```json
+{ "scores": [ { "scale_code": "B.1", "total": 45.0, "level": "中度依赖",
+                "interpretation": "部分日常生活需他人协助。", "abnormal": true, "severity": "medium",
+                "flags": [ { "flag": "行走能力受限", "severity": "medium",
+                             "symptom_codes": ["difficulty_walking"],
+                             "symptom_terms": ["行走困难"], "rule": {…} } ],
+                "explanation": "10 项得分之和，满分 100 分。",
+                "rule_refs": [ { "rule": "score:sum", "config": {…}, "answered_count": 10,
+                                 "total_count": 10,
+                                 "items": [ { "question": "B1-01", "label": "进食", "value": "5",
+                                              "score": 5, "max_score": 10, "answered_by": "王护士",
+                                              "proxy_flag": false } ] },
+                              { "rule": "levels:level_map", "matched_level": "中度依赖", "range": [41, 60] } ],
+                "missing_items": [], "needs_manual_review": true } ],
+  "branches": [ { "branch_code": "B1-B1", "target_scale": "B.3", "reason": "…", "source_scale": "B.1" } ],
+  "needs_manual_review": true, "notices": [ "题库条目待医护/专家评审，结论仅供演示，不作为正式临床结论。" ] }
+```
+> `rule_refs` 是「结论可回溯」的载体，前端应在结果页展示逐题作答与分值。
+
+### POST `/assessments/{session_id}/review` ✅（staff+）
+```json
+{ "action": "approve", "comment": "复核一致",
+  "corrections": [ { "question_code": "B1-09", "value": "10" } ] }
+```
+- `corrections` 提交后**自动重新计分**，返回新的 `score`。
+- `action`：`approve` | `correct`
+
+### GET `/assessments?patient_id=&scale_code=&status=&page=&size=` ✅ → 形态 A
+`status`：`in_progress` | `finished` | `reviewed` | `abandoned`
+
+### GET `/assessments/{session_id}` ✅ → 会话详情（同创建响应，另含 `score` 字段）
+
+---
+
+## 6. 报告 `/reports`
+
+### POST `/reports` ✅（staff+）
+```json
+{ "patient_id": 2, "title": "" }
+```
+每次调用**新建一个版本**（v1、v2…），不幂等。响应 `data` 为报告对象。
+
+### GET `/reports?patient_id=` ✅ → 裸数组
+元素：`{ id, patient_id, version, title, locked, created_at }`
+
+### GET `/reports/{id}` ✅
+```json
+{ "id": 1, "patient_id": 2, "version": 1, "title": "张桂芳 老年综合评估报告",
+  "locked": false, "disclaimer": "本报告由…生成，结果仅供参考，不构成诊断…",
+  "created_at": "…",
+  "sections": {
+    "basic": { "patient_id": 2, "name": "张桂芳", "gender": "女", "age": 78,
+               "birth_date": "1948-05-12", "phone": "…", "assessment_time": "2026-11-04 10:58",
+               "assessor": "李医生", "organization": "示例社区卫生服务中心",
+               "scale_count": 1, "scale_versions": ["0.1.0-draft"], "rule_versions": ["0.1.0-draft"],
+               "recent_sessions": [ { "id": 1, "scale_code": "B.1", "status": "reviewed",
+                                      "started_at": "…", "reviewer": "李医生" } ] },
+    "scale_results": [ { "scale_code": "B.1", "scale_name": "…", "total": 45.0, "level": "中度依赖",
+                         "interpretation": "…", "abnormal": true, "severity": "medium",
+                         "flags": [ … ], "explanation": "…", "rule_refs": [ … ],
+                         "scale_version": "0.1.0-draft", "rule_version": "0.1.0-draft",
+                         "needs_manual_review": true } ],
+    "dimension_summary": [ { "dimension": "躯体功能", "scale_count": 1, "abnormal_count": 1,
+                             "conclusion": "共 1 项量表参与小结，1 项提示异常。",
+                             "abnormal_scales": [ { "scale_code": "B.1", "level": "中度依赖", "interpretation": "…" } ] } ],
+    "positive_list": [ { "scale_code": "B.1", "scale_name": "…", "level": "中度依赖", "severity": "medium",
+                         "interpretation": "…", "flags": ["行走能力受限"], "need_special_assessment": true } ],
+    "ai_supplement": { "dimension_conclusions": [ { "dimension": "躯体功能", "conclusion": "…" } ],
+                       "trend": [], "model": "mock-deterministic-v1", "prompt_version": "0.1.0-draft",
+                       "generated_at": "…", "notice": "AI 补充评估，不替代正式量表施测；与量表结果冲突时以人工复核为准。" },
+    "disease_match": { "candidates": [ { "rank": 1, "disease_code": "I21", "disease_name": "急性心肌梗死",
+                                         "match_score": 75.0, "ref_probability": 27.09,
+                                         "hit_symptoms": [ { "code": "chest_pain", "term": "胸痛胸闷", "weight": "core" } ],
+                                         "missing_symptoms": [ { "code": "…", "term": "…", "weight": "core" } ],
+                                         "excluded_reasons": [ { "vs_code": "I10", "reason": "…", "points": -8 } ],
+                                         "risk_level": "immediate", "advice": { … } } ],
+                      "alert": { "level": "observe", "message": "…", "department": "…" },
+                      "disclaimer": "结果仅供参考，不构成诊断，请及时咨询医生。", "created_at": "…" },
+    "interventions": [ { "category": "运动", "items": ["B.1：行走能力受限，建议在康复治疗师指导下进行平衡与力量训练。"] } ],
+    "mdt_opinions": [],
+    "followup_plan": { "items": [ { "id": 1, "interval_days": 30, "due_at": "…",
+                                    "focus_items": [], "status": "planned" } ], "trend": [] } } }
+```
+
+### POST `/reports/{id}/lock` ✅（staff+）
+归档锁定；已锁定再调用 → 409。修改需新建版本。
+
+### GET `/reports/{id}/export?format=docx|pdf` ✅
+- `docx` → `application/vnd.openxmlformats-officedocument.wordprocessingml.document`
+- `pdf` → `application/pdf`
+- 文件名：`cga_report_{patient_id}_v{version}.{format}`（`Content-Disposition` 用 RFC 5987 编码）
+
+---
+
+## 7. 疾病库与匹配 `/diseases` `/matching`
+
+### GET `/diseases` ✅
+```json
+{ "diseases": [ { "code": "I21", "name": "急性心肌梗死", "aliases": ["心梗","AMI"],
+                   "system": "心血管系统", "risk_level": "immediate",
+                   "review_status": "draft_pending_medical_review", "symptom_count": 7 } ],
+  "thresholds": [ { "id": 1, "scope": "global", "disease_code": "", "threshold": 60.0,
+                    "level": "urgent", "review_status": "draft_pending_medical_review" } ],
+  "disclaimer": "结果仅供参考，不构成诊断，请及时咨询医生。" }
+```
+
+### GET `/diseases/{code}` ✅
+返回该病种完整定义：`code,name,aliases,system,risk_level,review_status,symptoms[],atypical_presentations[],differentials[],scale_links[],advice{department,urgency,text},source,review_note`。
+`symptoms[]` 元素：`{ code, weight: "core"|"secondary" }`；`differentials[]`：`{ vs_code, features[], points, reason }`。
+
+### POST `/matching/run` ✅
+```json
+{ "patient_id": 2 }
+```
+响应 `data`：
+```json
+{ "id": 1, "patient_id": 2, "created_at": "…", "rule_version": "0.1.0-draft",
+  "thresholds": { "global": 60.0, "I21": 55.0 },
+  "candidates": [ { "rank": 1, "disease_code": "I21", "disease_name": "急性心肌梗死",
+                    "match_score": 75.0, "ref_probability": 27.09,
+                    "hit_symptoms": [ { "code": "history:I21", "term": "既往病史：2 型糖尿病", "weight": "history" } ],
+                    "missing_symptoms": [ { "code": "polyuria", "term": "多尿", "weight": "core" } ],
+                    "excluded_reasons": [ { "vs_code": "I10", "reason": "…", "points": -8 } ],
+                    "risk_level": "immediate",
+                    "advice": { "department": "心血管内科 / 急诊", "urgency": "立即就医", "text": "…" },
+                    "evidence_insufficient": false } ],
+  "alert": { "id": 1, "level": "observe", "message": "…", "department": "…", "status": "pending" },
+  "disclaimer": "结果仅供参考，不构成诊断，请及时咨询医生。" }
+```
+字段语义（前端展示必须按此）：
+- `match_score` = **匹配度**（0~100，规则可解释）
+- `ref_probability` = **参考概率**（0~100，候选间相对可能性，**非患病概率**）
+- `evidence_insufficient` = true 表示该候选是补位展示（证据不足），前端应弱化展示
+- `hit_symptoms[].weight` 可能为 `core` / `secondary` / `history`（病史命中）
+
+### GET `/matching/runs?patient_id=` ✅ → 裸数组（最多 50 条）
+### GET `/matching/runs/{run_id}` ✅ → 同 POST 响应结构
+
+### GET `/matching/thresholds` ✅
+```json
+{ "thresholds": [ { "id": 1, "scope": "global|disease", "disease_code": "I21", "threshold": 55.0,
+                    "level": "immediate", "review_status": "…", "updated_by": "系统初始化",
+                    "updated_at": "…", "comment": "…" } ],
+  "weights": { "core": 3.0, "secondary": 1.0, "history_bonus": 15.0,
+               "temperature": 10.0, "global_threshold": 60.0 } }
+```
+
+### PUT `/matching/thresholds/{id}` ✅（doctor/admin）
+```json
+{ "threshold": 55.0, "level": "immediate", "review_status": "approved", "comment": "急症阈值下调" }
+```
+写审计日志。🟡 **v1.1 计划**：改为「提案→审批→生效」双表，接口形态将变，届时走契约变更流程。
+
+---
+
+## 8. 对话与定期评估 `/dialogue` `/periodic`
+
+### POST `/dialogue/sessions` ✅ → `{ id, patient_id, title, model, prompt_version, created_at, turns: [], profile: {…} }`
+
+### GET `/dialogue/sessions/{id}` ✅ → 同上（含 `turns[]` 与 `profile`）
+
+### POST `/dialogue/sessions/{id}/messages` ✅
+```json
+{ "content": "我这几天头晕，走路发飘", "proxy": null }
+```
+响应：
+```json
+{ "reply": "您说的头晕大概持续多久了？…",
+  "extracted": { "symptoms": [ { "code": "dizziness", "term": "头晕", "confidence": 0.85, "source": "dialogue" } ],
+                 "proxy": null },
+  "safety_note": "胸口不适可能是急症信号，请立即前往急诊或拨打 120，不要自行服药。",
+  "conflict_flags": [ { "field": "symptoms", "dialogue_value": ["difficulty_walking"],
+                        "scale_value": "B.1 未提示异常", "note": "对话提到…请医护复核。" } ],
+  "disclaimer": "本系统不提供诊断与用药建议，结果仅供参考，不构成诊断，请及时咨询医生。",
+  "model": "mock-deterministic-v1", "prompt_version": "0.1.0-draft" }
+```
+- `safety_note` 非空 = 命中急症安全规则，**前端必须醒目标红展示**。
+- `conflict_flags` 非空 = 对话与量表不一致，**只提示不修改**。
+
+### GET `/dialogue/sessions/{id}/profile` ✅
+```json
+{ "symptoms": [ { "code": "dizziness", "term": "头晕", "source": "dialogue" } ],
+  "conditions": [], "medications": [], "lifestyle": {}, "chief_complaint": {}, "updated_at": "…" }
+```
+
+### POST `/dialogue/sessions/{id}/messages/stream` 🟡
+契约：SSE，`data: {"reply":"…","done":false}` 逐段，`data: {"done":true,"extracted":{…},"safety_note":"…"}` 收尾。与非流式字段完全一致。
+
+### POST `/periodic/run` ✅（staff+）
+```json
+{ "patient_id": 2 }
+```
+响应：`{ id, patient_id, dimension_conclusions[], trend[], model, prompt_version, generated_at, notice }`
+`notice` 固定含「AI 补充评估，不替代正式量表施测；与量表结果冲突时以人工复核为准。」
+
+### GET `/periodic?patient_id=` ✅ → 裸数组
+
+---
+
+## 9. 随访与提醒 `/followups` `/alerts`
+
+### GET `/followups?patient_id=` ✅ → 裸数组
+元素：`{ id, patient_id, interval_days, focus_items[], due_at, status, note, result, created_at }`
+`status`：`planned` | `completed`
+
+### POST `/followups` ✅（staff+）
+```json
+{ "patient_id": 2, "interval_days": 30, "focus_items": ["B.1 平地行走"], "note": "一个月后复评" }
+```
+`due_at` 由服务器按 `interval_days` 自动计算。
+
+### POST `/followups/{id}/complete` ✅（staff+）
+```json
+{ "result": "ADL 评分由 45 升至 60" }
+```
+
+### GET `/alerts?patient_id=&status=` ✅ → 裸数组
+元素：
+```json
+{ "id": 1, "patient_id": 2, "level": "urgent", "message": "…", "department": "…",
+  "disclaimer": "结果仅供参考，不构成诊断，请及时咨询医生。", "status": "pending",
+  "handled_by": "", "handled_at": "", "handle_comment": "", "created_at": "…" }
+```
+`status`：`pending` | `ack` | `escalate` | `closed`
+`level`：`immediate` | `urgent` | `elective` | `observe`
+
+### POST `/alerts/{id}/handle` ✅（staff+）
+```json
+{ "action": "ack", "comment": "已电话联系家属" }
+```
+`action`：`ack` | `escalate` | `close`
+
+---
+
+## 10. 管理与质控 `/admin`（admin）
+
+### GET `/admin/users` ✅ → 裸数组
+### POST `/admin/users` ✅
+```json
+{ "username": "nurse2", "password": "…", "full_name": "赵护士", "role": "staff", "department": "护理部" }
+```
+### GET `/admin/audit-logs?actor=&target=&action=&limit=100` ✅ → 裸数组
+元素：`{ id, actor_name, action, target_type, target_id, detail, created_at }`
+`action` 取值：`create|update|view|export|lock|run|review|handle|ack|escalate|close|finish|dialogue|consent|update_threshold`
+### GET `/admin/quality-metrics` ✅
+```json
+{ "scoring_consistency": null, "match_accuracy": null, "false_alert_rate": null,
+  "alert_response_rate": 0.75, "pending_reviews": 1, "escalation_count": 0,
+  "triggered_alert_count": 1,
+  "stats": { "patients": 4, "users": 4, "assessments": 3, "abnormal_assessments": 1,
+             "reports": 1, "match_runs": 1, "alerts": 1, "pending_review": 1 },
+  "note": "计分一致率、匹配准确率、误报率需在真实标注数据积累后统计，当前留空。",
+  "generated_at": "…" }
+```
+> 前三个指标为 `null` 是**预期行为**（尚无标注集），不是 bug；前端需按「暂无数据」渲染而非报错。
+
+### GET `/admin/stats/overview` ✅ → 同 `stats` 对象 + `generated_at`
+### GET `/admin/prompt-templates` ✅ → 裸数组
+元素：`{ id, code, name, version, content, active, created_at }`
+
+---
+
+## 11. 枚举字典总表
+
+| 枚举 | 取值 | 出现位置 |
 | --- | --- | --- |
-| POST | `/assessments` | `{patient_id, scale_code, mode: "patient"|"staff", proxy_name?, proxy_relation?}` → 会话 |
-| GET | `/assessments/{id}` | `{id,patient_id,scale_code,scale_name,status,progress,current_question,questions,answers,mode,proxy}` |
-| POST | `/assessments/{id}/answers` | `{question_code, value, measured?, proxy_flag?, answered_by?}` → `{answer, next_question, progress}` |
-| POST | `/assessments/{id}/skip` | `{question_code, reason}` 跳过（记为缺项） |
-| POST | `/assessments/{id}/finish` | 完成 → `{scores:[{scale_code,total,level,interpretation,abnormal,severity,flags,explanation,rule_refs}], branches:[{target_scale,reason}], needs_manual_review}` |
-| POST | `/assessments/{id}/review` | 医护复核 `{action:"approve"|"correct", corrections:[{question_code,value}], comment}` |
-| GET | `/assessments?patient_id=&scale_code=&status=` | 列表 |
-| GET | `/patients/{id}/assessments` | 患者名下全部评估 |
+| `role` | `elder` / `staff` / `doctor` / `admin` | user |
+| `assessment.status` | `in_progress` / `finished` / `reviewed` / `abandoned` | session |
+| `review_status` | `draft_pending_medical_review` / `approved` / `deprecated` | scale / disease / threshold |
+| `severity` | `none` / `low` / `medium` / `high` | score / flag |
+| `alert.level` | `immediate` / `urgent` / `elective` / `observe` | alert / candidate |
+| `alert.status` | `pending` / `ack` / `escalate` / `closed` | alert |
+| `followup.status` | `planned` / `completed` | followup |
+| `threshold.scope` | `global` / `disease` | threshold |
+| `input_type` | `single` / `multi` / `number` | question |
+| `dimension` | `躯体功能` / `精神心理` / `社会与环境` / `老年综合征` | scale |
+| `rule_type` | `sum` / `count_positive` / `max` / `level_map` / `condition` | scoring |
+| `condition.op` | `eq` / `ne` / `in` / `lt` / `lte` / `gt` / `gte` | condition |
+| `symptom.weight` | `core` / `secondary`（命中证据另有 `history`） | disease / candidate |
+| `match.action` | `ack` / `escalate` / `close` | alert handle |
+| `review.action` | `approve` / `correct` | assessment review |
 
-`status`：`in_progress` / `finished` / `reviewed` / `abandoned`。
+**severity 中文映射**（前端展示用）：`none`→无、`low`→轻度、`medium`→中度、`high`→重度
+**alert.level 中文映射**：`immediate`→立即就医、`urgent`→尽快就医、`elective`→择期就诊、`observe`→居家观察
 
-## 5. 报告 `/reports`
+---
 
-| 方法 | 路径 | 说明 |
+## 12. 待实现清单（🟡/🔴，前端先用 mock）
+
+| 接口 | 状态 | 说明 |
 | --- | --- | --- |
-| POST | `/reports` | `{patient_id, assessment_ids?: [], title?}` → 生成（自动汇总该患者最近一次各量表结果） |
-| GET | `/reports?patient_id=` | 列表 |
-| GET | `/reports/{id}` | `{id,patient_id,version,locked,sections:{basic,scale_results,dimension_summary,positive_list,ai_supplement,disease_match,interventions,mdt_opinions,followup_plan},disclaimer}` |
-| POST | `/reports/{id}/lock` | 归档锁版本（后续修改需新建版本） |
-| GET | `/reports/{id}/export?format=docx\|pdf` | 文件下载 |
+| `POST /dialogue/sessions/{id}/messages/stream` | 🟡 | SSE 流式，字段与非流式一致 |
+| `GET /matching/thresholds` 的审批流形态 | 🟡 | 将改为提案/审批/生效三态 |
+| `GET /patients/{id}/assessments` 分页 | 🟡 | v1.2 统一为形态 A |
+| 其余列表接口分页 | 🟡 | v1.2 统一为形态 A |
+| 业务错误码 `biz_code` | 🔴 | v1.2 引入，`code` 保留 HTTP 语义 |
+| `POST /scales` 批量导入 | 🔴 | 暂只支持单表创建 |
+| 题目口语化改写接口 | 🔴 | 待数据侧定稿 |
+| 实测项计时上报接口 | 🔴 | 与 B.3 条目补录同步 |
 
-## 6. 疾病库与匹配 `/diseases`、`/matching`
+---
 
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| GET | `/diseases` | `{diseases:[{code,name,system,risk_level,symptom_count,review_status}], thresholds:[...]}` |
-| GET | `/diseases/{code}` | 详情（含症状权重、鉴别要点、关联量表、建议） |
-| POST | `/matching/run` | `{patient_id}` → 匹配批次 |
-| GET | `/matching/runs?patient_id=` | 批次列表 |
-| GET | `/matching/runs/{id}` | `{id,patient_id,created_at,thresholds,candidates:[{disease_code,disease_name,match_score,ref_probability,hit_symptoms:[{code,term,weight}],missing_symptoms:[...],excluded_reasons:[...],risk_level,advice}],alert:{level,message,department,disclaimer},disclaimer}` |
-| GET | `/matching/thresholds` | 阈值列表 `{scope, disease_code, threshold, level, review_status}` |
-| PUT | `/matching/thresholds/{id}` | 修改（admin/doctor，写审计） |
+## 13. 联调约定
 
-**术语约束（强制）**：对外字段只用 `match_score`（匹配度，0~100）、`ref_probability`（参考概率，0~100），
-文案用「匹配度」「参考概率」，禁止「确诊概率」「患病概率」。所有匹配结果与提醒必须带
-`disclaimer = "结果仅供参考，不构成诊断，请及时咨询医生。"`
-
-## 7. AI 对话 `/dialogue`
-
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| POST | `/dialogue/sessions` | `{patient_id}` → 会话 |
-| GET | `/dialogue/sessions/{id}` | `{id,patient_id,turns:[{role,content,extracted,safety_note,created_at}],profile}` |
-| POST | `/dialogue/sessions/{id}/messages` | `{content, proxy?}` → `{reply, extracted, safety_note, conflict_flags, disclaimer}` |
-| POST | `/dialogue/sessions/{id}/messages/stream` | 同上，SSE 流式返回 `data: {...}` |
-| GET | `/dialogue/sessions/{id}/profile` | 老人专属医疗数据库画像 `{symptoms:[],conditions:[],medications:[],lifestyle:{},updated_at}` |
-
-`extracted` 结构：`{symptoms:[{code,term,source,confidence}], conditions:[], medications:[], lifestyle:{}, chief_complaint:{}}`。
-`conflict_flags`：与量表结果冲突时返回 `[{field, dialogue_value, scale_value, note}]`，不自动覆盖任一方。
-
-## 8. 定期评估、随访、提醒
-
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| POST | `/periodic/run` | `{patient_id}` → 手动触发「AI 补充评估」，返回 `{id,patient_id,dimension_conclusions:[],trend:[],model,prompt_version,generated_at,notice}`，`notice` 固定含「AI 补充评估，不替代正式量表施测」 |
-| GET | `/periodic?patient_id=` | 历史 |
-| GET | `/followups?patient_id=` | 随访计划 |
-| POST | `/followups` | `{patient_id, interval_days, focus_items:[], due_at, note}` |
-| POST | `/followups/{id}/complete` | `{result, next_interval_days?}` |
-| GET | `/alerts?patient_id=&status=` | 就医提醒 `{id,patient_id,level,message,department,status,created_at,handled_by,handled_at}` |
-| POST | `/alerts/{id}/handle` | `{action:"ack"|"escalate"|"close", comment}` |
-
-`level`：`immediate`（立即就医）/ `urgent`（尽快就医）/ `elective`（择期就诊）/ `observe`（居家观察）。
-
-## 9. 管理与质控 `/admin`
-
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| GET | `/admin/users` / POST | 用户与角色管理（admin） |
-| GET | `/admin/audit-logs?actor=&target=&from=&to=&limit=` | 审计日志 |
-| GET | `/admin/quality-metrics` | `{scoring_consistency, match_accuracy, false_alert_rate, alert_response_rate, pending_reviews, stats}` |
-| GET | `/admin/stats/overview` | 看板汇总：患者数、评估数、报告数、待复核、提醒数 |
-| GET | `/admin/prompt-templates` | 提示词模板与版本 |
-
-## 10. 通用约定
-
-- 列表统一返回 `{items:[], total, page, size}`。
-- 时间统一 ISO8601 字符串。
-- 患者数据访问：elder 仅限 `patient_id` 绑定的本人数据（后端强制）。
-- 所有写操作写审计日志（操作人、对象、动作、时间、前后值摘要）。
+1. **端口**：后端 `127.0.0.1:8000`，前端 `127.0.0.1:3000`。CORS 白名单只放行 3000 端口，**前端换端口会被浏览器拦**，这是已知坑。
+2. **启动顺序**：后端起好（`/health` 返回 ok）→ 前端起。
+3. **演示账号**：`admin/admin12345`、`doctor/doctor12345`、`nurse/nurse12345`、`elder/elder12345`（elder 绑定演示患者）。
+4. **数据隔离**：开发期共用一个 SQLite（`backend/data/cga.db`）。两人同时造数据会互相干扰 → **各自用独立库**：后端启动前设 `CGA_DATABASE_URL=sqlite:///./data/cga_<你的名字>.db`。
+5. **契约校验**：CI 中跑「契约声明 vs OpenAPI」比对，缺接口即失败，防止文档与实现漂移。
