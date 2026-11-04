@@ -73,13 +73,12 @@ pnpm install
 **方式一（推荐，后端 `.env`）**：在 `backend/.env` 中配置，`config.yaml` 可覆盖同名项。
 
 ```text
-# 后端
-APP_ENV=dev
-DATABASE_URL=sqlite:///./data/cga.db
-SECRET_KEY=请替换为随机长字符串
-ACCESS_TOKEN_EXPIRE_MINUTES=120
-CORS_ORIGINS=http://127.0.0.1:3000
-LLM_PROVIDER=mock
+# 后端（环境变量统一使用 CGA_ 前缀，键名见 backend/app/core/config.py）
+CGA_DATABASE_URL=sqlite:///./data/cga.db
+CGA_JWT_SECRET=请替换为随机长字符串
+CGA_ACCESS_TOKEN_EXPIRE_MINUTES=720
+CGA_CORS_ORIGINS=http://127.0.0.1:3000
+CGA_LLM_PROVIDER=mock
 ```
 
 **方式二（根 `config.yaml`）**：以仓库根目录 `config.example.yaml` 为模板复制为 `config.yaml`（`config.yaml` 不入库）。
@@ -92,7 +91,7 @@ cd D:\ALLCODE\work\word2
 Copy-Item -LiteralPath 'config.example.yaml' -Destination 'config.yaml'
 ```
 
-> 若当前本地副本尚未提供 `config.example.yaml`，可按上述 `.env` 键名直接编写 `config.yaml`，或统一使用 `backend/.env`。实际键名以 `backend` 的配置读取实现为准。
+> 优先级：环境变量 > 根 `config.yaml` > 内置默认值。`config.yaml` 使用与上表相同的键名（不带 `CGA_` 前缀）。
 
 **前端**：用编辑器新建 `frontend/.env.local`，写入接口基址（不要用 PowerShell 5.1 的 `Set-Content -Encoding UTF8` 写入，避免带入 BOM）。
 
@@ -114,14 +113,14 @@ cd D:\ALLCODE\work\word2\backend
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
-**PostgreSQL（生产／联调）**：先建库，再把 `DATABASE_URL` 指向它。
+**PostgreSQL（生产／联调）**：先建库，再把 `CGA_DATABASE_URL` 指向它。
 
 ```powershell
 createdb -U postgres cga
 ```
 
 ```text
-DATABASE_URL=postgresql+psycopg://postgres:你的密码@127.0.0.1:5432/cga
+CGA_DATABASE_URL=postgresql+psycopg://postgres:你的密码@127.0.0.1:5432/cga
 ```
 
 > 驱动名按后端实现选择（`postgresql+psycopg` / `postgresql+psycopg2` / 异步驱动对应 `postgresql+asyncpg`）；表结构由应用启动时自动同步或由 `docs/sql/` 中的 DDL 初始化。
@@ -137,7 +136,7 @@ docker compose up -d
 后端启动时**自动播种**：预置账号（`admin` / `doctor` / `nurse` / `elder`）、21 张量表草稿题库、疾病库草稿与阈值初始值。首次启动后确认种子数据已生成：
 
 ```powershell
-Invoke-RestMethod -Uri 'http://127.0.0.1:8000/api/v1/health'
+Invoke-RestMethod -Uri 'http://127.0.0.1:8000/health'
 ```
 
 > 种子数据中的量表与疾病库条目均为 `review_status: draft_pending_medical_review` 的**待评审草稿**，须经医护与医学专家核对 WS/T 888—2026 附录 B 原文后审批发布，方可作为正式医学结论依据。
@@ -173,7 +172,7 @@ pnpm dev
 ### 3.1 健康检查与接口自检
 
 ```powershell
-Invoke-RestMethod -Uri 'http://127.0.0.1:8000/api/v1/health'
+Invoke-RestMethod -Uri 'http://127.0.0.1:8000/health'
 ```
 
 ```powershell
@@ -236,8 +235,8 @@ Get-NetTCPConnection -LocalPort 8000 -State Listen | Select-Object LocalPort,Own
 | --- | --- | --- |
 | **端口被占用**（`Address already in use`） | 8000／3000 已被其他进程占用 | 用 `Get-NetTCPConnection -LocalPort 8000 -State Listen` 定位占用 PID，确认后 `Stop-Process -Id <PID>`；或改用 `--port 8001` 并同步修改 `NEXT_PUBLIC_API_BASE` |
 | **依赖装不上** | pip／pnpm 网络或版本问题 | 升级打包器：`python -m pip install -U pip`、`pnpm self-update`；换国内镜像源；确认 Python 3.12 与 Node 20+；前端报 node_modules 损坏时删除 `node_modules` 后重装 `pnpm install` |
-| **数据库连接失败** | `DATABASE_URL` 写错、PostgreSQL 未启动、SQLite 目录不可写 | 检查 `.env`／`config.yaml`；PostgreSQL 服务未起时确认 `pg_isready`；SQLite 场景确认 `backend/data/` 存在且可写 |
-| **token 失效 / 401 / 403** | JWT 过期或密钥变更、请求未带 `Authorization: Bearer <token>` | 重新登录取新 token；确认 `SECRET_KEY` 未在运行中变更；老人账号只能访问本人数据，越权访问返回 403 |
+| **数据库连接失败** | `CGA_DATABASE_URL` 写错、PostgreSQL 未启动、SQLite 目录不可写 | 检查 `.env`／`config.yaml`；PostgreSQL 服务未起时确认 `pg_isready`；SQLite 场景确认 `backend/data/` 存在且可写 |
+| **token 失效 / 401 / 403** | JWT 过期或密钥变更、请求未带 `Authorization: Bearer <token>` | 重新登录取新 token；确认 `CGA_JWT_SECRET` 未在运行中变更；老人账号只能访问本人数据，越权访问返回 403 |
 | **报告导出报错（Word/PDF）** | 导出依赖缺失或缺少外部转换程序 | 按报错提示补装 `backend/requirements.txt` 中对应的导出依赖；PDF 转换若依赖外部程序（如 Office/LibreOffice），先安装该程序或改用 Word 导出 |
 | **Docker 守护进程未启动** | Docker Desktop 未运行 | 启动 Docker Desktop 并等待引擎就绪；**不可用时不必重试**，本地演示直接用 SQLite + 手动触发评估（`POST /api/v1/periodic/run`）替代 Celery 定时任务 |
 | **虚拟环境激活失败** | 执行策略限制 | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` 后重试 |
@@ -269,7 +268,7 @@ Nginx（静态资源 + /api 反向代理 + /api/v1 长连接/SSE 放行）
 | 数据库 | PostgreSQL 15+，定期 `pg_dump` 备份；连接串走环境变量注入，不落盘入库 |
 | 缓存与队列 | Redis 7，启用密码与持久化；Celery Worker 与 Beat 分离部署 |
 | 报告归档 | 导出文件落对象存储 / NAS，数据库只存元数据与版本号；归档时同步锁定报告版本 |
-| 密钥管理 | `SECRET_KEY`、大模型 API Key、数据库口令经环境变量或密钥管理服务注入，禁止写入仓库 |
+| 密钥管理 | `CGA_JWT_SECRET`、大模型 API Key、数据库口令经环境变量或密钥管理服务注入，禁止写入仓库 |
 
 ### 5.3 最小权限与审计留痕
 

@@ -1,0 +1,79 @@
+# 本地一键环境：PostgreSQL + Redis + 后端 + 前端
+# 使用前提：本机 Docker Desktop 已启动（docker info 可正常返回）。
+# 启动：docker compose up -d
+# 停止：docker compose down（保留数据）/ docker compose down -v（清空数据）
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cga-postgres
+    environment:
+      POSTGRES_USER: cga
+      POSTGRES_PASSWORD: cga
+      POSTGRES_DB: cga
+      TZ: Asia/Shanghai
+    ports:
+      - "5432:5432"
+    volumes:
+      - cga-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cga -d cga"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: cga-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - cga-redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cga-backend
+    environment:
+      CGA_DATABASE_URL: postgresql+psycopg://cga:cga@postgres:5432/cga
+      CGA_REDIS_URL: redis://redis:6379/0
+      CGA_JWT_SECRET: ${CGA_JWT_SECRET:-change-me-in-production}
+      CGA_LLM_PROVIDER: ${CGA_LLM_PROVIDER:-mock}
+      CGA_LLM_BASE_URL: ${CGA_LLM_BASE_URL:-}
+      CGA_LLM_API_KEY: ${CGA_LLM_API_KEY:-}
+      CGA_LLM_MODEL: ${CGA_LLM_MODEL:-}
+      CGA_CORS_ORIGINS: http://127.0.0.1:3000,http://localhost:3000
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - cga-storage:/app/storage
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cga-frontend
+    environment:
+      NEXT_PUBLIC_API_BASE: http://127.0.0.1:8000/api/v1
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  cga-pgdata:
+  cga-redisdata:
+  cga-storage:
