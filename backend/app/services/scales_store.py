@@ -107,7 +107,7 @@ def _count_items(payload: dict) -> int:
 
 
 def load_symptoms() -> dict[str, dict]:
-    """症状归一化字典。"""
+    """症状归一化字典（含鉴别性追问话术 probe）。"""
     if "symptoms" in _cache:
         return _cache["symptoms"]
     path = DISEASE_DIR / "symptoms.json"
@@ -123,6 +123,12 @@ def load_symptoms() -> dict[str, dict]:
 def symptom_term(code: str) -> str:
     entry = load_symptoms().get(code)
     return entry.get("term", code) if entry else code
+
+
+def symptom_probe(code: str) -> str:
+    """该症状的鉴别性追问话术（医生初诊用来区分同症多病）。"""
+    entry = load_symptoms().get(code)
+    return entry.get("probe", "") if entry else ""
 
 
 def load_disease_file() -> dict:
