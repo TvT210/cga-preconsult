@@ -1,16 +1,31 @@
 {
   "code": "plain",
   "name": "通俗版（老人与家属）",
-  "version": "0.2.0-draft",
+  "version": "0.3.0-draft",
   "scene": "plain",
   "review_status": "draft_pending_medical_review",
+  "standard_ref": [
+    {
+      "code": "工信厅信管函〔2021〕67 号 附件1",
+      "title": "互联网网站适老化通用设计规范",
+      "clauses": ["正文最小字号", "行距", "对比度"],
+      "note": "类比借用到纸质通俗版：正文 ≥18pt、行距 ≥1.3 倍、文本对比度 ≥4.5:1。"
+    }
+  ],
+  "typography": {
+    "body_font_pt": 18,
+    "line_spacing": 1.4,
+    "min_contrast_ratio": 4.5,
+    "note": "本模板为纸质版，正文按适老化通用设计规范类比设置；打印字号建议 ≥18pt。"
+  },
   "template": {
     "cover": {
       "title": "我的健康评估报告",
-      "subtitle": "看得懂的老年综合评估",
+      "subtitle": "看得懂的老年综合评估（家属与老人版）",
       "fields": [
         { "key": "name", "label": "姓名" },
         { "key": "age", "label": "年龄" },
+        { "key": "report_code", "label": "报告编号" },
         { "key": "assessment_time", "label": "评估日期" },
         { "key": "organization", "label": "评估机构" }
       ],
@@ -19,7 +34,7 @@
     "toc": [
       { "ref": "basic", "label": "您的基本情况" },
       { "ref": "scales", "label": "生活能做的事" },
-      { "ref": "positive", "label": "需要留意的地方" },
+      { "ref": "positive", "label": "需要多留意的地方" },
       { "ref": "match", "label": "建议就医提醒" },
       { "ref": "intervention", "label": "接下来可以怎么做" },
       { "ref": "followup", "label": "下次什么时候再来" }
@@ -69,9 +84,11 @@
         "source": "followup_plan"
       }
     ],
-    "signatures": [{ "role": "评估者", "name_key": "assessor" }],
-    "header": { "left": "我的健康评估报告", "right": "评估时间" },
-    "footer": { "left": "结果仅供参考，请听医生的", "right": "第 X 页 / 共 Y 页" },
-    "disclaimer": "这份报告帮您了解目前的情况，不能代替医生诊断。有疑问请咨询您的医生或家庭医生。"
+    "signatures": [
+      { "role": "家属／老人已了解（勾选）", "name_key": "", "date": true, "non_medical": true }
+    ],
+    "header": { "left": "我的健康评估报告", "right": "报告编号" },
+    "footer": { "left": "这份报告不能代替医生诊断", "right": "第 X 页 / 共 Y 页" },
+    "disclaimer": "这份报告帮您了解目前的情况，不能代替医生诊断。有疑问请咨询您的医生或家庭医生。报告中的「匹配度」与「参考概率」是系统根据您填写的症状做的参考排序，不是得病概率。"
   }
 }

@@ -1,39 +1,62 @@
 {
   "code": "professional",
   "name": "专业版（临床医护）",
-  "version": "0.2.0-draft",
+  "version": "0.3.0-draft",
   "scene": "professional",
   "review_status": "draft_pending_medical_review",
+  "standard_ref": [
+    {
+      "code": "WS/T 888—2026",
+      "title": "医疗机构老年综合评估技术操作标准",
+      "clauses": ["9.2.1", "10.3.1", "10.3.2", "10.4.1", "10.4.2", "10.4.3"],
+      "note": "10.3.1 为报告内容强制项（须含量表名称+结果+干预计划）；10.3.2 要求格式规范但未规定具体版式；10.4 为归档与全流程管理。"
+    },
+    {
+      "code": "GB/T 42195—2022",
+      "title": "老年人能力评估规范",
+      "clauses": ["附录C"],
+      "note": "签署栏与评估地点栏的结构参照。"
+    }
+  ],
   "template": {
     "cover": {
       "title": "老年综合评估报告",
-      "subtitle": "Comprehensive Geriatric Assessment Report",
+      "subtitle": "Comprehensive Geriatric Assessment Report（专业版）",
       "fields": [
+        { "key": "organization", "label": "机构名称" },
+        { "key": "department", "label": "执行科室" },
         { "key": "name", "label": "姓名" },
         { "key": "gender", "label": "性别" },
         { "key": "age", "label": "年龄" },
-        { "key": "assessment_time", "label": "评估时间" },
-        { "key": "assessor", "label": "评估者" },
-        { "key": "organization", "label": "机构" }
+        { "key": "report_code", "label": "报告编号" },
+        { "key": "report_version", "label": "版本号" },
+        { "key": "assessment_time", "label": "评估基准日期" },
+        { "key": "assessment_reason", "label": "评估原因" },
+        { "key": "confidentiality", "label": "密级／用途" },
+        { "key": "assessor", "label": "编制人" },
+        { "key": "reviewer", "label": "审核人" }
       ],
       "footer": "本报告由老年人就医预问诊与老年综合评估系统生成"
     },
     "toc": [
       { "ref": "basic", "label": "基本信息" },
+      { "ref": "history", "label": "疾病与用药摘要" },
       { "ref": "scales", "label": "量表评估结果" },
       { "ref": "dimensions", "label": "维度小结" },
-      { "ref": "positive", "label": "阳性问题清单" },
+      { "ref": "positive", "label": "阳性与风险项" },
       { "ref": "ai", "label": "AI 补充评估" },
-      { "ref": "match", "label": "疾病匹配与就医提醒" },
-      { "ref": "intervention", "label": "干预建议" },
+      { "ref": "match", "label": "疾病匹配与就医紧急度" },
+      { "ref": "intervention", "label": "个性化干预计划" },
       { "ref": "mdt", "label": "多学科意见" },
-      { "ref": "followup", "label": "随访计划" }
+      { "ref": "followup", "label": "随访计划" },
+      { "ref": "archive", "label": "归档与声明" }
     ],
     "blocks": [
       {
         "ref": "basic",
         "type": "kv",
         "title": "一、基本信息",
+        "subtitle": "1.1 评估对象与评估情境",
         "source": "basic",
         "fields": [
           { "key": "name", "label": "姓名" },
@@ -41,25 +64,35 @@
           { "key": "age", "label": "年龄" },
           { "key": "birth_date", "label": "出生日期" },
           { "key": "phone", "label": "联系电话" },
-          { "key": "assessment_time", "label": "评估时间" },
+          { "key": "report_code", "label": "报告编号" },
+          { "key": "report_version", "label": "版本号" },
+          { "key": "assessment_time", "label": "评估基准日期" },
+          { "key": "assessment_reason", "label": "评估原因" },
+          { "key": "assessment_place", "label": "评估地点" },
           { "key": "assessor", "label": "评估者" },
-          { "key": "organization", "label": "机构" },
-          { "key": "scale_count", "label": "本次评估量表数" },
-          { "key": "scale_versions", "label": "题库版本" },
-          { "key": "rule_versions", "label": "规则版本" }
+          { "key": "reviewer", "label": "审核人" },
+          { "key": "organization", "label": "机构" }
         ]
+      },
+      {
+        "ref": "history",
+        "type": "kv",
+        "title": "二、疾病与用药摘要",
+        "subtitle": "2.1 既往病史与用药",
+        "source": "history"
       },
       {
         "ref": "scales",
         "type": "table",
-        "title": "二、量表评估结果",
+        "title": "三、量表评估结果",
+        "subtitle": "3.1 量表结果总表",
         "source": "scale_results",
         "columns": [
           { "key": "scale_code", "label": "编号" },
           { "key": "scale_name", "label": "量表名称" },
           { "key": "dimension", "label": "维度" },
           { "key": "total", "label": "总分" },
-          { "key": "level", "label": "判读" },
+          { "key": "level", "label": "判读结果" },
           { "key": "abnormal", "label": "是否异常" },
           { "key": "needs_manual_review", "label": "待人工确认" }
         ]
@@ -67,7 +100,7 @@
       {
         "ref": "scales_detail",
         "type": "detail",
-        "title": "2.1 量表逐项作答与判读依据",
+        "title": "3.2 量表明细与判读依据",
         "source": "scale_results",
         "fields": ["scale_code", "scale_name", "interpretation", "explanation"],
         "flags": true
@@ -75,13 +108,13 @@
       {
         "ref": "dimensions",
         "type": "dimension",
-        "title": "三、维度小结",
+        "title": "四、维度小结",
         "source": "dimension_summary"
       },
       {
         "ref": "positive",
         "type": "table",
-        "title": "四、阳性问题清单",
+        "title": "五、阳性与风险项",
         "source": "positive_list",
         "columns": [
           { "key": "scale_code", "label": "编号" },
@@ -95,7 +128,7 @@
       {
         "ref": "ai",
         "type": "notice",
-        "title": "五、AI 补充评估",
+        "title": "六、AI 补充评估",
         "source": "ai_supplement",
         "notice_key": "notice",
         "items_key": "dimension_conclusions",
@@ -104,35 +137,53 @@
       {
         "ref": "match",
         "type": "match",
-        "title": "六、疾病匹配与就医提醒",
+        "title": "七、疾病匹配与就医紧急度",
         "source": "disease_match"
       },
       {
         "ref": "intervention",
         "type": "categories",
-        "title": "七、干预建议",
+        "title": "八、个性化干预计划",
         "source": "interventions"
       },
       {
         "ref": "mdt",
         "type": "mdt",
-        "title": "八、多学科意见",
+        "title": "九、多学科意见",
         "source": "mdt_opinions"
       },
       {
         "ref": "followup",
         "type": "followup",
-        "title": "九、随访计划",
+        "title": "十、随访计划",
         "source": "followup_plan"
+      },
+      {
+        "ref": "archive",
+        "type": "kv",
+        "title": "十一、归档与声明",
+        "source": "archive",
+        "fields": [
+          { "key": "report_code", "label": "报告编号" },
+          { "key": "report_version", "label": "报告版本" },
+          { "key": "template_code", "label": "报告模板" },
+          { "key": "report_state", "label": "归档状态" },
+          { "key": "scale_versions", "label": "量表版本集" },
+          { "key": "rule_versions", "label": "规则版本集" },
+          { "key": "model_versions", "label": "模型与提示词版本" },
+          { "key": "generated_at", "label": "生成时间" },
+          { "key": "created_by", "label": "生成人" }
+        ]
       }
     ],
     "signatures": [
-      { "role": "评估者", "name_key": "assessor" },
-      { "role": "复核医师", "name_key": "reviewer" },
-      { "role": "报告日期", "name_key": "assessment_time" }
+      { "role": "评估者（主评估医师／护士／技师）", "name_key": "assessor", "date": true },
+      { "role": "信息提供者／家属／照护者", "name_key": "proxy_name", "date": true },
+      { "role": "复核者（上级医师）", "name_key": "reviewer", "date": true },
+      { "role": "多学科负责人／机构", "name_key": "", "date": true }
     ],
-    "header": { "left": "老年综合评估报告", "right": "评估时间" },
-    "footer": { "left": "本报告不构成诊断", "right": "第 X 页 / 共 Y 页" },
-    "disclaimer": "本报告由老年人就医预问诊与老年综合评估系统生成，结果仅供参考，不构成诊断，请结合临床检查由医师判断。"
+    "header": { "left": "机构名称 · 执行科室", "right": "报告编号 · 版本号" },
+    "footer": { "left": "专业版 · 结果仅供参考不构成诊断", "right": "第 X 页 / 共 Y 页" },
+    "disclaimer": "本报告由老年人就医预问诊与老年综合评估系统生成。报告内容含量表名称、评估结果与干预计划（WS/T 888—2026 10.3.1）；结果仅供参考，不构成诊断，请结合临床检查由医师判断。归档后原则上不得修改，确需修改须经批准并保留修改痕迹。"
   }
 }

@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import datetime as dt
 import io
+import json
 from typing import Any
 
 from sqlalchemy import select
@@ -66,6 +67,23 @@ ALERT_LEVEL_LABELS = {
 }
 
 DIMENSIONS = ["躯体功能", "精神心理", "社会与环境", "老年综合征"]
+
+# 未显式指定标签时的兜底中文标签
+KV_LABELS = {
+    "conditions": "既往病史",
+    "medications": "当前用药",
+    "allergies": "过敏史",
+    "chief_complaint": "主诉",
+    "report_code": "报告编号",
+    "report_version": "报告版本",
+    "template_code": "报告模板",
+    "report_state": "归档状态",
+    "scale_versions": "量表版本集",
+    "rule_versions": "规则版本集",
+    "model_versions": "模型与提示词版本",
+    "generated_at": "生成时间",
+    "created_by": "生成人",
+}
 
 
 def _latest_scores(db: Session, patient_id: int) -> list[AssessmentScore]:
@@ -277,6 +295,35 @@ def build_sections(db: Session, patient_id: int, staff: User | None = None) -> d
     )
     reviewers = {row.id: row.full_name for row in db.query(User).all()}
 
+    # 疾病与用药摘要（预问诊采集）
+    history: dict[str, Any] = {"conditions": [], "medications": [], "allergies": []}
+    from app.db.models import Preconsult
+
+    preconsult = db.query(Preconsult).filter(Preconsult.patient_id == patient_id).first()
+    if preconsult:
+        payload = preconsult.payload or {}
+        source = payload.get("history") or {}
+        history = {
+            "conditions": list(source.get("conditions") or []),
+            "medications": [
+                f"{item.get('name','')}（{item.get('dose','')}）".strip("（）")
+                for item in (source.get("medications") or [])
+                if isinstance(item, dict)
+            ],
+            "allergies": [
+                f"{item.get('name','')}：{item.get('reaction','')}".strip("：")
+                for item in (source.get("allergies") or [])
+                if isinstance(item, dict)
+            ],
+            "chief_complaint": (payload.get("chief_complaint") or {}).get("text", ""),
+        }
+
+    reviewer = ""
+    for session in sessions:
+        if session.reviewer_id:
+            reviewer = reviewers.get(session.reviewer_id, "")
+            break
+
     return {
         "basic": {
             "patient_id": patient.id,
@@ -286,8 +333,16 @@ def build_sections(db: Session, patient_id: int, staff: User | None = None) -> d
             "birth_date": patient.birth_date.isoformat() if patient.birth_date else "",
             "phone": patient.phone,
             "assessment_time": dt.datetime.now().strftime("%Y-%m-%d %H:%M"),
-            "assessor": staff.full_name if staff else "系统自动",
+            "assessment_reason": "常规",
+            "assessment_place": "社区卫生服务中心",
+            "department": "老年医学科",
             "organization": "示例社区卫生服务中心",
+            "confidentiality": "专业版（临床医护）",
+            "report_code": "",
+            "report_version": "",
+            "assessor": staff.full_name if staff else "系统自动",
+            "reviewer": reviewer,
+            "proxy_name": "",
             "scale_count": len(scores),
             "scale_versions": sorted({score.scale_version for score in scores if score.scale_version}),
             "rule_versions": sorted({score.rule_version for score in scores if score.rule_version}),
@@ -302,6 +357,7 @@ def build_sections(db: Session, patient_id: int, staff: User | None = None) -> d
                 for item in sessions
             ],
         },
+        "history": history,
         "scale_results": scale_results,
         "dimension_summary": _dimension_summary(scores, scale_dims),
         "positive_list": positive_list,
@@ -310,6 +366,19 @@ def build_sections(db: Session, patient_id: int, staff: User | None = None) -> d
         "interventions": _interventions(scores),
         "mdt_opinions": [],
         "followup_plan": followup_plan,
+        "archive": {
+            "report_code": "",
+            "report_version": "",
+            "template_code": "",
+            "report_state": "草稿",
+            "scale_versions": sorted({score.scale_version for score in scores if score.scale_version}),
+            "rule_versions": sorted({score.rule_version for score in scores if score.rule_version}),
+            "model_versions": sorted(
+                {ai_supplement.get("prompt_version", "")} if ai_supplement.get("prompt_version") else set()
+            ),
+            "generated_at": dt.datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "created_by": staff.full_name if staff else "系统自动",
+        },
     }
 
 
@@ -375,11 +444,23 @@ def build_document(sections: dict, template: dict, title: str = "") -> dict[str,
         title_text = block.get("title", "")
 
         if kind == "kv":
+            fields = block.get("fields") or []
+            if not fields and isinstance(source, dict):
+                fields = [
+                    {"key": key, "label": KV_LABELS.get(key, key)} for key in source.keys()
+                ]
             rows = [
                 [field.get("label", field.get("key", "")), _stringify(source.get(field.get("key", "")))]
-                for field in block.get("fields", [])
+                for field in fields
             ] if isinstance(source, dict) else []
-            blocks.append({"type": "kv", "title": title_text, "rows": rows})
+            blocks.append(
+                {
+                    "type": "kv",
+                    "title": title_text,
+                    "subtitle": block.get("subtitle", ""),
+                    "rows": rows,
+                }
+            )
         elif kind == "table":
             columns = block.get("columns", [])
             rows = []
@@ -542,6 +623,29 @@ def create_report(
     )
     report.template_code = template_code or "professional"
     db.add(report)
+    db.flush()
+
+    # 报告编号：机构码-科室码-日期-流水号，须全局唯一且可反查报告 id
+    report_code = f"CGA-{dt.datetime.now().strftime('%Y%m%d')}-{report.id:04d}"
+    report_version = f"v{report.version}.0"
+
+    # 注意：JSON 列不会被追踪「原地修改」，必须构造**新对象**再赋值，否则不会产生 UPDATE
+    updated = json.loads(json.dumps(sections, ensure_ascii=False))
+    updated.setdefault("basic", {})["report_code"] = report_code
+    updated["basic"]["report_version"] = report_version
+    updated["basic"]["confidentiality"] = (
+        "专业版（临床医护）" if report.template_code == "professional" else "通俗版（老人与家属）"
+    )
+    archive = updated.setdefault("archive", {})
+    archive.update(
+        {
+            "report_code": report_code,
+            "report_version": report_version,
+            "template_code": report.template_code,
+            "report_state": "草稿（未锁定）",
+        }
+    )
+    report.sections = updated
     db.commit()
     db.refresh(report)
     return report
@@ -604,6 +708,11 @@ def export_docx(sections: dict, title: str, template: dict | None = None) -> byt
             run = paragraph.add_run(block["title"])
             run.bold = True
             run.font.size = Pt(12)
+        if block.get("subtitle"):
+            sub = document.add_paragraph()
+            sub_run = sub.add_run(block["subtitle"])
+            sub_run.bold = True
+            sub_run.font.size = Pt(10.5)
         if block["type"] == "kv":
             for label, value in block["rows"]:
                 paragraph = document.add_paragraph()
@@ -637,7 +746,13 @@ def export_docx(sections: dict, title: str, template: dict | None = None) -> byt
         document.add_paragraph()
         for signature in model["signatures"]:
             paragraph = document.add_paragraph()
-            paragraph.add_run(f"{signature.get('role','')}：________________")
+            label = signature.get("role", "")
+            if signature.get("non_medical"):
+                paragraph.add_run(f"{label}：☐ 已阅读　　日期：____________")
+            elif signature.get("date"):
+                paragraph.add_run(f"{label}：________________　　日期：____________")
+            else:
+                paragraph.add_run(f"{label}：________________")
     paragraph = document.add_paragraph()
     run = paragraph.add_run(model["disclaimer"])
     run.italic = True
@@ -724,6 +839,10 @@ def export_pdf(sections: dict, title: str, template: dict | None = None) -> byte
     for block in model["blocks"]:
         if block.get("title"):
             story.append(Paragraph(block["title"], heading_style))
+        if block.get("subtitle"):
+            story.append(Paragraph(block["subtitle"], ParagraphStyle(
+                "CGA sub", parent=body_style, fontSize=10.5, leading=15, spaceAfter=3
+            )))
         if block["type"] == "kv":
             rows = [[Paragraph(label, cell_style), Paragraph(str(value), cell_style)] for label, value in block["rows"]]
             if rows:
@@ -771,10 +890,17 @@ def export_pdf(sections: dict, title: str, template: dict | None = None) -> byte
 
     if model["signatures"]:
         story.append(Spacer(1, 8 * mm))
-        signature_rows = [
-            [Paragraph(f"{item.get('role','')}：____________________", cell_style)] for item in model["signatures"]
-        ]
-        table = Table(signature_rows, colWidths=[80 * mm])
+        signature_rows = []
+        for item in model["signatures"]:
+            label = item.get("role", "")
+            if item.get("non_medical"):
+                text = f"{label}：☐ 已阅读　　日期：____________"
+            elif item.get("date"):
+                text = f"{label}：________________　　日期：____________"
+            else:
+                text = f"{label}：________________"
+            signature_rows.append([Paragraph(text, cell_style)])
+        table = Table(signature_rows, colWidths=[100 * mm])
         table.setStyle(TableStyle([("FONTNAME", (0, 0), (-1, -1), "STSong-Light"), ("FONTSIZE", (0, 0), (-1, -1), 9.5)]))
         story.append(table)
 
