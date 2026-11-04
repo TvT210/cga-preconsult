@@ -107,7 +107,7 @@ python -m uvicorn app.main:app --reload --port 8000
 5. 验证健康检查
 
 ```powershell
-Invoke-RestMethod -Uri 'http://127.0.0.1:8000/api/v1/health'
+Invoke-RestMethod -Uri 'http://127.0.0.1:8000/health'
 ```
 
 后端地址：`http://127.0.0.1:8000`；OpenAPI 交互文档：`http://127.0.0.1:8000/docs`。
