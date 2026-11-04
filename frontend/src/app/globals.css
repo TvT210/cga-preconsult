@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: #f5f7fa;
+    color: #1a1a1a;
+    font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", system-ui,
+      -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* 高对比度焦点环，方便视力不佳者与键盘用户定位当前控件 */
+  :focus-visible {
+    outline: 3px solid #1d4ed8;
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+
+  /* 老人端正文不低于 18px */
+  p,
+  li,
+  label,
+  td,
+  th,
+  span,
+  div {
+    line-height: inherit;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl2 border border-slate-200 bg-white shadow-card;
+  }
+
+  .card-pad {
+    @apply p-5 sm:p-6;
+  }
+
+  /* 表单输入统一高度 ≥48px，避免误触 */
+  .field-input {
+    @apply w-full min-h-btn rounded-xl border-2 border-slate-300 bg-white px-4 py-3 text-elder text-ink placeholder:text-slate-400 focus:border-medical-700 focus:outline-none;
+  }
+
+  .field-select {
+    @apply w-full min-h-btn rounded-xl border-2 border-slate-300 bg-white px-4 py-3 text-elder text-ink focus:border-medical-700 focus:outline-none;
+  }
+
+  .field-label {
+    @apply mb-2 block text-elder font-medium text-ink;
+  }
+
+  .section-title {
+    @apply text-elder-lg font-semibold text-ink;
+  }
+
+  .muted {
+    @apply text-ink-soft;
+  }
+}
+
+/* 尊重系统「减少动态效果」设置 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
