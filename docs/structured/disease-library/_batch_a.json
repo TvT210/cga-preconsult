@@ -47,16 +47,45 @@
     {
       "code": "I21",
       "name": "急性心肌梗死",
-      "aliases": ["心梗", "AMI", "急性心梗", "心肌梗死"],
+      "aliases": [
+        "心梗",
+        "AMI",
+        "急性心梗",
+        "心肌梗死"
+      ],
       "system": "心血管系统",
       "risk_level": "immediate",
       "symptoms": [
-        { "code": "chest_pain", "weight": "core", "note": "老年人可为闷痛、压榨感或说不清的难受，部位不典型" },
-        { "code": "dyspnea", "weight": "core", "note": "老年人常以突发气促为唯一主诉" },
-        { "code": "palpitations", "weight": "core", "note": "糖尿病老人可仅表现为心慌" },
-        { "code": "nausea_vomiting", "weight": "secondary", "note": "下壁心肌梗死多见，老年人易被当作胃肠问题" },
-        { "code": "syncope", "weight": "secondary", "note": "老年人晕厥需警惕心源性" },
-        { "code": "fatigue", "weight": "secondary", "note": "可为极度乏力、极度疲乏" }
+        {
+          "code": "chest_pain",
+          "weight": "core",
+          "note": "老年人可为闷痛、压榨感或说不清的难受，部位不典型"
+        },
+        {
+          "code": "dyspnea",
+          "weight": "core",
+          "note": "老年人常以突发气促为唯一主诉"
+        },
+        {
+          "code": "palpitations",
+          "weight": "core",
+          "note": "糖尿病老人可仅表现为心慌"
+        },
+        {
+          "code": "nausea_vomiting",
+          "weight": "secondary",
+          "note": "下壁心肌梗死多见，老年人易被当作胃肠问题"
+        },
+        {
+          "code": "syncope",
+          "weight": "secondary",
+          "note": "老年人晕厥需警惕心源性"
+        },
+        {
+          "code": "fatigue",
+          "weight": "secondary",
+          "note": "可为极度乏力、极度疲乏"
+        }
       ],
       "atypical_presentations": [
         "无典型胸痛 → 老年人可仅表现突发气促、晕厥、极度乏力或意识改变",
@@ -64,45 +93,100 @@
         "跌倒后不适或上腹疼痛 → 起病时可能毫无胸痛线索，容易被当作骨科或消化问题"
       ],
       "risk_factors": [
-        { "factor": "高龄与多重共病", "detail": "75 岁以上冠心病合并糖尿病、高血压者风险显著升高" },
-        { "factor": "2 型糖尿病", "detail": "糖尿病神经病变使胸痛感受迟钝，是老年人无痛性心肌梗死的主要背景" },
-        { "factor": "高血压、高脂血症", "detail": "动脉粥样硬化基础病变" },
-        { "factor": "急性应激与失血", "detail": "感染、跌倒、脱水、手术等可诱发急性事件" },
-        { "factor": "不当用药", "detail": "拟交感药物、含麻黄制剂、过量补液可诱发心肌耗氧增加" }
+        {
+          "factor": "高龄与多重共病",
+          "detail": "75 岁以上冠心病合并糖尿病、高血压者风险显著升高"
+        },
+        {
+          "factor": "2 型糖尿病",
+          "detail": "糖尿病神经病变使胸痛感受迟钝，是老年人无痛性心肌梗死的主要背景"
+        },
+        {
+          "factor": "高血压、高脂血症",
+          "detail": "动脉粥样硬化基础病变"
+        },
+        {
+          "factor": "急性应激与失血",
+          "detail": "感染、跌倒、脱水、手术等可诱发急性事件"
+        },
+        {
+          "factor": "不当用药",
+          "detail": "拟交感药物、含麻黄制剂、过量补液可诱发心肌耗氧增加"
+        }
       ],
       "red_flags": [
-        { "code": "chest_pain", "term": "持续胸痛或胸部压榨感", "note": "超过 20 分钟不缓解，或伴出汗、濒死感，需立即呼叫 120" },
-        { "code": "syncope", "term": "突发晕厥伴胸闷", "note": "警惕心源性晕厥，立即就医" },
-        { "code": "dyspnea", "term": "突发进行性加重的呼吸困难", "note": "卧床休息不缓解，提示急性心功能受损，需立即呼叫 120" }
+        {
+          "code": "chest_pain",
+          "term": "持续胸痛或胸部压榨感",
+          "note": "超过 20 分钟不缓解，或伴出汗、濒死感，需立即呼叫 120"
+        },
+        {
+          "code": "syncope",
+          "term": "突发晕厥伴胸闷",
+          "note": "警惕心源性晕厥，立即就医"
+        },
+        {
+          "code": "dyspnea",
+          "term": "突发进行性加重的呼吸困难",
+          "note": "卧床休息不缓解，提示急性心功能受损，需立即呼叫 120"
+        }
       ],
       "protective_signs": [
-        { "code": "fever", "term": "发热", "note": "单纯发热不支持急性心肌梗死，更需考虑感染" },
-        { "code": "hemoptysis", "term": "咯血", "note": "咯血伴胸痛更倾向肺栓塞或肺部疾病" }
+        {
+          "code": "fever",
+          "term": "发热",
+          "note": "单纯发热不支持急性心肌梗死，更需考虑感染"
+        },
+        {
+          "code": "hemoptysis",
+          "term": "咯血",
+          "note": "咯血伴胸痛更倾向肺栓塞或肺部疾病"
+        }
       ],
       "differentials": [
         {
           "vs_code": "I10",
-          "features": ["chest_pain", "palpitations"],
+          "features": [
+            "chest_pain",
+            "palpitations"
+          ],
           "points": -8,
           "reason": "缺少急性胸痛或心悸线索时，更倾向高血压急症等血压急性升高相关表现而非急性心肌梗死"
         },
         {
           "vs_code": "I50",
-          "features": ["chest_pain"],
+          "features": [
+            "chest_pain"
+          ],
           "points": -6,
           "reason": "缺少胸部不适线索而以突发气促、腿肿、乏力为主时，更倾向急性心力衰竭失代偿"
         },
         {
           "vs_code": "I63",
-          "features": ["chest_pain", "dyspnea"],
+          "features": [
+            "chest_pain",
+            "dyspnea"
+          ],
           "points": -6,
           "reason": "缺少胸痛与气促线索而以突发言语含糊、单侧肢体无力为主时，更倾向急性脑卒中"
         }
       ],
       "scale_links": [
-        { "scale": "B.1", "item": "B1-09", "note": "关注活动耐量下降与行走能力" },
-        { "scale": "B.3", "item": "", "note": "关注心衰失代偿后的体能下降" },
-        { "scale": "B.10", "item": "B10-02", "note": "关注病后疲乏与衰弱筛查" }
+        {
+          "scale": "B.1",
+          "item": "B1-09",
+          "note": "关注活动耐量下降与行走能力"
+        },
+        {
+          "scale": "B.3",
+          "item": "",
+          "note": "关注心衰失代偿后的体能下降"
+        },
+        {
+          "scale": "B.10",
+          "item": "B10-02",
+          "note": "关注病后疲乏与衰弱筛查"
+        }
       ],
       "advice": {
         "department": "心血管内科／急诊",
@@ -110,23 +194,71 @@
         "text": "您说的胸口不舒服、喘不上气要马上重视，请立即去医院急诊或拨打 120，不要自己吃药。"
       },
       "source": "待医学专家评审（拟引用：老年人急性心肌梗死诊疗要点）",
-      "review_note": "草稿，未经评审不得用于正式临床提醒"
+      "review_note": "草稿，未经评审不得用于正式临床提醒",
+      "patterns": [
+        {
+          "symptoms": [
+            "chest_pain",
+            "dyspnea",
+            "palpitations"
+          ],
+          "bonus": 3.0,
+          "note": "胸痛 + 气促 + 心悸同时出现，提示急性心肌缺血（老年人可仅表现为气促与心慌）"
+        }
+      ]
     },
     {
       "code": "I63",
       "name": "急性脑卒中",
-      "aliases": ["脑梗", "脑梗死", "中风", "脑卒中"],
+      "aliases": [
+        "脑梗",
+        "脑梗死",
+        "中风",
+        "脑卒中"
+      ],
       "system": "神经系统",
       "risk_level": "immediate",
       "symptoms": [
-        { "code": "dysarthria", "weight": "core", "note": "言语含糊、口角歪斜，老年人常主诉「说话不利索」" },
-        { "code": "orientation_deficit", "weight": "core", "note": "意识障碍型卒中易被误认为痴呆加重" },
-        { "code": "muscle_weakness", "weight": "core", "note": "一侧肢体无力，需与糖尿病周围神经病变区分" },
-        { "code": "gait_instability", "weight": "core", "note": "走路歪斜、站不稳，常以跌倒形式就诊" },
-        { "code": "dizziness", "weight": "secondary", "note": "仅以眩晕起病的腔隙性梗死易被误判" },
-        { "code": "nausea_vomiting", "weight": "secondary", "note": "后循环卒中或颅内压升高时多见" },
-        { "code": "fatigue", "weight": "secondary", "note": "可表现为突然极度乏力、瘫软" },
-        { "code": "fall_history", "weight": "secondary", "note": "常以「无缘无故摔了一跤」为唯一就诊原因" }
+        {
+          "code": "dysarthria",
+          "weight": "core",
+          "note": "言语含糊、口角歪斜，老年人常主诉「说话不利索」"
+        },
+        {
+          "code": "orientation_deficit",
+          "weight": "core",
+          "note": "意识障碍型卒中易被误认为痴呆加重"
+        },
+        {
+          "code": "muscle_weakness",
+          "weight": "core",
+          "note": "一侧肢体无力，需与糖尿病周围神经病变区分"
+        },
+        {
+          "code": "gait_instability",
+          "weight": "core",
+          "note": "走路歪斜、站不稳，常以跌倒形式就诊"
+        },
+        {
+          "code": "dizziness",
+          "weight": "secondary",
+          "note": "仅以眩晕起病的腔隙性梗死易被误判"
+        },
+        {
+          "code": "nausea_vomiting",
+          "weight": "secondary",
+          "note": "后循环卒中或颅内压升高时多见"
+        },
+        {
+          "code": "fatigue",
+          "weight": "secondary",
+          "note": "可表现为突然极度乏力、瘫软"
+        },
+        {
+          "code": "fall_history",
+          "weight": "secondary",
+          "note": "常以「无缘无故摔了一跤」为唯一就诊原因"
+        }
       ],
       "atypical_presentations": [
         "无偏瘫主诉 → 老年人可仅表现突发眩晕、跌倒、乏力气促",
@@ -134,45 +266,103 @@
         "仅以眩晕起病的腔隙性梗死 → 容易被当作体位性低血压而延误"
       ],
       "risk_factors": [
-        { "factor": "高龄与多重共病", "detail": "高血压、糖尿病、房颤并存时卒中风险明显叠加" },
-        { "factor": "房颤与心源性栓塞", "detail": "心房颤动是老年人脑栓塞的重要原因，需结合脉搏不齐线索" },
-        { "factor": "既往短暂性脑缺血发作或卒中史", "detail": "既往发作史是本次急性发作的重要背景" },
-        { "factor": "功能状态差与长期卧床", "detail": "卧床、衰弱老人起病症状不典型，识别更困难" },
-        { "factor": "用药不当", "detail": "漏服抗凝药、降压过度均可诱发或加重脑供血不足" }
+        {
+          "factor": "高龄与多重共病",
+          "detail": "高血压、糖尿病、房颤并存时卒中风险明显叠加"
+        },
+        {
+          "factor": "房颤与心源性栓塞",
+          "detail": "心房颤动是老年人脑栓塞的重要原因，需结合脉搏不齐线索"
+        },
+        {
+          "factor": "既往短暂性脑缺血发作或卒中史",
+          "detail": "既往发作史是本次急性发作的重要背景"
+        },
+        {
+          "factor": "功能状态差与长期卧床",
+          "detail": "卧床、衰弱老人起病症状不典型，识别更困难"
+        },
+        {
+          "factor": "用药不当",
+          "detail": "漏服抗凝药、降压过度均可诱发或加重脑供血不足"
+        }
       ],
       "red_flags": [
-        { "code": "muscle_weakness", "term": "突发单侧肢体无力或麻木", "note": "需立即呼叫 120，并记录最后一次正常的时间，不超过治疗时间窗" },
-        { "code": "dysarthria", "term": "突发言语含糊、口角歪斜", "note": "立即就医，不要等待症状自行缓解" },
-        { "code": "orientation_deficit", "term": "突发意识障碍或剧烈头痛呕吐", "note": "警惕出血性卒中与大面积梗死，立即呼叫 120" }
+        {
+          "code": "muscle_weakness",
+          "term": "突发单侧肢体无力或麻木",
+          "note": "需立即呼叫 120，并记录最后一次正常的时间，不超过治疗时间窗"
+        },
+        {
+          "code": "dysarthria",
+          "term": "突发言语含糊、口角歪斜",
+          "note": "立即就医，不要等待症状自行缓解"
+        },
+        {
+          "code": "orientation_deficit",
+          "term": "突发意识障碍或剧烈头痛呕吐",
+          "note": "警惕出血性卒中与大面积梗死，立即呼叫 120"
+        }
       ],
       "protective_signs": [
-        { "code": "fever", "term": "发热", "note": "伴发热更倾向感染性疾病而非脑卒中" },
-        { "code": "hypoglycemia_symptom", "term": "心慌手抖、出冷汗", "note": "出现典型低血糖表现时，应先排查血糖再考虑脑卒中" }
+        {
+          "code": "fever",
+          "term": "发热",
+          "note": "伴发热更倾向感染性疾病而非脑卒中"
+        },
+        {
+          "code": "hypoglycemia_symptom",
+          "term": "心慌手抖、出冷汗",
+          "note": "出现典型低血糖表现时，应先排查血糖再考虑脑卒中"
+        }
       ],
       "differentials": [
         {
           "vs_code": "F05",
-          "features": ["muscle_weakness", "dysarthria"],
+          "features": [
+            "muscle_weakness",
+            "dysarthria"
+          ],
           "points": -8,
           "reason": "缺少肢体无力、言语含糊等局灶神经体征而以意识时好时坏为主时，更倾向谵妄"
         },
         {
           "vs_code": "E16.2",
-          "features": ["muscle_weakness", "dysarthria", "orientation_deficit"],
+          "features": [
+            "muscle_weakness",
+            "dysarthria",
+            "orientation_deficit"
+          ],
           "points": -6,
           "reason": "缺少局灶体征与定向障碍线索而以心慌手抖、出冷汗、饥饿感为主时，更倾向严重低血糖"
         },
         {
           "vs_code": "I21",
-          "features": ["muscle_weakness", "dysarthria", "gait_instability"],
+          "features": [
+            "muscle_weakness",
+            "dysarthria",
+            "gait_instability"
+          ],
           "points": -6,
           "reason": "缺少肢体无力、言语含糊等局灶线索而以胸痛、气促为主时，更倾向急性心肌梗死"
         }
       ],
       "scale_links": [
-        { "scale": "B.8", "item": "", "note": "关注语言与认知功能的变化" },
-        { "scale": "B.1", "item": "B1-08", "note": "关注卒中后转移与生活自理能力" },
-        { "scale": "B.3", "item": "", "note": "关注卒中后平衡与步态能力" }
+        {
+          "scale": "B.8",
+          "item": "",
+          "note": "关注语言与认知功能的变化"
+        },
+        {
+          "scale": "B.1",
+          "item": "B1-08",
+          "note": "关注卒中后转移与生活自理能力"
+        },
+        {
+          "scale": "B.3",
+          "item": "",
+          "note": "关注卒中后平衡与步态能力"
+        }
       ],
       "advice": {
         "department": "神经内科／急诊",
@@ -180,23 +370,70 @@
         "text": "突然说话不清楚、一侧手脚没劲、走路歪倒，都要马上送急诊。请记住最后一次正常的时间，别自己开车去医院。"
       },
       "source": "待医学专家评审（拟引用：急性缺血性卒中诊治指南 老年人相关要点）",
-      "review_note": "草稿，未经评审不得用于正式临床提醒"
+      "review_note": "草稿，未经评审不得用于正式临床提醒",
+      "patterns": [
+        {
+          "symptoms": [
+            "orientation_deficit",
+            "dysarthria",
+            "muscle_weakness"
+          ],
+          "bonus": 3.0,
+          "note": "意识改变 + 言语含糊 + 肢体无力组合，提示局灶性神经功能缺损"
+        }
+      ]
     },
     {
       "code": "I10",
       "name": "高血压急症",
-      "aliases": ["高血压危象", "血压突然升高", "恶性高血压"],
+      "aliases": [
+        "高血压危象",
+        "血压突然升高",
+        "恶性高血压"
+      ],
       "system": "心血管系统",
       "risk_level": "urgent",
       "symptoms": [
-        { "code": "dizziness", "weight": "core", "note": "老年人常主诉头昏、走路发飘" },
-        { "code": "chest_pain", "weight": "core", "note": "血压急剧升高伴胸闷者需警惕合并心肌缺血" },
-        { "code": "dyspnea", "weight": "core", "note": "可先于胸痛出现，是老年人常见的就诊原因" },
-        { "code": "orientation_deficit", "weight": "core", "note": "意识改变需排查高血压相关脑损害" },
-        { "code": "vision_decline", "weight": "secondary", "note": "看东西模糊，与眼底急性改变有关" },
-        { "code": "nausea_vomiting", "weight": "secondary", "note": "常与颅内压升高或胃肠道症状混淆" },
-        { "code": "palpitations", "weight": "secondary", "note": "心慌常见但缺乏特异性" },
-        { "code": "fatigue", "weight": "secondary", "note": "常被描述为浑身没劲、懒得动" }
+        {
+          "code": "dizziness",
+          "weight": "core",
+          "note": "老年人常主诉头昏、走路发飘"
+        },
+        {
+          "code": "chest_pain",
+          "weight": "core",
+          "note": "血压急剧升高伴胸闷者需警惕合并心肌缺血"
+        },
+        {
+          "code": "dyspnea",
+          "weight": "core",
+          "note": "可先于胸痛出现，是老年人常见的就诊原因"
+        },
+        {
+          "code": "orientation_deficit",
+          "weight": "core",
+          "note": "意识改变需排查高血压相关脑损害"
+        },
+        {
+          "code": "vision_decline",
+          "weight": "secondary",
+          "note": "看东西模糊，与眼底急性改变有关"
+        },
+        {
+          "code": "nausea_vomiting",
+          "weight": "secondary",
+          "note": "常与颅内压升高或胃肠道症状混淆"
+        },
+        {
+          "code": "palpitations",
+          "weight": "secondary",
+          "note": "心慌常见但缺乏特异性"
+        },
+        {
+          "code": "fatigue",
+          "weight": "secondary",
+          "note": "常被描述为浑身没劲、懒得动"
+        }
       ],
       "atypical_presentations": [
         "无剧烈头痛 → 老年人高血压急症常只表现头晕、乏力、走路发飘",
@@ -204,45 +441,101 @@
         "长期血压偏高 → 对升高感知迟钝，老人常自述「没什么感觉」而延误就诊"
       ],
       "risk_factors": [
-        { "factor": "长期血压控制不佳", "detail": "基础血压未达标是高血压急症最常见的背景" },
-        { "factor": "高龄", "detail": "老年人血管顺应性下降，同样的升高幅度更容易造成靶器官损害" },
-        { "factor": "停药与漏服降压药", "detail": "近期自行停药或换药是常见的诱发因素" },
-        { "factor": "肾功能不全", "detail": "水钠潴留与药物清除减慢使血压更难控制" },
-        { "factor": "急性应激事件", "detail": "感染、疼痛、跌倒、手术、寒冷刺激均可诱发血压急剧升高" }
+        {
+          "factor": "长期血压控制不佳",
+          "detail": "基础血压未达标是高血压急症最常见的背景"
+        },
+        {
+          "factor": "高龄",
+          "detail": "老年人血管顺应性下降，同样的升高幅度更容易造成靶器官损害"
+        },
+        {
+          "factor": "停药与漏服降压药",
+          "detail": "近期自行停药或换药是常见的诱发因素"
+        },
+        {
+          "factor": "肾功能不全",
+          "detail": "水钠潴留与药物清除减慢使血压更难控制"
+        },
+        {
+          "factor": "急性应激事件",
+          "detail": "感染、疼痛、跌倒、手术、寒冷刺激均可诱发血压急剧升高"
+        }
       ],
       "red_flags": [
-        { "code": "orientation_deficit", "term": "意识改变、抽搐或剧烈头痛呕吐", "note": "提示高血压脑病或出血，立即呼叫 120" },
-        { "code": "chest_pain", "term": "持续胸痛伴大汗", "note": "需立即就医排查合并急性心肌梗死" },
-        { "code": "dyspnea", "term": "严重气促、端坐呼吸", "note": "提示急性左心衰，需立即呼叫 120" }
+        {
+          "code": "orientation_deficit",
+          "term": "意识改变、抽搐或剧烈头痛呕吐",
+          "note": "提示高血压脑病或出血，立即呼叫 120"
+        },
+        {
+          "code": "chest_pain",
+          "term": "持续胸痛伴大汗",
+          "note": "需立即就医排查合并急性心肌梗死"
+        },
+        {
+          "code": "dyspnea",
+          "term": "严重气促、端坐呼吸",
+          "note": "提示急性左心衰，需立即呼叫 120"
+        }
       ],
       "protective_signs": [
-        { "code": "fever", "term": "发热", "note": "伴发热更倾向感染性疾病而非单纯血压急性升高" },
-        { "code": "hyperglycemia_symptom", "term": "明显口渴多饮伴尿多", "note": "伴明显高血糖表现时需优先排查代谢性急症" }
+        {
+          "code": "fever",
+          "term": "发热",
+          "note": "伴发热更倾向感染性疾病而非单纯血压急性升高"
+        },
+        {
+          "code": "hyperglycemia_symptom",
+          "term": "明显口渴多饮伴尿多",
+          "note": "伴明显高血糖表现时需优先排查代谢性急症"
+        }
       ],
       "differentials": [
         {
           "vs_code": "I21",
-          "features": ["dizziness", "chest_pain"],
+          "features": [
+            "dizziness",
+            "chest_pain"
+          ],
           "points": -8,
           "reason": "缺少头晕或胸部不适线索而以血压明显升高为唯一线索时，更倾向高血压急症"
         },
         {
           "vs_code": "I63",
-          "features": ["dizziness", "orientation_deficit"],
+          "features": [
+            "dizziness",
+            "orientation_deficit"
+          ],
           "points": -6,
           "reason": "缺少头晕与意识改变线索而以突发肢体无力、言语含糊为主时，更倾向急性脑卒中"
         },
         {
           "vs_code": "I50",
-          "features": ["dyspnea", "chest_pain"],
+          "features": [
+            "dyspnea",
+            "chest_pain"
+          ],
           "points": -6,
           "reason": "缺少气促与胸部不适线索而以腿肿、水肿、乏力为主时，更倾向急性心力衰竭失代偿"
         }
       ],
       "scale_links": [
-        { "scale": "B.1", "item": "B1-09", "note": "关注活动耐量与头晕相关的行走受限" },
-        { "scale": "B.3", "item": "", "note": "关注血压升高背景下的体能水平" },
-        { "scale": "B.10", "item": "B10-04", "note": "关注肌力下降与衰弱背景" }
+        {
+          "scale": "B.1",
+          "item": "B1-09",
+          "note": "关注活动耐量与头晕相关的行走受限"
+        },
+        {
+          "scale": "B.3",
+          "item": "",
+          "note": "关注血压升高背景下的体能水平"
+        },
+        {
+          "scale": "B.10",
+          "item": "B10-04",
+          "note": "关注肌力下降与衰弱背景"
+        }
       ],
       "advice": {
         "department": "心血管内科／急诊",
@@ -255,18 +548,54 @@
     {
       "code": "I50",
       "name": "急性心力衰竭急性失代偿",
-      "aliases": ["心衰急性发作", "急性左心衰", "心功能不全加重"],
+      "aliases": [
+        "心衰急性发作",
+        "急性左心衰",
+        "心功能不全加重"
+      ],
       "system": "心血管系统",
       "risk_level": "urgent",
       "symptoms": [
-        { "code": "dyspnea", "weight": "core", "note": "老年人常描述为「走不远就喘」而非急性气促" },
-        { "code": "orthopnea", "weight": "core", "note": "夜间憋醒、必须坐起才能喘过气，特异性高" },
-        { "code": "edema_heart", "weight": "core", "note": "凹陷性水肿，与容量负荷过重相关" },
-        { "code": "fatigue", "weight": "core", "note": "常是老年人最早主诉的受限症状" },
-        { "code": "cough", "weight": "secondary", "note": "可为干咳或粉红色泡沫痰，需与肺部感染区分" },
-        { "code": "palpitations", "weight": "secondary", "note": "合并心律失常时多见" },
-        { "code": "nocturia", "weight": "secondary", "note": "夜尿增多反映夜间容量负荷过重" },
-        { "code": "poor_appetite", "weight": "secondary", "note": "胃肠道淤血所致，常被当作消化问题" }
+        {
+          "code": "dyspnea",
+          "weight": "core",
+          "note": "老年人常描述为「走不远就喘」而非急性气促"
+        },
+        {
+          "code": "orthopnea",
+          "weight": "core",
+          "note": "夜间憋醒、必须坐起才能喘过气，特异性高"
+        },
+        {
+          "code": "edema_heart",
+          "weight": "core",
+          "note": "凹陷性水肿，与容量负荷过重相关"
+        },
+        {
+          "code": "fatigue",
+          "weight": "core",
+          "note": "常是老年人最早主诉的受限症状"
+        },
+        {
+          "code": "cough",
+          "weight": "secondary",
+          "note": "可为干咳或粉红色泡沫痰，需与肺部感染区分"
+        },
+        {
+          "code": "palpitations",
+          "weight": "secondary",
+          "note": "合并心律失常时多见"
+        },
+        {
+          "code": "nocturia",
+          "weight": "secondary",
+          "note": "夜尿增多反映夜间容量负荷过重"
+        },
+        {
+          "code": "poor_appetite",
+          "weight": "secondary",
+          "note": "胃肠道淤血所致，常被当作消化问题"
+        }
       ],
       "atypical_presentations": [
         "不说「喘不上气」 → 老年人急性心衰常只诉乏力、纳差、恶心、反应变慢",
@@ -274,45 +603,102 @@
         "夜尿增多、失眠 → 常被当作老年常态，延误对容量负荷过重的识别"
       ],
       "risk_factors": [
-        { "factor": "既往心衰或结构性心脏病", "detail": "既往射血功能下降是急性失代偿最强的预测因素之一" },
-        { "factor": "高龄与多重共病", "detail": "高血压、糖尿病、冠心病、肾功能不全并存时失代偿阈值下降" },
-        { "factor": "感染诱发", "detail": "呼吸道与尿路感染是老年人心衰急性发作的常见诱因" },
-        { "factor": "容量与钠负荷过重", "detail": "口味重、输液过快、短期大量补液可诱发失代偿" },
-        { "factor": "依从性与功能状态差", "detail": "漏服利尿剂或利尿剂抵抗、水钠潴留是重要背景" }
+        {
+          "factor": "既往心衰或结构性心脏病",
+          "detail": "既往射血功能下降是急性失代偿最强的预测因素之一"
+        },
+        {
+          "factor": "高龄与多重共病",
+          "detail": "高血压、糖尿病、冠心病、肾功能不全并存时失代偿阈值下降"
+        },
+        {
+          "factor": "感染诱发",
+          "detail": "呼吸道与尿路感染是老年人心衰急性发作的常见诱因"
+        },
+        {
+          "factor": "容量与钠负荷过重",
+          "detail": "口味重、输液过快、短期大量补液可诱发失代偿"
+        },
+        {
+          "factor": "依从性与功能状态差",
+          "detail": "漏服利尿剂或利尿剂抵抗、水钠潴留是重要背景"
+        }
       ],
       "red_flags": [
-        { "code": "orthopnea", "term": "夜间憋醒、端坐呼吸", "note": "提示急性左心衰，需立即就医，不要平躺休息" },
-        { "code": "dyspnea", "term": "进行性加重的呼吸困难", "note": "休息不缓解或说话即喘，立即呼叫 120" },
-        { "code": "hemoptysis", "term": "咯血或粉红色泡沫痰", "note": "提示急性肺水肿，需立即呼叫 120" }
+        {
+          "code": "orthopnea",
+          "term": "夜间憋醒、端坐呼吸",
+          "note": "提示急性左心衰，需立即就医，不要平躺休息"
+        },
+        {
+          "code": "dyspnea",
+          "term": "进行性加重的呼吸困难",
+          "note": "休息不缓解或说话即喘，立即呼叫 120"
+        },
+        {
+          "code": "hemoptysis",
+          "term": "咯血或粉红色泡沫痰",
+          "note": "提示急性肺水肿，需立即呼叫 120"
+        }
       ],
       "protective_signs": [
-        { "code": "fever", "term": "发热", "note": "伴发热、咳嗽咳痰时更倾向肺部感染" },
-        { "code": "chest_pain", "term": "持续胸痛", "note": "以持续胸痛为主要表现时，心衰多为继发于心肌缺血，更倾向急性心肌梗死" }
+        {
+          "code": "fever",
+          "term": "发热",
+          "note": "伴发热、咳嗽咳痰时更倾向肺部感染"
+        },
+        {
+          "code": "chest_pain",
+          "term": "持续胸痛",
+          "note": "以持续胸痛为主要表现时，心衰多为继发于心肌缺血，更倾向急性心肌梗死"
+        }
       ],
       "differentials": [
         {
           "vs_code": "I21",
-          "features": ["dyspnea", "orthopnea", "edema_heart"],
+          "features": [
+            "dyspnea",
+            "orthopnea",
+            "edema_heart"
+          ],
           "points": -8,
           "reason": "缺少气促、夜间憋醒或心源性水肿线索而以持续胸痛为主时，更倾向急性心肌梗死"
         },
         {
           "vs_code": "I10",
-          "features": ["dyspnea", "orthopnea"],
+          "features": [
+            "dyspnea",
+            "orthopnea"
+          ],
           "points": -6,
           "reason": "缺少气促与夜间憋醒线索而以头晕、血压明显升高为主时，更倾向高血压急症"
         },
         {
           "vs_code": "E10.3",
-          "features": ["orthopnea", "edema_heart"],
+          "features": [
+            "orthopnea",
+            "edema_heart"
+          ],
           "points": -6,
           "reason": "缺少夜间憋醒与心源性水肿线索而以恶心呕吐、腹痛、明显口渴多尿为主时，更倾向糖尿病酮症酸中毒"
         }
       ],
       "scale_links": [
-        { "scale": "B.1", "item": "B1-06", "note": "关注夜尿增多与控尿能力变化" },
-        { "scale": "B.16", "item": "B16-05", "note": "关注水肿、卧床导致的皮肤受压风险" },
-        { "scale": "B.19", "item": "B19-01", "note": "关注心衰导致的食欲下降与营养风险" }
+        {
+          "scale": "B.1",
+          "item": "B1-06",
+          "note": "关注夜尿增多与控尿能力变化"
+        },
+        {
+          "scale": "B.16",
+          "item": "B16-05",
+          "note": "关注水肿、卧床导致的皮肤受压风险"
+        },
+        {
+          "scale": "B.19",
+          "item": "B19-01",
+          "note": "关注心衰导致的食欲下降与营养风险"
+        }
       ],
       "advice": {
         "department": "心血管内科／急诊",
@@ -325,18 +711,55 @@
     {
       "code": "G30",
       "name": "阿尔茨海默病",
-      "aliases": ["老年痴呆", "阿尔茨海默", "AD", "老糊涂"],
+      "aliases": [
+        "老年痴呆",
+        "阿尔茨海默",
+        "AD",
+        "老糊涂"
+      ],
       "system": "神经系统",
       "risk_level": "elective",
       "symptoms": [
-        { "code": "memory_decline", "weight": "core", "note": "以近事记忆减退为主，进展缓慢" },
-        { "code": "orientation_deficit", "weight": "core", "note": "分不清日期、昼夜，常在早期出现" },
-        { "code": "repetitive_questioning", "weight": "core", "note": "刚说过就忘、反复问同一件事，是家属最常察觉的表现" },
-        { "code": "dementia_daily_function", "weight": "core", "note": "自理能力下降是判断严重程度的关键" },
-        { "code": "night_wandering", "weight": "secondary", "note": "夜间乱走、迷路，存在走失风险" },
-        { "code": "hallucination", "weight": "secondary", "note": "晚期可见视幻觉，需与谵妄鉴别" },
-        { "code": "anxiety", "weight": "secondary", "note": "常伴不安、易激惹，多在环境变动时加重" },
-        { "code": "insomnia", "weight": "secondary", "note": "昼夜节律紊乱与睡眠碎片化常见" }
+        {
+          "code": "memory_decline",
+          "weight": "core",
+          "note": "以近事记忆减退为主，进展缓慢"
+        },
+        {
+          "code": "orientation_deficit",
+          "weight": "core",
+          "note": "分不清日期、昼夜，常在早期出现"
+        },
+        {
+          "code": "repetitive_questioning",
+          "weight": "core",
+          "note": "刚说过就忘、反复问同一件事，是家属最常察觉的表现"
+        },
+        {
+          "code": "dementia_daily_function",
+          "weight": "core",
+          "note": "自理能力下降是判断严重程度的关键"
+        },
+        {
+          "code": "night_wandering",
+          "weight": "secondary",
+          "note": "夜间乱走、迷路，存在走失风险"
+        },
+        {
+          "code": "hallucination",
+          "weight": "secondary",
+          "note": "晚期可见视幻觉，需与谵妄鉴别"
+        },
+        {
+          "code": "anxiety",
+          "weight": "secondary",
+          "note": "常伴不安、易激惹，多在环境变动时加重"
+        },
+        {
+          "code": "insomnia",
+          "weight": "secondary",
+          "note": "昼夜节律紊乱与睡眠碎片化常见"
+        }
       ],
       "atypical_presentations": [
         "记性变差、脾气变差、最近有点糊涂 → 早期常以此就诊，而不是直接以认知障碍就诊",
@@ -344,44 +767,97 @@
         "反复问同一句话、购物算错钱、出门迷路 → 可完全没有「记性差」的主诉"
       ],
       "risk_factors": [
-        { "factor": "高龄", "detail": "65 岁后发病率随年龄明显上升，是最强的不可改变因素" },
-        { "factor": "轻度认知损害", "detail": "已有记忆减退但尚未影响自理能力者进展风险更高" },
-        { "factor": "家族史与遗传易感性", "detail": "一级亲属患病、早发型家族聚集提示较高风险" },
-        { "factor": "脑血管与代谢共病", "detail": "高血压、糖尿病、脑卒中史与认知下降风险相关" },
-        { "factor": "社会隔离与活动不足", "detail": "独居、活动量下降、社交减少者认知下降更明显" }
+        {
+          "factor": "高龄",
+          "detail": "65 岁后发病率随年龄明显上升，是最强的不可改变因素"
+        },
+        {
+          "factor": "轻度认知损害",
+          "detail": "已有记忆减退但尚未影响自理能力者进展风险更高"
+        },
+        {
+          "factor": "家族史与遗传易感性",
+          "detail": "一级亲属患病、早发型家族聚集提示较高风险"
+        },
+        {
+          "factor": "脑血管与代谢共病",
+          "detail": "高血压、糖尿病、脑卒中史与认知下降风险相关"
+        },
+        {
+          "factor": "社会隔离与活动不足",
+          "detail": "独居、活动量下降、社交减少者认知下降更明显"
+        }
       ],
       "red_flags": [
-        { "code": "delirium_fluctuation", "term": "意识状态突然波动", "note": "提示可能为谵妄等可逆病因，立即就医查原因，不要按痴呆进展处理" },
-        { "code": "fall_history", "term": "反复跌倒或走失", "note": "尽快就医评估认知与居家安全，必要时安排陪护" }
+        {
+          "code": "delirium_fluctuation",
+          "term": "意识状态突然波动",
+          "note": "提示可能为谵妄等可逆病因，立即就医查原因，不要按痴呆进展处理"
+        },
+        {
+          "code": "fall_history",
+          "term": "反复跌倒或走失",
+          "note": "尽快就医评估认知与居家安全，必要时安排陪护"
+        }
       ],
       "protective_signs": [
-        { "code": "depression", "term": "情绪低落、绝望感为主", "note": "以情绪症状为主、记忆问题波动不大时，更倾向老年抑郁" },
-        { "code": "tremor", "term": "静止性震颤伴动作明显变慢", "note": "伴帕金森样表现时，更倾向帕金森病相关的认知障碍" }
+        {
+          "code": "depression",
+          "term": "情绪低落、绝望感为主",
+          "note": "以情绪症状为主、记忆问题波动不大时，更倾向老年抑郁"
+        },
+        {
+          "code": "tremor",
+          "term": "静止性震颤伴动作明显变慢",
+          "note": "伴帕金森样表现时，更倾向帕金森病相关的认知障碍"
+        }
       ],
       "differentials": [
         {
           "vs_code": "F05",
-          "features": ["memory_decline", "repetitive_questioning", "dementia_daily_function"],
+          "features": [
+            "memory_decline",
+            "repetitive_questioning",
+            "dementia_daily_function"
+          ],
           "points": -8,
           "reason": "缺少持续进展的记忆减退与自理能力下降而以意识时好时坏为主时，更倾向谵妄"
         },
         {
           "vs_code": "F32",
-          "features": ["memory_decline", "repetitive_questioning"],
+          "features": [
+            "memory_decline",
+            "repetitive_questioning"
+          ],
           "points": -6,
           "reason": "缺少记忆减退线索而以情绪低落、绝望感、活动减少为主时，更倾向老年抑郁"
         },
         {
           "vs_code": "I63",
-          "features": ["memory_decline", "dementia_daily_function"],
+          "features": [
+            "memory_decline",
+            "dementia_daily_function"
+          ],
           "points": -6,
           "reason": "缺少长期缓慢进展的记忆与自理能力下降而以突发局灶神经体征为主时，更倾向急性脑卒中"
         }
       ],
       "scale_links": [
-        { "scale": "B.8", "item": "", "note": "认知筛查与随访" },
-        { "scale": "B.1", "item": "B1-05", "note": "关注生活自理能力与失禁情况" },
-        { "scale": "B.9", "item": "", "note": "关注走失与居家安全风险" }
+        {
+          "scale": "B.8",
+          "item": "",
+          "note": "认知筛查与随访"
+        },
+        {
+          "scale": "B.1",
+          "item": "B1-05",
+          "note": "关注生活自理能力与失禁情况"
+        },
+        {
+          "scale": "B.9",
+          "item": "",
+          "note": "关注走失与居家安全风险"
+        }
       ],
       "advice": {
         "department": "神经内科／老年医学科",
@@ -394,18 +870,55 @@
     {
       "code": "F05",
       "name": "谵妄",
-      "aliases": ["意识模糊", "谵妄状态", "急性意识障碍", "说胡话"],
+      "aliases": [
+        "意识模糊",
+        "谵妄状态",
+        "急性意识障碍",
+        "说胡话"
+      ],
       "system": "精神心理",
       "risk_level": "urgent",
       "symptoms": [
-        { "code": "delirium_fluctuation", "weight": "core", "note": "意识与注意力忽好忽坏，是与痴呆鉴别的关键" },
-        { "code": "orientation_deficit", "weight": "core", "note": "不知身在何处、分不清昼夜，常在数小时内出现" },
-        { "code": "hallucination", "weight": "core", "note": "多为视幻觉，老人常描述为「看见不存在的东西」" },
-        { "code": "anxiety", "weight": "secondary", "note": "躁动型谵妄常见，伴恐惧、激越" },
-        { "code": "insomnia", "weight": "secondary", "note": "睡眠节律颠倒，夜间躁动" },
-        { "code": "night_wandering", "weight": "secondary", "note": "夜间乱走、试图离开病房" },
-        { "code": "fatigue", "weight": "secondary", "note": "可表现为嗜睡、反应迟钝" },
-        { "code": "poor_appetite", "weight": "secondary", "note": "拒食常加重脱水与营养问题" }
+        {
+          "code": "delirium_fluctuation",
+          "weight": "core",
+          "note": "意识与注意力忽好忽坏，是与痴呆鉴别的关键"
+        },
+        {
+          "code": "orientation_deficit",
+          "weight": "core",
+          "note": "不知身在何处、分不清昼夜，常在数小时内出现"
+        },
+        {
+          "code": "hallucination",
+          "weight": "core",
+          "note": "多为视幻觉，老人常描述为「看见不存在的东西」"
+        },
+        {
+          "code": "anxiety",
+          "weight": "secondary",
+          "note": "躁动型谵妄常见，伴恐惧、激越"
+        },
+        {
+          "code": "insomnia",
+          "weight": "secondary",
+          "note": "睡眠节律颠倒，夜间躁动"
+        },
+        {
+          "code": "night_wandering",
+          "weight": "secondary",
+          "note": "夜间乱走、试图离开病房"
+        },
+        {
+          "code": "fatigue",
+          "weight": "secondary",
+          "note": "可表现为嗜睡、反应迟钝"
+        },
+        {
+          "code": "poor_appetite",
+          "weight": "secondary",
+          "note": "拒食常加重脱水与营养问题"
+        }
       ],
       "atypical_presentations": [
         "不躁动而嗜睡、发呆、退缩 → 老年人谵妄常是「安静型」，容易被忽略",
@@ -413,45 +926,101 @@
         "感染、术后、脱水、便秘、缺氧或调整用药后 → 突然意识改变，属可逆的急症"
       ],
       "risk_factors": [
-        { "factor": "高龄与既往认知障碍", "detail": "痴呆或轻度认知损害老人发生谵妄的比例明显更高" },
-        { "factor": "急性疾病与手术", "detail": "感染、骨折、手术、住院环境改变是常见诱因" },
-        { "factor": "脱水与营养不良", "detail": "进食不足、口渴感知减退、便秘可诱发或加重谵妄" },
-        { "factor": "多重用药与镇静类药物", "detail": "阿片类、苯二氮䓬类、抗胆碱能药物及突然停药均可致谵妄" },
-        { "factor": "感官剥夺与环境陌生", "detail": "视力听力下降、陌生环境、夜间照明不足增加风险" }
+        {
+          "factor": "高龄与既往认知障碍",
+          "detail": "痴呆或轻度认知损害老人发生谵妄的比例明显更高"
+        },
+        {
+          "factor": "急性疾病与手术",
+          "detail": "感染、骨折、手术、住院环境改变是常见诱因"
+        },
+        {
+          "factor": "脱水与营养不良",
+          "detail": "进食不足、口渴感知减退、便秘可诱发或加重谵妄"
+        },
+        {
+          "factor": "多重用药与镇静类药物",
+          "detail": "阿片类、苯二氮䓬类、抗胆碱能药物及突然停药均可致谵妄"
+        },
+        {
+          "factor": "感官剥夺与环境陌生",
+          "detail": "视力听力下降、陌生环境、夜间照明不足增加风险"
+        }
       ],
       "red_flags": [
-        { "code": "delirium_fluctuation", "term": "意识突然波动、几小时内明显变化", "note": "属急症信号，需立即就医查找感染、脱水、缺氧、用药等诱因" },
-        { "code": "fever", "term": "发热伴意识改变", "note": "需立即就医，警惕感染性脑病与全身感染" },
-        { "code": "syncope", "term": "意识丧失伴抽搐", "note": "立即呼叫 120，同时排查低血糖等可逆原因" }
+        {
+          "code": "delirium_fluctuation",
+          "term": "意识突然波动、几小时内明显变化",
+          "note": "属急症信号，需立即就医查找感染、脱水、缺氧、用药等诱因"
+        },
+        {
+          "code": "fever",
+          "term": "发热伴意识改变",
+          "note": "需立即就医，警惕感染性脑病与全身感染"
+        },
+        {
+          "code": "syncope",
+          "term": "意识丧失伴抽搐",
+          "note": "立即呼叫 120，同时排查低血糖等可逆原因"
+        }
       ],
       "protective_signs": [
-        { "code": "memory_decline", "term": "长期缓慢进展的记忆减退", "note": "无急剧波动、呈缓慢进展时，更倾向阿尔茨海默病等退行性认知障碍" },
-        { "code": "depression", "term": "以情绪低落、无力为主", "note": "以情绪症状为主、无意识波动时，更倾向老年抑郁" }
+        {
+          "code": "memory_decline",
+          "term": "长期缓慢进展的记忆减退",
+          "note": "无急剧波动、呈缓慢进展时，更倾向阿尔茨海默病等退行性认知障碍"
+        },
+        {
+          "code": "depression",
+          "term": "以情绪低落、无力为主",
+          "note": "以情绪症状为主、无意识波动时，更倾向老年抑郁"
+        }
       ],
       "differentials": [
         {
           "vs_code": "G30",
-          "features": ["delirium_fluctuation", "hallucination"],
+          "features": [
+            "delirium_fluctuation",
+            "hallucination"
+          ],
           "points": -8,
           "reason": "缺少意识波动与幻觉而以长期缓慢进展的记忆与自理能力下降为主时，更倾向阿尔茨海默病"
         },
         {
           "vs_code": "F32",
-          "features": ["delirium_fluctuation", "orientation_deficit"],
+          "features": [
+            "delirium_fluctuation",
+            "orientation_deficit"
+          ],
           "points": -6,
           "reason": "缺少意识波动与定向障碍线索而以情绪低落、绝望感、活动减少为主时，更倾向老年抑郁"
         },
         {
           "vs_code": "I63",
-          "features": ["delirium_fluctuation", "orientation_deficit"],
+          "features": [
+            "delirium_fluctuation",
+            "orientation_deficit"
+          ],
           "points": -6,
           "reason": "缺少意识波动线索而以突发肢体无力、言语含糊等局灶体征为主时，更倾向急性脑卒中"
         }
       ],
       "scale_links": [
-        { "scale": "B.21", "item": "", "note": "谵妄专项评估与阳性判定" },
-        { "scale": "B.18", "item": "B18-02", "note": "关注进食减少等可逆诱因" },
-        { "scale": "B.12", "item": "", "note": "关注便秘等常见诱因" }
+        {
+          "scale": "B.21",
+          "item": "",
+          "note": "谵妄专项评估与阳性判定"
+        },
+        {
+          "scale": "B.18",
+          "item": "B18-02",
+          "note": "关注进食减少等可逆诱因"
+        },
+        {
+          "scale": "B.12",
+          "item": "",
+          "note": "关注便秘等常见诱因"
+        }
       ],
       "advice": {
         "department": "老年医学科／急诊",
@@ -464,18 +1033,55 @@
     {
       "code": "F32",
       "name": "老年抑郁",
-      "aliases": ["抑郁症", "抑郁障碍", "老年抑郁情绪障碍", "情绪低落"],
+      "aliases": [
+        "抑郁症",
+        "抑郁障碍",
+        "老年抑郁情绪障碍",
+        "情绪低落"
+      ],
       "system": "精神心理",
       "risk_level": "elective",
       "symptoms": [
-        { "code": "depression", "weight": "core", "note": "心情持续低落、兴趣减退，老年人常不主动表达" },
-        { "code": "anxiety", "weight": "core", "note": "烦躁、坐立不安，与抑郁常并存" },
-        { "code": "fatigue", "weight": "core", "note": "浑身没劲，是最常见的躯体化主诉" },
-        { "code": "insomnia", "weight": "core", "note": "早醒最常见，也可表现为整夜不睡" },
-        { "code": "low_activity", "weight": "secondary", "note": "退缩、不出门、不与人来往" },
-        { "code": "poor_appetite", "weight": "secondary", "note": "食欲下降常导致体重减轻" },
-        { "code": "weight_loss", "weight": "secondary", "note": "少数老年人以体重增加就诊，需注意鉴别" },
-        { "code": "social_isolation", "weight": "secondary", "note": "独居、丧偶、子女不在身边者更常见" }
+        {
+          "code": "depression",
+          "weight": "core",
+          "note": "心情持续低落、兴趣减退，老年人常不主动表达"
+        },
+        {
+          "code": "anxiety",
+          "weight": "core",
+          "note": "烦躁、坐立不安，与抑郁常并存"
+        },
+        {
+          "code": "fatigue",
+          "weight": "core",
+          "note": "浑身没劲，是最常见的躯体化主诉"
+        },
+        {
+          "code": "insomnia",
+          "weight": "core",
+          "note": "早醒最常见，也可表现为整夜不睡"
+        },
+        {
+          "code": "low_activity",
+          "weight": "secondary",
+          "note": "退缩、不出门、不与人来往"
+        },
+        {
+          "code": "poor_appetite",
+          "weight": "secondary",
+          "note": "食欲下降常导致体重减轻"
+        },
+        {
+          "code": "weight_loss",
+          "weight": "secondary",
+          "note": "少数老年人以体重增加就诊，需注意鉴别"
+        },
+        {
+          "code": "social_isolation",
+          "weight": "secondary",
+          "note": "独居、丧偶、子女不在身边者更常见"
+        }
       ],
       "atypical_presentations": [
         "胸闷、乏力、浑身疼、胃口差 → 老年人抑郁常以躯体化主诉就诊，不愿谈情绪",
@@ -483,44 +1089,96 @@
         "「年纪大了脑子糊涂」「性格变了」 → 常被家人这样理解，从而延误识别"
       ],
       "risk_factors": [
-        { "factor": "高龄", "detail": "65 岁后抑郁患病率明显上升" },
-        { "factor": "丧偶、独居与社会隔离", "detail": "缺少家庭与邻里支持是重要的社会心理因素" },
-        { "factor": "慢性疾病、疼痛与功能下降", "detail": "行动受限、长期疼痛会持续消耗情绪与精力" },
-        { "factor": "生活应激事件", "detail": "丧亲、住院、搬家、经济困难等是常见诱发因素" },
-        { "factor": "多重用药", "detail": "部分降压药、激素、镇静药可加重情绪低落并影响睡眠" }
+        {
+          "factor": "高龄",
+          "detail": "65 岁后抑郁患病率明显上升"
+        },
+        {
+          "factor": "丧偶、独居与社会隔离",
+          "detail": "缺少家庭与邻里支持是重要的社会心理因素"
+        },
+        {
+          "factor": "慢性疾病、疼痛与功能下降",
+          "detail": "行动受限、长期疼痛会持续消耗情绪与精力"
+        },
+        {
+          "factor": "生活应激事件",
+          "detail": "丧亲、住院、搬家、经济困难等是常见诱发因素"
+        },
+        {
+          "factor": "多重用药",
+          "detail": "部分降压药、激素、镇静药可加重情绪低落并影响睡眠"
+        }
       ],
       "red_flags": [
-        { "code": "depression", "term": "出现不想活、想伤害自己的念头", "note": "需立即联系家人陪同并就医，必要时呼叫 120，不能独处" },
-        { "code": "weight_loss", "term": "明显体重下降伴进食减少", "note": "尽快就医排查器质性病因，不宜仅归因于情绪问题" }
+        {
+          "code": "depression",
+          "term": "出现不想活、想伤害自己的念头",
+          "note": "需立即联系家人陪同并就医，必要时呼叫 120，不能独处"
+        },
+        {
+          "code": "weight_loss",
+          "term": "明显体重下降伴进食减少",
+          "note": "尽快就医排查器质性病因，不宜仅归因于情绪问题"
+        }
       ],
       "protective_signs": [
-        { "code": "delirium_fluctuation", "term": "意识时好时坏、伴幻觉", "note": "伴意识波动与幻觉时，更倾向谵妄而非单纯情绪问题" },
-        { "code": "orientation_deficit", "term": "明显定向力障碍", "note": "伴明显定向障碍时，更倾向谵妄或其他器质性原因" }
+        {
+          "code": "delirium_fluctuation",
+          "term": "意识时好时坏、伴幻觉",
+          "note": "伴意识波动与幻觉时，更倾向谵妄而非单纯情绪问题"
+        },
+        {
+          "code": "orientation_deficit",
+          "term": "明显定向力障碍",
+          "note": "伴明显定向障碍时，更倾向谵妄或其他器质性原因"
+        }
       ],
       "differentials": [
         {
           "vs_code": "F05",
-          "features": ["depression", "anxiety", "low_activity"],
+          "features": [
+            "depression",
+            "anxiety",
+            "low_activity"
+          ],
           "points": -8,
           "reason": "缺少明显的情绪低落与绝望感而以意识波动、幻觉为主时，更倾向谵妄"
         },
         {
           "vs_code": "G30",
-          "features": ["depression", "fatigue"],
+          "features": [
+            "depression",
+            "fatigue"
+          ],
           "points": -6,
           "reason": "以情绪低落、易哭泣绝望为主而记忆与自理能力保持稳定时，更倾向老年抑郁"
         },
         {
           "vs_code": "E46",
-          "features": ["depression"],
+          "features": [
+            "depression"
+          ],
           "points": -6,
           "reason": "以情绪低落、绝望感为主而体重与肌量基本稳定时，更倾向老年抑郁；伴明显消瘦与低体重时更倾向营养不良"
         }
       ],
       "scale_links": [
-        { "scale": "B.13", "item": "B13-05", "note": "关注抑郁相关的白天疲乏与睡眠问题" },
-        { "scale": "B.10", "item": "B10-02", "note": "关注疲乏、体重下降与衰弱相关表现" },
-        { "scale": "B.2", "item": "B2-05", "note": "关注抑郁对服药与日常事务管理能力的影响" }
+        {
+          "scale": "B.13",
+          "item": "B13-05",
+          "note": "关注抑郁相关的白天疲乏与睡眠问题"
+        },
+        {
+          "scale": "B.10",
+          "item": "B10-02",
+          "note": "关注疲乏、体重下降与衰弱相关表现"
+        },
+        {
+          "scale": "B.2",
+          "item": "B2-05",
+          "note": "关注抑郁对服药与日常事务管理能力的影响"
+        }
       ],
       "advice": {
         "department": "老年医学科／精神科",
@@ -533,18 +1191,55 @@
     {
       "code": "E46",
       "name": "蛋白质-能量营养不良",
-      "aliases": ["营养不良", "老年营养不良", "蛋白质营养不良", "营养不足"],
+      "aliases": [
+        "营养不良",
+        "老年营养不良",
+        "蛋白质营养不良",
+        "营养不足"
+      ],
       "system": "营养与代谢",
       "risk_level": "urgent",
       "symptoms": [
-        { "code": "weight_loss", "weight": "core", "note": "非刻意减重造成的下降，是识别营养不良的重要线索" },
-        { "code": "low_bmi", "weight": "core", "note": "体重指数偏低，老年人常在明显消瘦前已低于正常范围" },
-        { "code": "poor_appetite", "weight": "core", "note": "持续数周的食欲下降，比消瘦出现得更早" },
-        { "code": "muscle_mass_loss", "weight": "core", "note": "肌肉量与肌力同步下降，常被误认为体力变差" },
-        { "code": "fatigue", "weight": "secondary", "note": "与肌量减少、贫血共同导致" },
-        { "code": "muscle_weakness", "weight": "secondary", "note": "起身、行走无力，甚至影响个人生活自理" },
-        { "code": "cachexia", "weight": "secondary", "note": "见于慢性消耗性疾病，提示需查找原发病" },
-        { "code": "feeding_difficulty", "weight": "secondary", "note": "咀嚼、吞咽困难导致蛋白摄入不足" }
+        {
+          "code": "weight_loss",
+          "weight": "core",
+          "note": "非刻意减重造成的下降，是识别营养不良的重要线索"
+        },
+        {
+          "code": "low_bmi",
+          "weight": "core",
+          "note": "体重指数偏低，老年人常在明显消瘦前已低于正常范围"
+        },
+        {
+          "code": "poor_appetite",
+          "weight": "core",
+          "note": "持续数周的食欲下降，比消瘦出现得更早"
+        },
+        {
+          "code": "muscle_mass_loss",
+          "weight": "core",
+          "note": "肌肉量与肌力同步下降，常被误认为体力变差"
+        },
+        {
+          "code": "fatigue",
+          "weight": "secondary",
+          "note": "与肌量减少、贫血共同导致"
+        },
+        {
+          "code": "muscle_weakness",
+          "weight": "secondary",
+          "note": "起身、行走无力，甚至影响个人生活自理"
+        },
+        {
+          "code": "cachexia",
+          "weight": "secondary",
+          "note": "见于慢性消耗性疾病，提示需查找原发病"
+        },
+        {
+          "code": "feeding_difficulty",
+          "weight": "secondary",
+          "note": "咀嚼、吞咽困难导致蛋白摄入不足"
+        }
       ],
       "atypical_presentations": [
         "没胃口 → 老年人营养不良常先表现食欲下降，而不是明显消瘦",
@@ -552,46 +1247,108 @@
         "慢性病忌口、牙齿缺失、吞咽困难 → 可导致蛋白摄入不足，常未被主动追问"
       ],
       "risk_factors": [
-        { "factor": "高龄与多病共存", "detail": "慢性炎症性疾病、肿瘤、肝肾疾病等共同消耗蛋白质与能量" },
-        { "factor": "进食受限", "detail": "咀嚼困难、吞咽障碍、置胃管、术后长期禁食直接减少摄入" },
-        { "factor": "食欲与消化功能下降", "detail": "味觉减退、胃肠功能紊乱、药物不良反应导致进食减少" },
-        { "factor": "照护与经济支持不足", "detail": "独居、无人备餐、行动不便导致进食量与种类都不足" },
-        { "factor": "活动与代谢因素", "detail": "长期卧床、肌肉量减少使能量需求下降而蛋白质需求并未同步下降" }
+        {
+          "factor": "高龄与多病共存",
+          "detail": "慢性炎症性疾病、肿瘤、肝肾疾病等共同消耗蛋白质与能量"
+        },
+        {
+          "factor": "进食受限",
+          "detail": "咀嚼困难、吞咽障碍、置胃管、术后长期禁食直接减少摄入"
+        },
+        {
+          "factor": "食欲与消化功能下降",
+          "detail": "味觉减退、胃肠功能紊乱、药物不良反应导致进食减少"
+        },
+        {
+          "factor": "照护与经济支持不足",
+          "detail": "独居、无人备餐、行动不便导致进食量与种类都不足"
+        },
+        {
+          "factor": "活动与代谢因素",
+          "detail": "长期卧床、肌肉量减少使能量需求下降而蛋白质需求并未同步下降"
+        }
       ],
       "red_flags": [
-        { "code": "weight_loss", "term": "短期内明显体重下降", "note": "尽快就医查找原因，不宜仅按「胃口差」处理" },
-        { "code": "feeding_difficulty", "term": "完全无法进食或持续呕吐", "note": "需立即就医处理，可迅速加重营养与脱水问题" },
-        { "code": "dehydration", "term": "口干、尿少、皮肤干燥", "note": "伴进食减少时提示容量不足，需尽快就医" }
+        {
+          "code": "weight_loss",
+          "term": "短期内明显体重下降",
+          "note": "尽快就医查找原因，不宜仅按「胃口差」处理"
+        },
+        {
+          "code": "feeding_difficulty",
+          "term": "完全无法进食或持续呕吐",
+          "note": "需立即就医处理，可迅速加重营养与脱水问题"
+        },
+        {
+          "code": "dehydration",
+          "term": "口干、尿少、皮肤干燥",
+          "note": "伴进食减少时提示容量不足，需尽快就医"
+        }
       ],
       "protective_signs": [
-        { "code": "fever", "term": "发热", "note": "伴发热更倾向感染性疾病，营养不良多为继发结果" },
-        { "code": "diarrhea", "term": "长期腹泻", "note": "伴长期腹泻时更倾向消化系统疾病或吸收不良" },
-        { "code": "depression", "term": "以情绪低落为主", "note": "以情绪症状为主、无明显肌量减少时，更倾向老年抑郁" }
+        {
+          "code": "fever",
+          "term": "发热",
+          "note": "伴发热更倾向感染性疾病，营养不良多为继发结果"
+        },
+        {
+          "code": "diarrhea",
+          "term": "长期腹泻",
+          "note": "伴长期腹泻时更倾向消化系统疾病或吸收不良"
+        },
+        {
+          "code": "depression",
+          "term": "以情绪低落为主",
+          "note": "以情绪症状为主、无明显肌量减少时，更倾向老年抑郁"
+        }
       ],
       "differentials": [
         {
           "vs_code": "E11",
-          "features": ["weight_loss", "low_bmi", "muscle_mass_loss"],
+          "features": [
+            "weight_loss",
+            "low_bmi",
+            "muscle_mass_loss"
+          ],
           "points": -8,
           "reason": "缺少消瘦、低体重与肌量减少线索而以口渴多饮、多尿为主时，更倾向 2 型糖尿病"
         },
         {
           "vs_code": "F32",
-          "features": ["weight_loss", "poor_appetite"],
+          "features": [
+            "weight_loss",
+            "poor_appetite"
+          ],
           "points": -6,
           "reason": "缺少消瘦与长期纳差线索而以情绪低落、绝望感与活动减少为主时，更倾向老年抑郁"
         },
         {
           "vs_code": "E11.5",
-          "features": ["weight_loss", "low_bmi", "muscle_mass_loss"],
+          "features": [
+            "weight_loss",
+            "low_bmi",
+            "muscle_mass_loss"
+          ],
           "points": -6,
           "reason": "缺少消瘦、低体重与肌量减少线索而以足部溃疡、皮肤破损为主时，更倾向糖尿病足"
         }
       ],
       "scale_links": [
-        { "scale": "B.19", "item": "B19-02", "note": "营养不良风险筛查与分层" },
-        { "scale": "B.18", "item": "B18-02", "note": "关注进食量减少与营养风险" },
-        { "scale": "B.1", "item": "B1-01", "note": "关注进食与自理能力" }
+        {
+          "scale": "B.19",
+          "item": "B19-02",
+          "note": "营养不良风险筛查与分层"
+        },
+        {
+          "scale": "B.18",
+          "item": "B18-02",
+          "note": "关注进食量减少与营养风险"
+        },
+        {
+          "scale": "B.1",
+          "item": "B1-01",
+          "note": "关注进食与自理能力"
+        }
       ],
       "advice": {
         "department": "老年医学科／临床营养科",
@@ -604,18 +1361,55 @@
     {
       "code": "E11",
       "name": "2型糖尿病",
-      "aliases": ["糖尿病", "成人型糖尿病", "Ⅱ型糖尿病", "非胰岛素依赖型糖尿病"],
+      "aliases": [
+        "糖尿病",
+        "成人型糖尿病",
+        "Ⅱ型糖尿病",
+        "非胰岛素依赖型糖尿病"
+      ],
       "system": "内分泌代谢",
       "risk_level": "elective",
       "symptoms": [
-        { "code": "polyuria", "weight": "core", "note": "尿量增多、尿频，老年人常归因于前列腺问题或夜尿多" },
-        { "code": "hyperglycemia_symptom", "weight": "core", "note": "口渴多饮，老年人常主动减少饮水而症状不明显" },
-        { "code": "nocturia", "weight": "core", "note": "夜尿增多是最早被察觉的线索之一" },
-        { "code": "fatigue", "weight": "secondary", "note": "乏力常被归因于「人老了没精神」" },
-        { "code": "weight_loss", "weight": "secondary", "note": "老年人 2 型糖尿病多为体重正常或超重，明显消瘦需排查其他病因" },
-        { "code": "vision_decline", "weight": "secondary", "note": "视力下降需排查糖尿病视网膜病变" },
-        { "code": "foot_ulcer", "weight": "secondary", "note": "足部溃疡是重要的并发症线索" },
-        { "code": "polypharmacy", "weight": "secondary", "note": "降糖药与多重用药共存时，需关注低血糖风险" }
+        {
+          "code": "polyuria",
+          "weight": "core",
+          "note": "尿量增多、尿频，老年人常归因于前列腺问题或夜尿多"
+        },
+        {
+          "code": "hyperglycemia_symptom",
+          "weight": "core",
+          "note": "口渴多饮，老年人常主动减少饮水而症状不明显"
+        },
+        {
+          "code": "nocturia",
+          "weight": "core",
+          "note": "夜尿增多是最早被察觉的线索之一"
+        },
+        {
+          "code": "fatigue",
+          "weight": "secondary",
+          "note": "乏力常被归因于「人老了没精神」"
+        },
+        {
+          "code": "weight_loss",
+          "weight": "secondary",
+          "note": "老年人 2 型糖尿病多为体重正常或超重，明显消瘦需排查其他病因"
+        },
+        {
+          "code": "vision_decline",
+          "weight": "secondary",
+          "note": "视力下降需排查糖尿病视网膜病变"
+        },
+        {
+          "code": "foot_ulcer",
+          "weight": "secondary",
+          "note": "足部溃疡是重要的并发症线索"
+        },
+        {
+          "code": "polypharmacy",
+          "weight": "secondary",
+          "note": "降糖药与多重用药共存时，需关注低血糖风险"
+        }
       ],
       "atypical_presentations": [
         "无「三多一少」 → 老年糖尿病常只表现乏力、视物模糊或反复感染",
@@ -623,45 +1417,103 @@
         "跌倒、谵妄、尿路感染 → 可作为「发现糖尿病」的首发表现"
       ],
       "risk_factors": [
-        { "factor": "年龄与腹型肥胖", "detail": "随年龄增长发病率升高，与腹型肥胖、缺乏运动高度相关" },
-        { "factor": "家族史与遗传易感性", "detail": "父母、同胞有糖尿病者风险明显升高" },
-        { "factor": "久坐少动与膳食结构", "detail": "活动量下降与高能量密度饮食是重要的生活方式因素" },
-        { "factor": "合并高血压与血脂异常", "detail": "常与代谢综合征并存，提示整体心血管风险" },
-        { "factor": "升高血糖的药物", "detail": "长期使用糖皮质激素、部分利尿剂等可诱发或加重糖代谢异常" }
+        {
+          "factor": "年龄与腹型肥胖",
+          "detail": "随年龄增长发病率升高，与腹型肥胖、缺乏运动高度相关"
+        },
+        {
+          "factor": "家族史与遗传易感性",
+          "detail": "父母、同胞有糖尿病者风险明显升高"
+        },
+        {
+          "factor": "久坐少动与膳食结构",
+          "detail": "活动量下降与高能量密度饮食是重要的生活方式因素"
+        },
+        {
+          "factor": "合并高血压与血脂异常",
+          "detail": "常与代谢综合征并存，提示整体心血管风险"
+        },
+        {
+          "factor": "升高血糖的药物",
+          "detail": "长期使用糖皮质激素、部分利尿剂等可诱发或加重糖代谢异常"
+        }
       ],
       "red_flags": [
-        { "code": "foot_ulcer", "term": "足部出现溃疡或伤口不愈合", "note": "尽快就诊糖尿病足专科，早处理可避免感染与截肢" },
-        { "code": "vision_decline", "term": "视力明显下降或视物模糊", "note": "尽快就医筛查视网膜病变，不要拖到看不见才看" },
-        { "code": "dehydration", "term": "反复出现口干、尿少、脱水", "note": "尽快就医评估血糖控制情况，避免进展为糖尿病急症" }
+        {
+          "code": "foot_ulcer",
+          "term": "足部出现溃疡或伤口不愈合",
+          "note": "尽快就诊糖尿病足专科，早处理可避免感染与截肢"
+        },
+        {
+          "code": "vision_decline",
+          "term": "视力明显下降或视物模糊",
+          "note": "尽快就医筛查视网膜病变，不要拖到看不见才看"
+        },
+        {
+          "code": "dehydration",
+          "term": "反复出现口干、尿少、脱水",
+          "note": "尽快就医评估血糖控制情况，避免进展为糖尿病急症"
+        }
       ],
       "protective_signs": [
-        { "code": "hypoglycemia_symptom", "term": "心慌手抖、出冷汗、饥饿感", "note": "以低血糖表现为主时，更倾向降糖药过量或进食减少所致低血糖" },
-        { "code": "poor_appetite", "term": "以食欲下降与消瘦为主", "note": "无多饮多尿而以纳差消瘦为主时，更倾向蛋白质-能量营养不良" }
+        {
+          "code": "hypoglycemia_symptom",
+          "term": "心慌手抖、出冷汗、饥饿感",
+          "note": "以低血糖表现为主时，更倾向降糖药过量或进食减少所致低血糖"
+        },
+        {
+          "code": "poor_appetite",
+          "term": "以食欲下降与消瘦为主",
+          "note": "无多饮多尿而以纳差消瘦为主时，更倾向蛋白质-能量营养不良"
+        }
       ],
       "differentials": [
         {
           "vs_code": "E46",
-          "features": ["polyuria", "hyperglycemia_symptom", "nocturia"],
+          "features": [
+            "polyuria",
+            "hyperglycemia_symptom",
+            "nocturia"
+          ],
           "points": -8,
           "reason": "缺少多尿、口渴多饮与夜尿增多线索而以消瘦、低体重与肌量减少为主时，更倾向蛋白质-能量营养不良"
         },
         {
           "vs_code": "E16.2",
-          "features": ["hyperglycemia_symptom", "polyuria"],
+          "features": [
+            "hyperglycemia_symptom",
+            "polyuria"
+          ],
           "points": -8,
           "reason": "缺少口渴多饮与多尿线索而以心慌手抖、出冷汗、饥饿感为主时，更倾向严重低血糖"
         },
         {
           "vs_code": "E11.5",
-          "features": ["foot_ulcer", "hyperglycemia_symptom", "polyuria"],
+          "features": [
+            "foot_ulcer",
+            "hyperglycemia_symptom",
+            "polyuria"
+          ],
           "points": -6,
           "reason": "缺少足部溃疡与皮肤破损线索时，更倾向单纯的 2 型糖尿病；已出现足部创口者需按糖尿病足处理"
         }
       ],
       "scale_links": [
-        { "scale": "B.19", "item": "B19-02", "note": "关注血糖控制不佳导致的体重下降与营养风险" },
-        { "scale": "B.1", "item": "B1-09", "note": "关注活动量与功能水平" },
-        { "scale": "B.2", "item": "B2-05", "note": "关注自我服药与血糖管理能力" }
+        {
+          "scale": "B.19",
+          "item": "B19-02",
+          "note": "关注血糖控制不佳导致的体重下降与营养风险"
+        },
+        {
+          "scale": "B.1",
+          "item": "B1-09",
+          "note": "关注活动量与功能水平"
+        },
+        {
+          "scale": "B.2",
+          "item": "B2-05",
+          "note": "关注自我服药与血糖管理能力"
+        }
       ],
       "advice": {
         "department": "内分泌科",
@@ -674,18 +1526,55 @@
     {
       "code": "E10.3",
       "name": "糖尿病酮症酸中毒",
-      "aliases": ["DKA", "酮症酸中毒", "糖尿病急症", "酮症"],
+      "aliases": [
+        "DKA",
+        "酮症酸中毒",
+        "糖尿病急症",
+        "酮症"
+      ],
       "system": "内分泌代谢",
       "risk_level": "immediate",
       "symptoms": [
-        { "code": "hyperglycemia_symptom", "weight": "core", "note": "老年人血糖可能只是中度升高，口渴多饮并不明显" },
-        { "code": "polyuria", "weight": "core", "note": "早期多尿，后期可转为少尿" },
-        { "code": "nausea_vomiting", "weight": "core", "note": "顽固呕吐，既是表现也是加重脱水的原因" },
-        { "code": "dehydration", "weight": "core", "note": "口干、尿少、皮肤弹性差" },
-        { "code": "abdominal_pain", "weight": "secondary", "note": "可酷似急腹症或心梗样表现" },
-        { "code": "dyspnea", "weight": "secondary", "note": "深大呼吸、代偿性通气，老年人常只说「喘不上气」" },
-        { "code": "fatigue", "weight": "secondary", "note": "极度乏力、反应迟钝" },
-        { "code": "weight_loss", "weight": "secondary", "note": "短期内体重下降明显" }
+        {
+          "code": "hyperglycemia_symptom",
+          "weight": "core",
+          "note": "老年人血糖可能只是中度升高，口渴多饮并不明显"
+        },
+        {
+          "code": "polyuria",
+          "weight": "core",
+          "note": "早期多尿，后期可转为少尿"
+        },
+        {
+          "code": "nausea_vomiting",
+          "weight": "core",
+          "note": "顽固呕吐，既是表现也是加重脱水的原因"
+        },
+        {
+          "code": "dehydration",
+          "weight": "core",
+          "note": "口干、尿少、皮肤弹性差"
+        },
+        {
+          "code": "abdominal_pain",
+          "weight": "secondary",
+          "note": "可酷似急腹症或心梗样表现"
+        },
+        {
+          "code": "dyspnea",
+          "weight": "secondary",
+          "note": "深大呼吸、代偿性通气，老年人常只说「喘不上气」"
+        },
+        {
+          "code": "fatigue",
+          "weight": "secondary",
+          "note": "极度乏力、反应迟钝"
+        },
+        {
+          "code": "weight_loss",
+          "weight": "secondary",
+          "note": "短期内体重下降明显"
+        }
       ],
       "atypical_presentations": [
         "无明显口渴多尿 → 老年人糖尿病酮症酸中毒可只表现乏力、食欲差、恶心",
@@ -693,45 +1582,103 @@
         "感染是常见诱因 → 症状轻重常与血糖数值不相称"
       ],
       "risk_factors": [
-        { "factor": "感染", "detail": "呼吸道、泌尿道与腹腔感染是老年人酮症酸中毒最常见的诱因" },
-        { "factor": "胰岛素治疗中断或剂量不足", "detail": "漏打胰岛素、剂量不足或改药未减量可直接诱发" },
-        { "factor": "进食显著减少", "detail": "恶心、呕吐、吞咽困难导致进食中断而未同步减药" },
-        { "factor": "新发或未识别的糖尿病", "detail": "老年人新发糖尿病可直接以酮症酸中毒起病" },
-        { "factor": "脱水与急性应激", "detail": "高热、呕吐、腹泻、急性心肌梗死等应激状态增加风险" }
+        {
+          "factor": "感染",
+          "detail": "呼吸道、泌尿道与腹腔感染是老年人酮症酸中毒最常见的诱因"
+        },
+        {
+          "factor": "胰岛素治疗中断或剂量不足",
+          "detail": "漏打胰岛素、剂量不足或改药未减量可直接诱发"
+        },
+        {
+          "factor": "进食显著减少",
+          "detail": "恶心、呕吐、吞咽困难导致进食中断而未同步减药"
+        },
+        {
+          "factor": "新发或未识别的糖尿病",
+          "detail": "老年人新发糖尿病可直接以酮症酸中毒起病"
+        },
+        {
+          "factor": "脱水与急性应激",
+          "detail": "高热、呕吐、腹泻、急性心肌梗死等应激状态增加风险"
+        }
       ],
       "red_flags": [
-        { "code": "nausea_vomiting", "term": "持续呕吐、无法进食进水", "note": "立即就医，呕吐会迅速加重脱水与酸中毒" },
-        { "code": "dyspnea", "term": "深快呼吸、呼吸急促", "note": "需立即呼叫 120，提示酸中毒代偿" },
-        { "code": "orientation_deficit", "term": "意识模糊、嗜睡", "note": "立即呼叫 120，提示酸中毒已影响意识" }
+        {
+          "code": "nausea_vomiting",
+          "term": "持续呕吐、无法进食进水",
+          "note": "立即就医，呕吐会迅速加重脱水与酸中毒"
+        },
+        {
+          "code": "dyspnea",
+          "term": "深快呼吸、呼吸急促",
+          "note": "需立即呼叫 120，提示酸中毒代偿"
+        },
+        {
+          "code": "orientation_deficit",
+          "term": "意识模糊、嗜睡",
+          "note": "立即呼叫 120，提示酸中毒已影响意识"
+        }
       ],
       "protective_signs": [
-        { "code": "hypoglycemia_symptom", "term": "心慌手抖、出冷汗", "note": "伴典型低血糖表现时，更倾向严重低血糖" },
-        { "code": "chest_pain", "term": "以持续胸痛为主要表现", "note": "老年人可无心悸等典型线索，需同时排查急性心肌梗死" }
+        {
+          "code": "hypoglycemia_symptom",
+          "term": "心慌手抖、出冷汗",
+          "note": "伴典型低血糖表现时，更倾向严重低血糖"
+        },
+        {
+          "code": "chest_pain",
+          "term": "以持续胸痛为主要表现",
+          "note": "老年人可无心悸等典型线索，需同时排查急性心肌梗死"
+        }
       ],
       "differentials": [
         {
           "vs_code": "E14.0",
-          "features": ["nausea_vomiting", "abdominal_pain", "hyperglycemia_symptom"],
+          "features": [
+            "nausea_vomiting",
+            "abdominal_pain",
+            "hyperglycemia_symptom"
+          ],
           "points": -8,
           "reason": "缺少恶心呕吐与腹痛线索而以明显口渴、多尿、脱水伴意识障碍为主时，更倾向高渗高血糖状态"
         },
         {
           "vs_code": "E16.2",
-          "features": ["hyperglycemia_symptom", "polyuria"],
+          "features": [
+            "hyperglycemia_symptom",
+            "polyuria"
+          ],
           "points": -8,
           "reason": "缺少口渴多饮与多尿线索而以心慌手抖、出冷汗、饥饿感为主时，更倾向严重低血糖"
         },
         {
           "vs_code": "I50",
-          "features": ["nausea_vomiting", "dehydration", "abdominal_pain"],
+          "features": [
+            "nausea_vomiting",
+            "dehydration",
+            "abdominal_pain"
+          ],
           "points": -6,
           "reason": "缺少恶心呕吐、腹痛与脱水线索而以夜间憋醒、心源性水肿为主时，更倾向急性心力衰竭失代偿"
         }
       ],
       "scale_links": [
-        { "scale": "B.18", "item": "B18-02", "note": "关注进食减少与营养风险" },
-        { "scale": "B.21", "item": "", "note": "关注意识改变" },
-        { "scale": "B.10", "item": "B10-01", "note": "关注短期体重下降与衰弱表现" }
+        {
+          "scale": "B.18",
+          "item": "B18-02",
+          "note": "关注进食减少与营养风险"
+        },
+        {
+          "scale": "B.21",
+          "item": "",
+          "note": "关注意识改变"
+        },
+        {
+          "scale": "B.10",
+          "item": "B10-01",
+          "note": "关注短期体重下降与衰弱表现"
+        }
       ],
       "advice": {
         "department": "内分泌科／急诊",
@@ -739,23 +1686,71 @@
         "text": "恶心吃不下、浑身没劲、喘不上气、口干尿少，请马上去急诊。记得带上血糖记录和药盒。"
       },
       "source": "待医学专家评审（拟引用：中国糖尿病酮症酸中毒诊治标准）",
-      "review_note": "草稿，未经评审不得用于正式临床提醒"
+      "review_note": "草稿，未经评审不得用于正式临床提醒",
+      "patterns": [
+        {
+          "symptoms": [
+            "hyperglycemia_symptom",
+            "deep_breathing",
+            "nausea_vomiting"
+          ],
+          "bonus": 3.0,
+          "note": "高血糖 + 深大呼吸 + 恶心呕吐组合，提示酮症酸中毒的代偿表现"
+        }
+      ]
     },
     {
       "code": "E14.0",
       "name": "高渗高血糖状态",
-      "aliases": ["HHS", "高血糖高渗状态", "非酮症高渗昏迷", "高渗性高血糖昏迷"],
+      "aliases": [
+        "HHS",
+        "高血糖高渗状态",
+        "非酮症高渗昏迷",
+        "高渗性高血糖昏迷"
+      ],
       "system": "内分泌代谢",
       "risk_level": "immediate",
       "symptoms": [
-        { "code": "hyperglycemia_symptom", "weight": "core", "note": "极度口渴多饮，老年人常因认知障碍而不表达" },
-        { "code": "dehydration", "weight": "core", "note": "重度脱水，口干、尿少、皮肤干燥" },
-        { "code": "orientation_deficit", "weight": "core", "note": "意识障碍可为唯一就诊原因" },
-        { "code": "polyuria", "weight": "core", "note": "早期多尿，后期转为少尿或无尿" },
-        { "code": "fatigue", "weight": "secondary", "note": "极度乏力、反应迟钝" },
-        { "code": "delirium_fluctuation", "weight": "secondary", "note": "意识状态波动，易被误认为谵妄" },
-        { "code": "continence_urinary", "weight": "secondary", "note": "多尿期可出现尿失禁" },
-        { "code": "nocturia", "weight": "secondary", "note": "夜间频繁起身如厕" }
+        {
+          "code": "hyperglycemia_symptom",
+          "weight": "core",
+          "note": "极度口渴多饮，老年人常因认知障碍而不表达"
+        },
+        {
+          "code": "dehydration",
+          "weight": "core",
+          "note": "重度脱水，口干、尿少、皮肤干燥"
+        },
+        {
+          "code": "orientation_deficit",
+          "weight": "core",
+          "note": "意识障碍可为唯一就诊原因"
+        },
+        {
+          "code": "polyuria",
+          "weight": "core",
+          "note": "早期多尿，后期转为少尿或无尿"
+        },
+        {
+          "code": "fatigue",
+          "weight": "secondary",
+          "note": "极度乏力、反应迟钝"
+        },
+        {
+          "code": "delirium_fluctuation",
+          "weight": "secondary",
+          "note": "意识状态波动，易被误认为谵妄"
+        },
+        {
+          "code": "continence_urinary",
+          "weight": "secondary",
+          "note": "多尿期可出现尿失禁"
+        },
+        {
+          "code": "nocturia",
+          "weight": "secondary",
+          "note": "夜间频繁起身如厕"
+        }
       ],
       "atypical_presentations": [
         "起病缓慢、只觉口渴乏力反应迟钝 → 老年人高渗常无剧烈症状",
@@ -763,45 +1758,103 @@
         "长期卧床、认知障碍 → 可完全没有口渴主诉"
       ],
       "risk_factors": [
-        { "factor": "高龄与 2 型糖尿病基础", "detail": "老年人肾功能随年龄下降，糖化血红蛋白常不高，不能据此排除" },
-        { "factor": "感染与脱水", "detail": "发热、呕吐、腹泻与饮水不足是常见诱因" },
-        { "factor": "停药与漏服降糖药", "detail": "未按时服用降糖药使血糖持续升高" },
-        { "factor": "认知障碍与口渴感知减退", "detail": "认知障碍老人不主动饮水，脱水进展快且无主诉" },
-        { "factor": "独居与照护支持不足", "detail": "无人提醒服药、饮水，症状出现时已较重" }
+        {
+          "factor": "高龄与 2 型糖尿病基础",
+          "detail": "老年人肾功能随年龄下降，糖化血红蛋白常不高，不能据此排除"
+        },
+        {
+          "factor": "感染与脱水",
+          "detail": "发热、呕吐、腹泻与饮水不足是常见诱因"
+        },
+        {
+          "factor": "停药与漏服降糖药",
+          "detail": "未按时服用降糖药使血糖持续升高"
+        },
+        {
+          "factor": "认知障碍与口渴感知减退",
+          "detail": "认知障碍老人不主动饮水，脱水进展快且无主诉"
+        },
+        {
+          "factor": "独居与照护支持不足",
+          "detail": "无人提醒服药、饮水，症状出现时已较重"
+        }
       ],
       "red_flags": [
-        { "code": "orientation_deficit", "term": "意识障碍、嗜睡甚至抽搐", "note": "立即呼叫 120，意识障碍常提示病情已较重" },
-        { "code": "dehydration", "term": "重度脱水、口干尿少", "note": "需立即就医补液与调整用药" },
-        { "code": "delirium_fluctuation", "term": "意识状态明显波动", "note": "需立即就医排查高渗状态、严重低血糖与感染" }
+        {
+          "code": "orientation_deficit",
+          "term": "意识障碍、嗜睡甚至抽搐",
+          "note": "立即呼叫 120，意识障碍常提示病情已较重"
+        },
+        {
+          "code": "dehydration",
+          "term": "重度脱水、口干尿少",
+          "note": "需立即就医补液与调整用药"
+        },
+        {
+          "code": "delirium_fluctuation",
+          "term": "意识状态明显波动",
+          "note": "需立即就医排查高渗状态、严重低血糖与感染"
+        }
       ],
       "protective_signs": [
-        { "code": "hypoglycemia_symptom", "term": "心慌手抖、出冷汗", "note": "伴典型低血糖表现时，更倾向严重低血糖" },
-        { "code": "abdominal_pain", "term": "明显腹痛与恶心呕吐", "note": "伴明显腹痛、呕吐时，更倾向糖尿病酮症酸中毒" }
+        {
+          "code": "hypoglycemia_symptom",
+          "term": "心慌手抖、出冷汗",
+          "note": "伴典型低血糖表现时，更倾向严重低血糖"
+        },
+        {
+          "code": "abdominal_pain",
+          "term": "明显腹痛与恶心呕吐",
+          "note": "伴明显腹痛、呕吐时，更倾向糖尿病酮症酸中毒"
+        }
       ],
       "differentials": [
         {
           "vs_code": "E10.3",
-          "features": ["hyperglycemia_symptom", "dehydration", "polyuria"],
+          "features": [
+            "hyperglycemia_symptom",
+            "dehydration",
+            "polyuria"
+          ],
           "points": -8,
           "reason": "缺少明显口渴、多尿与脱水线索而以恶心呕吐、腹痛为主时，更倾向糖尿病酮症酸中毒"
         },
         {
           "vs_code": "E16.2",
-          "features": ["hyperglycemia_symptom", "polyuria", "dehydration"],
+          "features": [
+            "hyperglycemia_symptom",
+            "polyuria",
+            "dehydration"
+          ],
           "points": -8,
           "reason": "缺少口渴多饮、多尿与脱水线索而以心慌手抖、出冷汗为主时，更倾向严重低血糖"
         },
         {
           "vs_code": "F05",
-          "features": ["hyperglycemia_symptom", "dehydration"],
+          "features": [
+            "hyperglycemia_symptom",
+            "dehydration"
+          ],
           "points": -6,
           "reason": "缺少明显口渴多饮与脱水线索而以意识突然波动、幻觉为主时，更倾向谵妄"
         }
       ],
       "scale_links": [
-        { "scale": "B.21", "item": "", "note": "关注意识改变与谵妄" },
-        { "scale": "B.8", "item": "", "note": "关注认知功能变化" },
-        { "scale": "B.18", "item": "B18-02", "note": "关注进食减少与营养风险" }
+        {
+          "scale": "B.21",
+          "item": "",
+          "note": "关注意识改变与谵妄"
+        },
+        {
+          "scale": "B.8",
+          "item": "",
+          "note": "关注认知功能变化"
+        },
+        {
+          "scale": "B.18",
+          "item": "B18-02",
+          "note": "关注进食减少与营养风险"
+        }
       ],
       "advice": {
         "department": "内分泌科／急诊",
@@ -814,16 +1867,45 @@
     {
       "code": "E16.2",
       "name": "严重低血糖",
-      "aliases": ["低血糖昏迷", "低血糖发作", "低血糖反应", "血糖过低"],
+      "aliases": [
+        "低血糖昏迷",
+        "低血糖发作",
+        "低血糖反应",
+        "血糖过低"
+      ],
       "system": "内分泌代谢",
       "risk_level": "immediate",
       "symptoms": [
-        { "code": "hypoglycemia_symptom", "weight": "core", "note": "心慌、手抖、出冷汗、饥饿感" },
-        { "code": "orientation_deficit", "weight": "core", "note": "意识模糊、言语含糊，酷似谵妄" },
-        { "code": "syncope", "weight": "core", "note": "严重时可昏迷" },
-        { "code": "tremor", "weight": "secondary", "note": "手抖、出冷汗，常与心慌同时出现" },
-        { "code": "fatigue", "weight": "secondary", "note": "发作后极度乏力" },
-        { "code": "delirium_fluctuation", "weight": "secondary", "note": "易被误认为谵妄" }
+        {
+          "code": "hypoglycemia_symptom",
+          "weight": "core",
+          "note": "心慌、手抖、出冷汗、饥饿感"
+        },
+        {
+          "code": "orientation_deficit",
+          "weight": "core",
+          "note": "意识模糊、言语含糊，酷似谵妄"
+        },
+        {
+          "code": "syncope",
+          "weight": "core",
+          "note": "严重时可昏迷"
+        },
+        {
+          "code": "tremor",
+          "weight": "secondary",
+          "note": "手抖、出冷汗，常与心慌同时出现"
+        },
+        {
+          "code": "fatigue",
+          "weight": "secondary",
+          "note": "发作后极度乏力"
+        },
+        {
+          "code": "delirium_fluctuation",
+          "weight": "secondary",
+          "note": "易被误认为谵妄"
+        }
       ],
       "atypical_presentations": [
         "乏力、说话含糊、行为异常 → 老年人低血糖可仅表现这些，家属常误认为「年纪大了脑子糊涂」",
@@ -831,43 +1913,92 @@
         "禁食后更易发生且症状不典型 → 肾功能不全、营养不良者"
       ],
       "risk_factors": [
-        { "factor": "降糖药物", "detail": "胰岛素、磺脲类药物剂量过量或未随进食调整" },
-        { "factor": "进食减少", "detail": "食欲差、恶心、吞咽困难导致摄入不足而未减药" },
-        { "factor": "肝肾功能不全", "detail": "药物清除减慢，低血糖持续时间延长" },
-        { "factor": "饮酒", "detail": "抑制糖异生，低血糖与昏迷风险叠加" }
+        {
+          "factor": "降糖药物",
+          "detail": "胰岛素、磺脲类药物剂量过量或未随进食调整"
+        },
+        {
+          "factor": "进食减少",
+          "detail": "食欲差、恶心、吞咽困难导致摄入不足而未减药"
+        },
+        {
+          "factor": "肝肾功能不全",
+          "detail": "药物清除减慢，低血糖持续时间延长"
+        },
+        {
+          "factor": "饮酒",
+          "detail": "抑制糖异生，低血糖与昏迷风险叠加"
+        }
       ],
       "red_flags": [
-        { "code": "syncope", "term": "意识丧失或抽搐", "note": "立即喂糖并呼叫 120" },
-        { "code": "orientation_deficit", "term": "意识模糊伴大汗", "note": "高度提示低血糖，需立即处理" }
+        {
+          "code": "syncope",
+          "term": "意识丧失或抽搐",
+          "note": "立即喂糖并呼叫 120"
+        },
+        {
+          "code": "orientation_deficit",
+          "term": "意识模糊伴大汗",
+          "note": "高度提示低血糖，需立即处理"
+        }
       ],
       "protective_signs": [
-        { "code": "hyperglycemia_symptom", "term": "多饮多尿伴口渴", "note": "更倾向高血糖而非低血糖" },
-        { "code": "dehydration", "term": "明显脱水、口干尿少", "note": "伴明显脱水与多尿时，更倾向高血糖相关急症" }
+        {
+          "code": "hyperglycemia_symptom",
+          "term": "多饮多尿伴口渴",
+          "note": "更倾向高血糖而非低血糖"
+        },
+        {
+          "code": "dehydration",
+          "term": "明显脱水、口干尿少",
+          "note": "伴明显脱水与多尿时，更倾向高血糖相关急症"
+        }
       ],
       "differentials": [
         {
           "vs_code": "E11",
-          "features": ["hypoglycemia_symptom", "tremor"],
+          "features": [
+            "hypoglycemia_symptom",
+            "tremor"
+          ],
           "points": -8,
           "reason": "无心慌手抖、出冷汗等低血糖线索而以口渴多饮、多尿、夜尿增多为主时，更倾向 2 型糖尿病"
         },
         {
           "vs_code": "I63",
-          "features": ["hypoglycemia_symptom", "orientation_deficit"],
+          "features": [
+            "hypoglycemia_symptom",
+            "orientation_deficit"
+          ],
           "points": -6,
           "reason": "无心慌手抖、出冷汗等低血糖线索而以突发肢体无力、言语含糊等局灶体征为主时，更倾向急性脑卒中"
         },
         {
           "vs_code": "E10.3",
-          "features": ["hypoglycemia_symptom", "tremor"],
+          "features": [
+            "hypoglycemia_symptom",
+            "tremor"
+          ],
           "points": -6,
           "reason": "无心慌手抖、出冷汗等低血糖线索而以恶心呕吐、腹痛、明显口渴多尿为主时，更倾向糖尿病酮症酸中毒"
         }
       ],
       "scale_links": [
-        { "scale": "B.21", "item": "", "note": "关注意识改变与谵妄鉴别" },
-        { "scale": "B.18", "item": "B18-02", "note": "关注进食减少导致的低血糖易感性" },
-        { "scale": "B.1", "item": "B1-01", "note": "关注进食与自行进食能力" }
+        {
+          "scale": "B.21",
+          "item": "",
+          "note": "关注意识改变与谵妄鉴别"
+        },
+        {
+          "scale": "B.18",
+          "item": "B18-02",
+          "note": "关注进食减少导致的低血糖易感性"
+        },
+        {
+          "scale": "B.1",
+          "item": "B1-01",
+          "note": "关注进食与自行进食能力"
+        }
       ],
       "advice": {
         "department": "内分泌科／急诊",
@@ -875,22 +2006,66 @@
         "text": "如果出现心慌手抖、冒冷汗、说不清话甚至昏过去，可能是血糖太低，请立刻吃含糖食物并马上叫 120 或去医院。"
       },
       "source": "待医学专家评审（拟引用：老年人低血糖诊疗与防跌倒要点）",
-      "review_note": "草稿，未经评审不得用于正式临床提醒"
+      "review_note": "草稿，未经评审不得用于正式临床提醒",
+      "patterns": [
+        {
+          "symptoms": [
+            "hypoglycemia_symptom",
+            "tremor",
+            "delirium_fluctuation"
+          ],
+          "bonus": 3.0,
+          "note": "心慌手抖 + 意识波动组合，提示低血糖发作（易被误认为谵妄）"
+        }
+      ]
     },
     {
       "code": "E11.5",
       "name": "糖尿病足",
-      "aliases": ["糖尿病足溃疡", "糖足", "糖尿病坏疽", "糖尿病足伤口"],
+      "aliases": [
+        "糖尿病足溃疡",
+        "糖足",
+        "糖尿病坏疽",
+        "糖尿病足伤口"
+      ],
       "system": "内分泌代谢",
       "risk_level": "urgent",
       "symptoms": [
-        { "code": "foot_ulcer", "weight": "core", "note": "足底、趾端或足背出现溃疡，是本病最核心的表现" },
-        { "code": "skin_breakdown", "weight": "core", "note": "创面周围皮肤破损、浸渍，容易向深部组织蔓延" },
-        { "code": "pain_chronic", "weight": "core", "note": "可为神经病理性疼痛或缺血性疼痛；感觉减退者溃疡常无痛" },
-        { "code": "gait_instability", "weight": "secondary", "note": "因足部疼痛或关节变形而走路不稳，易跌倒" },
-        { "code": "difficulty_walking", "weight": "secondary", "note": "行走距离缩短，因足部创面与疼痛所致" },
-        { "code": "fall_history", "weight": "secondary", "note": "行走不稳者跌倒风险升高，创面常在跌倒后加重" },
-        { "code": "fatigue", "weight": "secondary", "note": "慢性感染与进食不足可导致乏力" }
+        {
+          "code": "foot_ulcer",
+          "weight": "core",
+          "note": "足底、趾端或足背出现溃疡，是本病最核心的表现"
+        },
+        {
+          "code": "skin_breakdown",
+          "weight": "core",
+          "note": "创面周围皮肤破损、浸渍，容易向深部组织蔓延"
+        },
+        {
+          "code": "pain_chronic",
+          "weight": "core",
+          "note": "可为神经病理性疼痛或缺血性疼痛；感觉减退者溃疡常无痛"
+        },
+        {
+          "code": "gait_instability",
+          "weight": "secondary",
+          "note": "因足部疼痛或关节变形而走路不稳，易跌倒"
+        },
+        {
+          "code": "difficulty_walking",
+          "weight": "secondary",
+          "note": "行走距离缩短，因足部创面与疼痛所致"
+        },
+        {
+          "code": "fall_history",
+          "weight": "secondary",
+          "note": "行走不稳者跌倒风险升高，创面常在跌倒后加重"
+        },
+        {
+          "code": "fatigue",
+          "weight": "secondary",
+          "note": "慢性感染与进食不足可导致乏力"
+        }
       ],
       "atypical_presentations": [
         "足部破溃无痛感 → 周围神经病变使疼痛减退，创口常在洗澡、换鞋时才发现",
@@ -898,45 +2073,102 @@
         "足部溃疡长期不愈 → 常被当作「老毛病」，拖延到感染后才就诊"
       ],
       "risk_factors": [
-        { "factor": "长病程与血糖控制不佳", "detail": "血糖长期偏高是神经病变与血管病变共同发展的基础" },
-        { "factor": "周围神经病变与下肢动脉病变", "detail": "感觉减退使足部损伤不易察觉，缺血影响创面愈合" },
-        { "factor": "鞋袜不合适与足部外伤", "detail": "不合脚的鞋、烫伤、修剪不当造成的微小外伤是常见起点" },
-        { "factor": "视力下降与自理能力差", "detail": "看不清脚部伤口、无法自行检查与护理足部" },
-        { "factor": "吸烟与肾功能不全", "detail": "吸烟加速血管病变，肾功能不全增加感染与愈合不良风险" }
+        {
+          "factor": "长病程与血糖控制不佳",
+          "detail": "血糖长期偏高是神经病变与血管病变共同发展的基础"
+        },
+        {
+          "factor": "周围神经病变与下肢动脉病变",
+          "detail": "感觉减退使足部损伤不易察觉，缺血影响创面愈合"
+        },
+        {
+          "factor": "鞋袜不合适与足部外伤",
+          "detail": "不合脚的鞋、烫伤、修剪不当造成的微小外伤是常见起点"
+        },
+        {
+          "factor": "视力下降与自理能力差",
+          "detail": "看不清脚部伤口、无法自行检查与护理足部"
+        },
+        {
+          "factor": "吸烟与肾功能不全",
+          "detail": "吸烟加速血管病变，肾功能不全增加感染与愈合不良风险"
+        }
       ],
       "red_flags": [
-        { "code": "fever", "term": "发热伴足部红肿、渗液", "note": "提示感染已扩散，立即就医，不要自行换药拖延" },
-        { "code": "foot_ulcer", "term": "溃疡较深、可见深部组织或周围皮肤发黑", "note": "立即就医，需专科评估处理方式" },
-        { "code": "skin_breakdown", "term": "创面短时间内快速扩大", "note": "立即就医，需急诊处理创面与感染" }
+        {
+          "code": "fever",
+          "term": "发热伴足部红肿、渗液",
+          "note": "提示感染已扩散，立即就医，不要自行换药拖延"
+        },
+        {
+          "code": "foot_ulcer",
+          "term": "溃疡较深、可见深部组织或周围皮肤发黑",
+          "note": "立即就医，需专科评估处理方式"
+        },
+        {
+          "code": "skin_breakdown",
+          "term": "创面短时间内快速扩大",
+          "note": "立即就医，需急诊处理创面与感染"
+        }
       ],
       "protective_signs": [
-        { "code": "hyperglycemia_symptom", "term": "口渴多饮、多尿而无足部伤口", "note": "以血糖升高表现为主且无足部创口时，更倾向单纯的 2 型糖尿病" },
-        { "code": "polyuria", "term": "以尿量增多为主而无足部伤口", "note": "以多尿为主且无足部创口时，更倾向血糖控制不佳的单纯 2 型糖尿病" }
+        {
+          "code": "hyperglycemia_symptom",
+          "term": "口渴多饮、多尿而无足部伤口",
+          "note": "以血糖升高表现为主且无足部创口时，更倾向单纯的 2 型糖尿病"
+        },
+        {
+          "code": "polyuria",
+          "term": "以尿量增多为主而无足部伤口",
+          "note": "以多尿为主且无足部创口时，更倾向血糖控制不佳的单纯 2 型糖尿病"
+        }
       ],
       "differentials": [
         {
           "vs_code": "E11",
-          "features": ["foot_ulcer", "skin_breakdown"],
+          "features": [
+            "foot_ulcer",
+            "skin_breakdown"
+          ],
           "points": -8,
           "reason": "无足部溃疡与皮肤破损线索时，更倾向单纯的 2 型糖尿病；已出现足部创口者需按糖尿病足处理"
         },
         {
           "vs_code": "I63",
-          "features": ["foot_ulcer", "skin_breakdown", "pain_chronic"],
+          "features": [
+            "foot_ulcer",
+            "skin_breakdown",
+            "pain_chronic"
+          ],
           "points": -6,
           "reason": "缺少足部创口线索而以突发肢体无力、言语含糊、步态明显改变为主时，更倾向急性脑卒中"
         },
         {
           "vs_code": "E46",
-          "features": ["foot_ulcer", "skin_breakdown"],
+          "features": [
+            "foot_ulcer",
+            "skin_breakdown"
+          ],
           "points": -6,
           "reason": "缺少足部创口线索而以消瘦、低体重、肌量减少为主时，更倾向蛋白质-能量营养不良（营养不良同样影响创面愈合）"
         }
       ],
       "scale_links": [
-        { "scale": "B.16", "item": "B16-01", "note": "周围神经病变使感觉减退，足部损伤与压疮风险升高" },
-        { "scale": "B.19", "item": "B19-03", "note": "关注行走困难与活动受限程度" },
-        { "scale": "B.3", "item": "", "note": "关注足部功能、平衡与步态能力" }
+        {
+          "scale": "B.16",
+          "item": "B16-01",
+          "note": "周围神经病变使感觉减退，足部损伤与压疮风险升高"
+        },
+        {
+          "scale": "B.19",
+          "item": "B19-03",
+          "note": "关注行走困难与活动受限程度"
+        },
+        {
+          "scale": "B.3",
+          "item": "",
+          "note": "关注足部功能、平衡与步态能力"
+        }
       ],
       "advice": {
         "department": "内分泌科／糖尿病足专科",

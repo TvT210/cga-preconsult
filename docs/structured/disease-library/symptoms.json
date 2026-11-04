@@ -1,94 +1,1028 @@
 {
-  "version": "0.1.0-draft",
+  "version": "0.2.0-draft",
   "review_status": "draft_pending_medical_review",
   "note": "症状归一化字典：把口语表达、同义词映射到标准症状词条。匹配引擎与题库阳性标记共用此词表。条目为草稿，需医学专家评审后发布。",
   "symptoms": [
-    { "code": "fall_history", "term": "跌倒史", "category": "躯体功能", "synonyms": ["摔倒", "跌过跤", "走路摔倒"] },
-    { "code": "fall_injury", "term": "跌倒致伤", "category": "躯体功能", "synonyms": ["摔倒受伤", "跌倒骨折"] },
-    { "code": "gait_slow", "term": "步速缓慢", "category": "躯体功能", "synonyms": ["走得慢", "走路慢", "步速下降"] },
-    { "code": "gait_instability", "term": "步态不稳", "category": "躯体功能", "synonyms": ["走路摇晃", "走路不稳", "走路发飘", "走不稳", "走路打晃", "站不稳", "打晃"] },
-    { "code": "muscle_weakness", "term": "肌力下降", "category": "躯体功能", "synonyms": ["没力气", "力气小", "提不动东西"] },
-    { "code": "muscle_mass_loss", "term": "肌量减少", "category": "躯体功能", "synonyms": ["肌肉萎缩", "瘦了没力气", "肌少症"] },
-    { "code": "difficulty_walking", "term": "行走困难", "category": "躯体功能", "synonyms": ["走不动", "走路费劲", "行走受限"] },
-    { "code": "chair_transfer_difficulty", "term": "起身转移困难", "category": "躯体功能", "synonyms": ["站不起来", "起不来", "从椅子起来费劲"] },
-    { "code": "bed_transfer_difficulty", "term": "卧床转移困难", "category": "躯体功能", "synonyms": ["翻不了身", "床上挪不动"] },
-    { "code": "bathing_difficulty", "term": "洗澡困难", "category": "躯体功能", "synonyms": ["洗不了澡", "洗澡要人帮"] },
-    { "code": "dressing_difficulty", "term": "穿衣困难", "category": "躯体功能", "synonyms": ["穿不了衣服", "穿衣服费劲"] },
-    { "code": "toileting_difficulty", "term": "如厕困难", "category": "躯体功能", "synonyms": ["上厕所费劲", "自己上不了厕所"] },
-    { "code": "feeding_difficulty", "term": "进食困难", "category": "躯体功能", "synonyms": ["吃饭要人喂", "咽不下饭"] },
-    { "code": "continence_urinary", "term": "尿失禁", "category": "老年综合征", "synonyms": ["漏尿", "尿裤子", "憋不住尿"] },
-    { "code": "continence_fecal", "term": "排便失禁", "category": "老年综合征", "synonyms": ["拉裤子", "大便失禁"] },
-    { "code": "constipation", "term": "便秘", "category": "老年综合征", "synonyms": ["大便干", "好几天不拉", "排便困难"] },
-    { "code": "nocturia", "term": "夜尿增多", "category": "老年综合征", "synonyms": ["起夜多", "晚上起来好几次"] },
-    { "code": "dysuria", "term": "排尿困难", "category": "老年综合征", "synonyms": ["尿不出来", "尿疼", "排尿费劲"] },
-    { "code": "urinary_frequency", "term": "尿频", "category": "老年综合征", "synonyms": ["老想上厕所", "小便次数多"] },
-    { "code": "poor_appetite", "term": "食欲减退", "category": "老年综合征", "synonyms": ["吃不下", "没胃口", "不想吃饭"] },
-    { "code": "weight_loss", "term": "体重下降", "category": "老年综合征", "synonyms": ["瘦了", "掉秤", "体重轻了"] },
-    { "code": "low_bmi", "term": "低体重", "category": "老年综合征", "synonyms": ["太瘦", "BMI低"] },
-    { "code": "edema", "term": "水肿", "category": "老年综合征", "synonyms": ["浮肿", "脚肿", "腿肿"] },
-    { "code": "fatigue", "term": "乏力疲劳", "category": "老年综合征", "synonyms": ["没劲", "浑身没力气", "容易累"] },
-    { "code": "dizziness", "term": "头晕", "category": "躯体功能", "synonyms": ["晕乎", "脑袋发晕", "头昏"] },
-    { "code": "syncope", "term": "晕厥", "category": "躯体功能", "synonyms": ["晕过去", "昏倒", "眼前一黑倒了"] },
-    { "code": "fracture_history", "term": "骨折史", "category": "躯体功能", "synonyms": ["摔断过骨头", "骨折过"] },
-    { "code": "pain_chronic", "term": "慢性疼痛", "category": "老年综合征", "synonyms": ["长期疼", "一直痛", "老毛病疼"] },
-    { "code": "chest_pain", "term": "胸痛胸闷", "category": "急症预警", "synonyms": ["胸口疼", "心口疼", "憋气胸闷", "胸口压得慌"] },
-    { "code": "dyspnea", "term": "呼吸困难", "category": "急症预警", "synonyms": ["喘不上气", "气短", "喘得厉害"] },
-    { "code": "orthopnea", "term": "夜间阵发性呼吸困难", "category": "急症预警", "synonyms": ["半夜憋醒", "晚上喘醒", "躺下就喘"] },
-    { "code": "cough", "term": "咳嗽", "category": "呼吸系统", "synonyms": ["咳", "干咳", "咳嗽厉害"] },
-    { "code": "sputum", "term": "咳痰", "category": "呼吸系统", "synonyms": ["有痰", "吐痰", "痰多"] },
-    { "code": "fever", "term": "发热", "category": "急症预警", "synonyms": ["发烧", "体温高", "发冷"] },
-    { "code": "hemoptysis", "term": "咯血", "category": "急症预警", "synonyms": ["咳出血", "痰里有血"] },
-    { "code": "palpitations", "term": "心悸", "category": "急症预警", "synonyms": ["心跳快", "心慌", "心跳得厉害"] },
-    { "code": "unilateral_leg_swelling", "term": "单侧下肢肿胀", "category": "急症预警", "synonyms": ["一条腿肿", "左腿肿", "右腿肿"] },
-    { "code": "aspiration_risk", "term": "误吸呛咳", "category": "老年综合征", "synonyms": ["喝水呛到", "吃饭呛咳", "误吸"] },
-    { "code": "dysphagia", "term": "吞咽困难", "category": "老年综合征", "synonyms": ["咽不下", "喝水呛", "吞东西费劲"] },
-    { "code": "dysarthria", "term": "言语含糊", "category": "精神心理", "synonyms": ["说话不清楚", "口齿不清"] },
-    { "code": "tremor", "term": "震颤", "category": "精神心理", "synonyms": ["手抖", "发抖"] },
-    { "code": "rigidity", "term": "肌强直", "category": "精神心理", "synonyms": ["身体僵硬", "发僵"] },
-    { "code": "bradykinesia", "term": "运动迟缓", "category": "精神心理", "synonyms": ["动作慢", "手脚慢"] },
-    { "code": "memory_decline", "term": "记忆减退", "category": "精神心理", "synonyms": ["忘事", "记性差", "想不起来"] },
-    { "code": "orientation_deficit", "term": "定向力障碍", "category": "精神心理", "synonyms": ["不知道日期", "分不清白天黑夜", "不知身在何处"] },
-    { "code": "delirium_fluctuation", "term": "意识波动谵妄", "category": "精神心理", "synonyms": ["一时清楚一时糊涂", "说胡话", "精神状态忽好忽坏"] },
-    { "code": "hallucination", "term": "幻觉", "category": "精神心理", "synonyms": ["看见不存在的东西", "听到有人说话"] },
-    { "code": "depression", "term": "情绪低落抑郁", "category": "精神心理", "synonyms": ["不想活", "心里堵得慌", "情绪低落", "老想哭"] },
-    { "code": "anxiety", "term": "焦虑", "category": "精神心理", "synonyms": ["心慌害怕", "着急", "坐立不安"] },
-    { "code": "insomnia", "term": "入睡困难失眠", "category": "老年综合征", "synonyms": ["睡不着", "翻来覆去", "入睡困难"] },
-    { "code": "nocturnal_awakening", "term": "夜间易醒", "category": "老年综合征", "synonyms": ["一晚上醒好几回", "睡不踏实"] },
-    { "code": "social_isolation", "term": "社会隔离", "category": "社会与环境", "synonyms": ["没人说话", "一个人待着", "独居没人管"] },
-    { "code": "caregiver_burden", "term": "照护负担", "category": "社会与环境", "synonyms": ["照顾不过来", "家里人都累"] },
-    { "code": "poor_sleep_quality", "term": "睡眠质量差", "category": "老年综合征", "synonyms": ["睡不踏实", "休息不好"] },
-    { "code": "low_activity", "term": "活动量下降", "category": "生活方式", "synonyms": ["不运动", "很少出门", "老待在家里"] },
-    { "code": "smoking_history", "term": "吸烟史", "category": "生活方式", "synonyms": ["抽烟", "吸烟"] },
-    { "code": "drinking_history", "term": "饮酒史", "category": "生活方式", "synonyms": ["喝酒", "爱喝酒"] },
-    { "code": "polyuria", "term": "多尿", "category": "内分泌代谢", "synonyms": ["尿多", "小便量多"] },
-    { "code": "polypharmacy", "term": "多重用药", "category": "用药", "synonyms": ["吃很多种药", "一长串药"] },
-    { "code": "hypoglycemia_symptom", "term": "低血糖表现", "category": "内分泌代谢", "synonyms": ["心慌手抖出汗", "低血糖"] },
-    { "code": "hyperglycemia_symptom", "term": "高血糖表现", "category": "内分泌代谢", "synonyms": ["口渴", "多饮", "高血糖"] },
-    { "code": "foot_ulcer", "term": "糖尿病足溃疡", "category": "内分泌代谢", "synonyms": ["脚上烂了", "脚底有伤口"] },
-    { "code": "vision_decline", "term": "视力下降", "category": "躯体功能", "synonyms": ["看不清", "眼睛花了", "视力差"] },
-    { "code": "hearing_decline", "term": "听力下降", "category": "躯体功能", "synonyms": ["听不清", "耳朵背", "要大声说话"] },
-    { "code": "home_safety_risk", "term": "居家环境风险", "category": "社会与环境", "synonyms": ["家里不安全", "地上太滑", "楼梯没扶手"] },
-    { "code": "medication_nonadherence", "term": "服药依从性差", "category": "用药", "synonyms": ["药经常忘吃", "私自停药"] },
-    { "code": "dehydration", "term": "脱水", "category": "急症预警", "synonyms": ["脱水", "缺水", "嘴唇干"] },
-    { "code": "anemia_symptom", "term": "贫血表现", "category": "血液系统", "synonyms": ["脸色苍白", "头晕眼花", "贫血"] },
-    { "code": "bleeding_tendency", "term": "出血倾向", "category": "血液系统", "synonyms": ["容易出血", "牙龈出血", "身上有瘀斑"] },
-    { "code": "cachexia", "term": "恶病质", "category": "老年综合征", "synonyms": ["皮包骨", "消耗样"] },
-    { "code": "skin_breakdown", "term": "皮肤破损", "category": "老年综合征", "synonyms": ["压疮", "褥疮", "皮肤破"] },
-    { "code": "abdominal_pain", "term": "腹痛", "category": "消化系统", "synonyms": ["肚子疼", "腹痛"] },
-    { "code": "nausea_vomiting", "term": "恶心呕吐", "category": "消化系统", "synonyms": ["恶心", "想吐", "吐了"] },
-    { "code": "diarrhea", "term": "腹泻", "category": "消化系统", "synonyms": ["拉肚子", "稀便"] },
-    { "code": "melena", "term": "黑便便血", "category": "急症预警", "synonyms": ["黑便", "柏油样便", "大便带血"] },
-    { "code": "hematemesis", "term": "呕血", "category": "急症预警", "synonyms": ["吐血", "呕血"] },
-    { "code": "jaundice", "term": "黄疸", "category": "消化系统", "synonyms": ["皮肤发黄", "眼白发黄"] },
-    { "code": "edema_heart", "term": "心源性水肿", "category": "心血管", "synonyms": ["心脏不好腿肿", "全身浮肿"] },
-    { "code": "orthostatic_hypotension", "term": "体位性低血压", "category": "心血管", "synonyms": ["一起身就头晕", "站起来眼前发黑"] },
-    { "code": "snoring", "term": "打鼾", "category": "呼吸系统", "synonyms": ["打呼噜", "睡觉打鼾"] },
-    { "code": "daytime_somnolence", "term": "日间嗜睡", "category": "老年综合征", "synonyms": ["白天老打瞌睡", "总是睡不够"] },
-    { "code": "weight_bearing_pain", "term": "负重疼痛", "category": "肌肉骨骼", "synonyms": ["走远路腿疼", "上下楼膝盖疼"] },
-    { "code": "joint_pain", "term": "关节痛", "category": "肌肉骨骼", "synonyms": ["关节疼", "膝盖疼", "腰疼"] },
-    { "code": "urinary_retention", "term": "尿潴留", "category": "泌尿系统", "synonyms": ["尿不出", "膀胱胀"] },
-    { "code": "dementia_daily_function", "term": "认知影响生活自理", "category": "精神心理", "synonyms": ["自己照顾不了自己", "忘事忘得厉害"] },
-    { "code": "repetitive_questioning", "term": "反复提问", "category": "精神心理", "synonyms": ["老问同样的问题", "刚说过就忘"] },
-    { "code": "night_wandering", "term": "夜间游走", "category": "精神心理", "synonyms": ["半夜乱走", "夜里不睡乱跑"] }
+    {
+      "code": "fall_history",
+      "term": "跌倒史",
+      "category": "躯体功能",
+      "synonyms": [
+        "摔倒",
+        "跌过跤",
+        "走路摔倒"
+      ]
+    },
+    {
+      "code": "fall_injury",
+      "term": "跌倒致伤",
+      "category": "躯体功能",
+      "synonyms": [
+        "摔倒受伤",
+        "跌倒骨折"
+      ]
+    },
+    {
+      "code": "gait_slow",
+      "term": "步速缓慢",
+      "category": "躯体功能",
+      "synonyms": [
+        "走得慢",
+        "走路慢",
+        "步速下降"
+      ]
+    },
+    {
+      "code": "gait_instability",
+      "term": "步态不稳",
+      "category": "躯体功能",
+      "synonyms": [
+        "走路摇晃",
+        "走路不稳",
+        "走路发飘",
+        "走不稳",
+        "走路打晃",
+        "站不稳",
+        "打晃"
+      ]
+    },
+    {
+      "code": "muscle_weakness",
+      "term": "肌力下降",
+      "category": "躯体功能",
+      "synonyms": [
+        "没力气",
+        "力气小",
+        "提不动东西"
+      ]
+    },
+    {
+      "code": "muscle_mass_loss",
+      "term": "肌量减少",
+      "category": "躯体功能",
+      "synonyms": [
+        "肌肉萎缩",
+        "瘦了没力气",
+        "肌少症"
+      ]
+    },
+    {
+      "code": "difficulty_walking",
+      "term": "行走困难",
+      "category": "躯体功能",
+      "synonyms": [
+        "走不动",
+        "走路费劲",
+        "行走受限"
+      ]
+    },
+    {
+      "code": "chair_transfer_difficulty",
+      "term": "起身转移困难",
+      "category": "躯体功能",
+      "synonyms": [
+        "站不起来",
+        "起不来",
+        "从椅子起来费劲"
+      ]
+    },
+    {
+      "code": "bed_transfer_difficulty",
+      "term": "卧床转移困难",
+      "category": "躯体功能",
+      "synonyms": [
+        "翻不了身",
+        "床上挪不动"
+      ]
+    },
+    {
+      "code": "bathing_difficulty",
+      "term": "洗澡困难",
+      "category": "躯体功能",
+      "synonyms": [
+        "洗不了澡",
+        "洗澡要人帮"
+      ]
+    },
+    {
+      "code": "dressing_difficulty",
+      "term": "穿衣困难",
+      "category": "躯体功能",
+      "synonyms": [
+        "穿不了衣服",
+        "穿衣服费劲"
+      ]
+    },
+    {
+      "code": "toileting_difficulty",
+      "term": "如厕困难",
+      "category": "躯体功能",
+      "synonyms": [
+        "上厕所费劲",
+        "自己上不了厕所"
+      ]
+    },
+    {
+      "code": "feeding_difficulty",
+      "term": "进食困难",
+      "category": "躯体功能",
+      "synonyms": [
+        "吃饭要人喂",
+        "咽不下饭"
+      ]
+    },
+    {
+      "code": "continence_urinary",
+      "term": "尿失禁",
+      "category": "老年综合征",
+      "synonyms": [
+        "漏尿",
+        "尿裤子",
+        "憋不住尿"
+      ]
+    },
+    {
+      "code": "continence_fecal",
+      "term": "排便失禁",
+      "category": "老年综合征",
+      "synonyms": [
+        "拉裤子",
+        "大便失禁"
+      ]
+    },
+    {
+      "code": "constipation",
+      "term": "便秘",
+      "category": "老年综合征",
+      "synonyms": [
+        "大便干",
+        "好几天不拉",
+        "排便困难"
+      ]
+    },
+    {
+      "code": "nocturia",
+      "term": "夜尿增多",
+      "category": "老年综合征",
+      "synonyms": [
+        "起夜多",
+        "晚上起来好几次"
+      ]
+    },
+    {
+      "code": "dysuria",
+      "term": "排尿困难",
+      "category": "老年综合征",
+      "synonyms": [
+        "尿不出来",
+        "尿疼",
+        "排尿费劲"
+      ]
+    },
+    {
+      "code": "urinary_frequency",
+      "term": "尿频",
+      "category": "老年综合征",
+      "synonyms": [
+        "老想上厕所",
+        "小便次数多"
+      ]
+    },
+    {
+      "code": "poor_appetite",
+      "term": "食欲减退",
+      "category": "老年综合征",
+      "synonyms": [
+        "吃不下",
+        "没胃口",
+        "不想吃饭"
+      ]
+    },
+    {
+      "code": "weight_loss",
+      "term": "体重下降",
+      "category": "老年综合征",
+      "synonyms": [
+        "瘦了",
+        "掉秤",
+        "体重轻了"
+      ]
+    },
+    {
+      "code": "low_bmi",
+      "term": "低体重",
+      "category": "老年综合征",
+      "synonyms": [
+        "太瘦",
+        "BMI低"
+      ]
+    },
+    {
+      "code": "edema",
+      "term": "水肿",
+      "category": "老年综合征",
+      "synonyms": [
+        "浮肿",
+        "脚肿",
+        "腿肿"
+      ]
+    },
+    {
+      "code": "fatigue",
+      "term": "乏力疲劳",
+      "category": "老年综合征",
+      "synonyms": [
+        "没劲",
+        "浑身没力气",
+        "容易累"
+      ]
+    },
+    {
+      "code": "dizziness",
+      "term": "头晕",
+      "category": "躯体功能",
+      "synonyms": [
+        "晕乎",
+        "脑袋发晕",
+        "头昏"
+      ]
+    },
+    {
+      "code": "syncope",
+      "term": "晕厥",
+      "category": "躯体功能",
+      "synonyms": [
+        "晕过去",
+        "昏倒",
+        "眼前一黑倒了"
+      ]
+    },
+    {
+      "code": "fracture_history",
+      "term": "骨折史",
+      "category": "躯体功能",
+      "synonyms": [
+        "摔断过骨头",
+        "骨折过"
+      ]
+    },
+    {
+      "code": "pain_chronic",
+      "term": "慢性疼痛",
+      "category": "老年综合征",
+      "synonyms": [
+        "长期疼",
+        "一直痛",
+        "老毛病疼"
+      ]
+    },
+    {
+      "code": "chest_pain",
+      "term": "胸痛胸闷",
+      "category": "急症预警",
+      "synonyms": [
+        "胸口疼",
+        "心口疼",
+        "憋气胸闷",
+        "胸口压得慌"
+      ]
+    },
+    {
+      "code": "dyspnea",
+      "term": "呼吸困难",
+      "category": "急症预警",
+      "synonyms": [
+        "喘不上气",
+        "气短",
+        "喘得厉害"
+      ]
+    },
+    {
+      "code": "orthopnea",
+      "term": "夜间阵发性呼吸困难",
+      "category": "急症预警",
+      "synonyms": [
+        "半夜憋醒",
+        "晚上喘醒",
+        "躺下就喘"
+      ]
+    },
+    {
+      "code": "cough",
+      "term": "咳嗽",
+      "category": "呼吸系统",
+      "synonyms": [
+        "咳",
+        "干咳",
+        "咳嗽厉害"
+      ]
+    },
+    {
+      "code": "sputum",
+      "term": "咳痰",
+      "category": "呼吸系统",
+      "synonyms": [
+        "有痰",
+        "吐痰",
+        "痰多"
+      ]
+    },
+    {
+      "code": "fever",
+      "term": "发热",
+      "category": "急症预警",
+      "synonyms": [
+        "发烧",
+        "体温高",
+        "发冷"
+      ]
+    },
+    {
+      "code": "hemoptysis",
+      "term": "咯血",
+      "category": "急症预警",
+      "synonyms": [
+        "咳出血",
+        "痰里有血"
+      ]
+    },
+    {
+      "code": "palpitations",
+      "term": "心悸",
+      "category": "急症预警",
+      "synonyms": [
+        "心跳快",
+        "心慌",
+        "心跳得厉害"
+      ]
+    },
+    {
+      "code": "unilateral_leg_swelling",
+      "term": "单侧下肢肿胀",
+      "category": "急症预警",
+      "synonyms": [
+        "一条腿肿",
+        "左腿肿",
+        "右腿肿"
+      ]
+    },
+    {
+      "code": "aspiration_risk",
+      "term": "误吸呛咳",
+      "category": "老年综合征",
+      "synonyms": [
+        "喝水呛到",
+        "吃饭呛咳",
+        "误吸"
+      ]
+    },
+    {
+      "code": "dysphagia",
+      "term": "吞咽困难",
+      "category": "老年综合征",
+      "synonyms": [
+        "咽不下",
+        "喝水呛",
+        "吞东西费劲"
+      ]
+    },
+    {
+      "code": "dysarthria",
+      "term": "言语含糊",
+      "category": "精神心理",
+      "synonyms": [
+        "说话不清楚",
+        "口齿不清"
+      ]
+    },
+    {
+      "code": "tremor",
+      "term": "震颤",
+      "category": "精神心理",
+      "synonyms": [
+        "手抖",
+        "发抖"
+      ]
+    },
+    {
+      "code": "rigidity",
+      "term": "肌强直",
+      "category": "精神心理",
+      "synonyms": [
+        "身体僵硬",
+        "发僵"
+      ]
+    },
+    {
+      "code": "bradykinesia",
+      "term": "运动迟缓",
+      "category": "精神心理",
+      "synonyms": [
+        "动作慢",
+        "手脚慢"
+      ]
+    },
+    {
+      "code": "memory_decline",
+      "term": "记忆减退",
+      "category": "精神心理",
+      "synonyms": [
+        "忘事",
+        "记性差",
+        "想不起来"
+      ]
+    },
+    {
+      "code": "orientation_deficit",
+      "term": "定向力障碍",
+      "category": "精神心理",
+      "synonyms": [
+        "不知道日期",
+        "分不清白天黑夜",
+        "不知身在何处"
+      ]
+    },
+    {
+      "code": "delirium_fluctuation",
+      "term": "意识波动谵妄",
+      "category": "精神心理",
+      "synonyms": [
+        "一时清楚一时糊涂",
+        "说胡话",
+        "精神状态忽好忽坏"
+      ]
+    },
+    {
+      "code": "hallucination",
+      "term": "幻觉",
+      "category": "精神心理",
+      "synonyms": [
+        "看见不存在的东西",
+        "听到有人说话"
+      ]
+    },
+    {
+      "code": "depression",
+      "term": "情绪低落抑郁",
+      "category": "精神心理",
+      "synonyms": [
+        "不想活",
+        "心里堵得慌",
+        "情绪低落",
+        "老想哭"
+      ]
+    },
+    {
+      "code": "anxiety",
+      "term": "焦虑",
+      "category": "精神心理",
+      "synonyms": [
+        "心慌害怕",
+        "着急",
+        "坐立不安"
+      ]
+    },
+    {
+      "code": "insomnia",
+      "term": "入睡困难失眠",
+      "category": "老年综合征",
+      "synonyms": [
+        "睡不着",
+        "翻来覆去",
+        "入睡困难"
+      ]
+    },
+    {
+      "code": "nocturnal_awakening",
+      "term": "夜间易醒",
+      "category": "老年综合征",
+      "synonyms": [
+        "一晚上醒好几回",
+        "睡不踏实"
+      ]
+    },
+    {
+      "code": "social_isolation",
+      "term": "社会隔离",
+      "category": "社会与环境",
+      "synonyms": [
+        "没人说话",
+        "一个人待着",
+        "独居没人管"
+      ]
+    },
+    {
+      "code": "caregiver_burden",
+      "term": "照护负担",
+      "category": "社会与环境",
+      "synonyms": [
+        "照顾不过来",
+        "家里人都累"
+      ]
+    },
+    {
+      "code": "poor_sleep_quality",
+      "term": "睡眠质量差",
+      "category": "老年综合征",
+      "synonyms": [
+        "睡不踏实",
+        "休息不好"
+      ]
+    },
+    {
+      "code": "low_activity",
+      "term": "活动量下降",
+      "category": "生活方式",
+      "synonyms": [
+        "不运动",
+        "很少出门",
+        "老待在家里"
+      ]
+    },
+    {
+      "code": "smoking_history",
+      "term": "吸烟史",
+      "category": "生活方式",
+      "synonyms": [
+        "抽烟",
+        "吸烟"
+      ]
+    },
+    {
+      "code": "drinking_history",
+      "term": "饮酒史",
+      "category": "生活方式",
+      "synonyms": [
+        "喝酒",
+        "爱喝酒"
+      ]
+    },
+    {
+      "code": "polyuria",
+      "term": "多尿",
+      "category": "内分泌代谢",
+      "synonyms": [
+        "尿多",
+        "小便量多"
+      ]
+    },
+    {
+      "code": "polypharmacy",
+      "term": "多重用药",
+      "category": "用药",
+      "synonyms": [
+        "吃很多种药",
+        "一长串药"
+      ]
+    },
+    {
+      "code": "hypoglycemia_symptom",
+      "term": "低血糖表现",
+      "category": "内分泌代谢",
+      "synonyms": [
+        "心慌手抖出汗",
+        "低血糖"
+      ]
+    },
+    {
+      "code": "hyperglycemia_symptom",
+      "term": "高血糖表现",
+      "category": "内分泌代谢",
+      "synonyms": [
+        "口渴",
+        "多饮",
+        "高血糖"
+      ]
+    },
+    {
+      "code": "foot_ulcer",
+      "term": "糖尿病足溃疡",
+      "category": "内分泌代谢",
+      "synonyms": [
+        "脚上烂了",
+        "脚底有伤口"
+      ]
+    },
+    {
+      "code": "vision_decline",
+      "term": "视力下降",
+      "category": "躯体功能",
+      "synonyms": [
+        "看不清",
+        "眼睛花了",
+        "视力差"
+      ]
+    },
+    {
+      "code": "hearing_decline",
+      "term": "听力下降",
+      "category": "躯体功能",
+      "synonyms": [
+        "听不清",
+        "耳朵背",
+        "要大声说话"
+      ]
+    },
+    {
+      "code": "home_safety_risk",
+      "term": "居家环境风险",
+      "category": "社会与环境",
+      "synonyms": [
+        "家里不安全",
+        "地上太滑",
+        "楼梯没扶手"
+      ]
+    },
+    {
+      "code": "medication_nonadherence",
+      "term": "服药依从性差",
+      "category": "用药",
+      "synonyms": [
+        "药经常忘吃",
+        "私自停药"
+      ]
+    },
+    {
+      "code": "dehydration",
+      "term": "脱水",
+      "category": "急症预警",
+      "synonyms": [
+        "脱水",
+        "缺水",
+        "嘴唇干"
+      ]
+    },
+    {
+      "code": "anemia_symptom",
+      "term": "贫血表现",
+      "category": "血液系统",
+      "synonyms": [
+        "脸色苍白",
+        "头晕眼花",
+        "贫血"
+      ]
+    },
+    {
+      "code": "bleeding_tendency",
+      "term": "出血倾向",
+      "category": "血液系统",
+      "synonyms": [
+        "容易出血",
+        "牙龈出血",
+        "身上有瘀斑"
+      ]
+    },
+    {
+      "code": "cachexia",
+      "term": "恶病质",
+      "category": "老年综合征",
+      "synonyms": [
+        "皮包骨",
+        "消耗样"
+      ]
+    },
+    {
+      "code": "skin_breakdown",
+      "term": "皮肤破损",
+      "category": "老年综合征",
+      "synonyms": [
+        "压疮",
+        "褥疮",
+        "皮肤破"
+      ]
+    },
+    {
+      "code": "abdominal_pain",
+      "term": "腹痛",
+      "category": "消化系统",
+      "synonyms": [
+        "肚子疼",
+        "腹痛"
+      ]
+    },
+    {
+      "code": "nausea_vomiting",
+      "term": "恶心呕吐",
+      "category": "消化系统",
+      "synonyms": [
+        "恶心",
+        "想吐",
+        "吐了"
+      ]
+    },
+    {
+      "code": "diarrhea",
+      "term": "腹泻",
+      "category": "消化系统",
+      "synonyms": [
+        "拉肚子",
+        "稀便"
+      ]
+    },
+    {
+      "code": "melena",
+      "term": "黑便便血",
+      "category": "急症预警",
+      "synonyms": [
+        "黑便",
+        "柏油样便",
+        "大便带血"
+      ]
+    },
+    {
+      "code": "hematemesis",
+      "term": "呕血",
+      "category": "急症预警",
+      "synonyms": [
+        "吐血",
+        "呕血"
+      ]
+    },
+    {
+      "code": "jaundice",
+      "term": "黄疸",
+      "category": "消化系统",
+      "synonyms": [
+        "皮肤发黄",
+        "眼白发黄"
+      ]
+    },
+    {
+      "code": "edema_heart",
+      "term": "心源性水肿",
+      "category": "心血管",
+      "synonyms": [
+        "心脏不好腿肿",
+        "全身浮肿"
+      ]
+    },
+    {
+      "code": "orthostatic_hypotension",
+      "term": "体位性低血压",
+      "category": "心血管",
+      "synonyms": [
+        "一起身就头晕",
+        "站起来眼前发黑"
+      ]
+    },
+    {
+      "code": "snoring",
+      "term": "打鼾",
+      "category": "呼吸系统",
+      "synonyms": [
+        "打呼噜",
+        "睡觉打鼾"
+      ]
+    },
+    {
+      "code": "daytime_somnolence",
+      "term": "日间嗜睡",
+      "category": "老年综合征",
+      "synonyms": [
+        "白天老打瞌睡",
+        "总是睡不够"
+      ]
+    },
+    {
+      "code": "weight_bearing_pain",
+      "term": "负重疼痛",
+      "category": "肌肉骨骼",
+      "synonyms": [
+        "走远路腿疼",
+        "上下楼膝盖疼"
+      ]
+    },
+    {
+      "code": "joint_pain",
+      "term": "关节痛",
+      "category": "肌肉骨骼",
+      "synonyms": [
+        "关节疼",
+        "膝盖疼",
+        "腰疼"
+      ]
+    },
+    {
+      "code": "urinary_retention",
+      "term": "尿潴留",
+      "category": "泌尿系统",
+      "synonyms": [
+        "尿不出",
+        "膀胱胀"
+      ]
+    },
+    {
+      "code": "dementia_daily_function",
+      "term": "认知影响生活自理",
+      "category": "精神心理",
+      "synonyms": [
+        "自己照顾不了自己",
+        "忘事忘得厉害"
+      ]
+    },
+    {
+      "code": "repetitive_questioning",
+      "term": "反复提问",
+      "category": "精神心理",
+      "synonyms": [
+        "老问同样的问题",
+        "刚说过就忘"
+      ]
+    },
+    {
+      "code": "night_wandering",
+      "term": "夜间游走",
+      "category": "精神心理",
+      "synonyms": [
+        "半夜乱走",
+        "夜里不睡乱跑"
+      ]
+    },
+    {
+      "code": "peripheral_sensory_loss",
+      "term": "周围神经病变／肢体感觉减退",
+      "category": "躯体功能",
+      "synonyms": [
+        "手脚麻木",
+        "腿脚发麻",
+        "身上发麻",
+        "感觉减退"
+      ]
+    },
+    {
+      "code": "cold_feet",
+      "term": "足部发凉",
+      "category": "躯体功能",
+      "synonyms": [
+        "脚凉",
+        "脚冷",
+        "脚底发凉",
+        "腿发凉"
+      ]
+    },
+    {
+      "code": "intermittent_claudication",
+      "term": "间歇性跛行",
+      "category": "躯体功能",
+      "synonyms": [
+        "走一段要歇",
+        "走几步就疼要站住",
+        "走路要停下来歇"
+      ]
+    },
+    {
+      "code": "proteinuria",
+      "term": "尿泡沫增多",
+      "category": "内分泌代谢",
+      "synonyms": [
+        "泡沫尿",
+        "尿里有泡沫",
+        "尿泡沫多"
+      ]
+    },
+    {
+      "code": "ketone_breath",
+      "term": "呼气有烂苹果味",
+      "category": "急症预警",
+      "synonyms": [
+        "烂苹果味",
+        "口气有烂苹果味",
+        "酮体阳性"
+      ]
+    },
+    {
+      "code": "deep_breathing",
+      "term": "呼吸深快",
+      "category": "急症预警",
+      "synonyms": [
+        "深大呼吸",
+        "呼吸又深又快",
+        "呼吸深而快"
+      ]
+    },
+    {
+      "code": "polyphagia",
+      "term": "多食易饥",
+      "category": "内分泌代谢",
+      "synonyms": [
+        "总是饿",
+        "吃得多",
+        "容易饿",
+        "饿得快"
+      ]
+    },
+    {
+      "code": "recurrent_infection",
+      "term": "反复感染",
+      "category": "老年综合征",
+      "synonyms": [
+        "老是好不了",
+        "反复感冒",
+        "反复尿路感染",
+        "感染老是反复"
+      ]
+    },
+    {
+      "code": "abdominal_distension",
+      "term": "腹胀",
+      "category": "消化系统",
+      "synonyms": [
+        "肚子胀",
+        "肚子鼓胀",
+        "胀得慌"
+      ]
+    },
+    {
+      "code": "no_flatus_or_defecation",
+      "term": "停止排气排便",
+      "category": "消化系统",
+      "synonyms": [
+        "不放屁",
+        "不排气",
+        "不排便也不排气"
+      ]
+    },
+    {
+      "code": "hip_pain",
+      "term": "髋部疼痛",
+      "category": "肌肉骨骼",
+      "synonyms": [
+        "髋关节痛",
+        "大腿根疼",
+        "腹股沟疼",
+        "胯骨疼"
+      ]
+    },
+    {
+      "code": "limb_deformity",
+      "term": "患肢短缩或外旋畸形",
+      "category": "肌肉骨骼",
+      "synonyms": [
+        "腿变短了",
+        "脚歪了",
+        "患肢外旋"
+      ]
+    },
+    {
+      "code": "morning_stiffness",
+      "term": "晨僵",
+      "category": "肌肉骨骼",
+      "synonyms": [
+        "早上僵",
+        "起床关节僵硬",
+        "早晨关节不利索"
+      ]
+    },
+    {
+      "code": "joint_swelling",
+      "term": "关节肿胀",
+      "category": "肌肉骨骼",
+      "synonyms": [
+        "关节肿",
+        "膝盖肿",
+        "关节发肿"
+      ]
+    },
+    {
+      "code": "vesicular_rash",
+      "term": "簇集性水疱",
+      "category": "皮肤与软组织",
+      "synonyms": [
+        "一串水疱",
+        "簇集水疱",
+        "带状疱疹皮疹",
+        "起疱疹"
+      ]
+    },
+    {
+      "code": "urinary_appearance_change",
+      "term": "尿液性状改变",
+      "category": "泌尿系统",
+      "synonyms": [
+        "尿液浑浊",
+        "尿有异味",
+        "尿色浑浊有味"
+      ]
+    },
+    {
+      "code": "weak_urine_stream",
+      "term": "尿线变细",
+      "category": "泌尿系统",
+      "synonyms": [
+        "尿线细",
+        "排尿要等一会儿",
+        "尿越来越细"
+      ]
+    },
+    {
+      "code": "anosmia",
+      "term": "嗅觉减退",
+      "category": "躯体功能",
+      "synonyms": [
+        "闻不到味",
+        "嗅觉不灵",
+        "闻不出饭菜味"
+      ]
+    }
   ]
 }

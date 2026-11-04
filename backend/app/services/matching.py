@@ -41,6 +41,12 @@ class MatchingWeights:
     temperature: float = 10.0
     global_threshold: float = 60.0
     top_n: int = 5
+    # 区分度加权：共享症状（很多病都有）权重下调，独有症状上调
+    distinctive_weighting: bool = True
+    idf_floor: float = 0.5
+    idf_cap: float = 2.0
+    # 症状组合命中时的额外加分（以一个核心症状的权重量级计）
+    pattern_bonus: float = 3.0
 
     def to_dict(self) -> dict[str, float]:
         return {
@@ -50,6 +56,10 @@ class MatchingWeights:
             "protective_penalty": self.protective_penalty,
             "temperature": self.temperature,
             "global_threshold": self.global_threshold,
+            "distinctive_weighting": self.distinctive_weighting,
+            "idf_floor": self.idf_floor,
+            "idf_cap": self.idf_cap,
+            "pattern_bonus": self.pattern_bonus,
         }
 
 
@@ -110,6 +120,80 @@ def _history_match(disease: dict, conditions: set[str]) -> bool:
     return False
 
 
+def _document_frequency(diseases: list[dict]) -> dict[str, int]:
+    """统计每个症状出现在多少个病种里（区分度的分母）。"""
+    counter: dict[str, int] = {}
+    for disease in diseases:
+        payload = disease.get("payload") or disease
+        codes = {item.get("code", "") for item in payload.get("symptoms", []) or []}
+        for code in codes:
+            if code:
+                counter[code] = counter.get(code, 0) + 1
+    return counter
+
+
+def _idf_multiplier(code: str, df: dict[str, int], total: int, floor: float, cap: float) -> float:
+    """区分度系数：出现在越多病种的症状，权重越低。
+
+    命中 1 个病种 → cap（2.0，独有症状，说明力强）；
+    命中全部病种 → floor（0.5，共享症状，说明力弱）。
+    """
+    if total <= 0:
+        return 1.0
+    seen = df.get(code, 0)
+    if seen <= 0:
+        return cap
+    raw = math.log(1 + total / seen)
+    normalized = raw / math.log(1 + total)
+    return max(floor, min(cap, normalized * cap))
+
+
+def _annotate_distinctiveness(candidates: list[dict]) -> None:
+    """标注区分性症状与共享症状，回答「为什么是它而不是别的」。
+
+    同一症状若被多个候选同时命中，说明该症状区分度低（很多病都有）；
+    只被本候选命中，则是该病的区分性线索。
+    """
+    owners: dict[str, list[str]] = {}
+    for candidate in candidates:
+        for item in candidate.get("hit_symptoms", []):
+            code = item.get("code", "")
+            if not code or code.startswith(("history:", "pattern:")):
+                continue
+            owners.setdefault(code, []).append(candidate["disease_code"])
+
+    for candidate in candidates:
+        distinctive: list[dict] = []
+        shared: list[dict] = []
+        for item in candidate.get("hit_symptoms", []):
+            code = item.get("code", "")
+            if not code or code.startswith(("history:", "pattern:")):
+                continue
+            others = [owner for owner in owners.get(code, []) if owner != candidate["disease_code"]]
+            if others:
+                item["shared_with"] = others
+                shared.append(
+                    {
+                        "code": code,
+                        "term": item.get("term", code),
+                        "shared_with": others,
+                        "note": f"该症状在 {len(others) + 1} 个候选中同时出现，区分度低",
+                    }
+                )
+            else:
+                distinctive.append(
+                    {
+                        "code": code,
+                        "term": item.get("term", code),
+                        "weight": item.get("weight"),
+                        "distinctive": item.get("distinctive"),
+                        "note": "仅本候选命中，是支持本病的关键线索",
+                    }
+                )
+        candidate["distinctive_symptoms"] = distinctive
+        candidate["shared_symptoms"] = shared
+
+
 def run_matching(
     diseases: list[dict],
     evidence: dict,
@@ -119,6 +203,10 @@ def run_matching(
     """执行匹配，返回 Top-N 候选与分级提醒。"""
     symptom_codes: set[str] = evidence.get("symptom_codes", set())
     conditions: set[str] = evidence.get("conditions", set())
+
+    # 区分度系数：共享症状（很多病都有）权重下调，独有症状上调
+    df = _document_frequency(diseases)
+    total_diseases = len(diseases)
 
     scored: list[dict] = []
     for disease in diseases:
@@ -134,13 +222,28 @@ def run_matching(
         for symptom in symptom_list:
             code = symptom.get("code", "")
             weight = symptom.get("weight", "secondary")
-            score = weights.core if weight == "core" else weights.secondary
+            base = weights.core if weight == "core" else weights.secondary
+            multiplier = (
+                _idf_multiplier(code, df, total_diseases, weights.idf_floor, weights.idf_cap)
+                if weights.distinctive_weighting
+                else 1.0
+            )
+            score = base * multiplier
             max_possible += score
             if code in symptom_codes:
                 raw += score
                 if weight == "core":
                     core_hits += 1
-                hit.append({"code": code, "term": symptom_term(code), "weight": weight, "points": score})
+                hit.append(
+                    {
+                        "code": code,
+                        "term": symptom_term(code),
+                        "weight": weight,
+                        "points": round(score, 2),
+                        "distinctive": round(multiplier, 2),
+                        "shared_with": [],
+                    }
+                )
             else:
                 missing.append({"code": code, "term": symptom_term(code), "weight": weight})
 
@@ -223,6 +326,25 @@ def run_matching(
             if item.get("code") and item.get("code") in symptom_codes
         ]
 
+        # 症状组合模式：医生看的是「组合」而非单个症状，组合全中额外加分
+        pattern_hits: list[dict] = []
+        for pattern in payload.get("patterns", []) or []:
+            codes = [code for code in pattern.get("symptoms", []) or [] if code]
+            if len(codes) < 2:
+                continue
+            if all(code in symptom_codes for code in codes):
+                bonus = float(pattern.get("bonus", weights.pattern_bonus) or 0)
+                raw += bonus
+                pattern_hits.append(
+                    {
+                        "code": f"pattern:{disease.get('code', '')}:{len(codes)}",
+                        "term": pattern.get("note", "症状组合命中"),
+                        "weight": "pattern",
+                        "points": bonus,
+                        "symptoms": codes,
+                    }
+                )
+
         match_score = 0.0 if max_possible <= 0 else max(0.0, min(100.0, raw / max_possible * 100.0))
         scored.append(
             {
@@ -233,6 +355,7 @@ def run_matching(
                 "raw_score": round(raw, 2),
                 "match_score": round(match_score, 2),
                 "hit_symptoms": hit,
+                "pattern_hits": pattern_hits,
                 "missing_symptoms": missing,
                 "excluded_reasons": excluded,
                 "red_flags": red_flag_hits,
@@ -281,6 +404,8 @@ def run_matching(
 
     for rank, item in enumerate(candidates, start=1):
         item["rank"] = rank
+
+    _annotate_distinctiveness(candidates)
 
     alert = _decide_alert(candidates, thresholds, weights)
     return MatchOutcome(
