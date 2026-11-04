@@ -432,7 +432,17 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
   "thresholds": { "global": 60.0, "I21": 55.0 },
   "candidates": [ { "rank": 1, "disease_code": "I21", "disease_name": "急性心肌梗死",
                     "match_score": 75.0, "ref_probability": 27.09,
-                    "hit_symptoms": [ { "code": "history:I21", "term": "既往病史：2 型糖尿病", "weight": "history" } ],
+                    "hit_symptoms": [ { "code": "history:I21", "term": "既往病史：2 型糖尿病", "weight": "history" },
+                                      { "code": "chest_pain", "term": "胸痛胸闷", "weight": "core",
+                                        "points": 4.8, "distinctive": 1.6, "shared_with": [] } ],
+                    "pattern_hits": [ { "code": "pattern:I21:3", "term": "胸痛 + 气促 + 心悸同时出现…",
+                                        "weight": "pattern", "points": 3.0,
+                                        "symptoms": ["chest_pain", "dyspnea", "palpitations"] } ],
+                    "distinctive_symptoms": [ { "code": "chest_pain", "term": "胸痛胸闷", "weight": "core",
+                                                "distinctive": 1.6, "note": "仅本候选命中，是支持本病的关键线索" } ],
+                    "shared_symptoms": [ { "code": "fatigue", "term": "乏力疲劳",
+                                           "shared_with": ["A41", "J18"],
+                                           "note": "该症状在 3 个候选中同时出现，区分度低" } ],
                     "missing_symptoms": [ { "code": "polyuria", "term": "多尿", "weight": "core" } ],
                     "excluded_reasons": [ { "vs_code": "I10", "reason": "…", "points": -8 } ],
                     "red_flags": [ { "code": "chest_pain", "term": "持续胸痛或胸部压榨感", "note": "超过 20 分钟不缓解需呼叫 120" } ],
@@ -456,6 +466,10 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
 - `risk_factor_hits` = 该老人已具备的高危因素（仅当疾病库条目写了 `code` 时才会出现）
 - `risk_factors` = 该病的完整高危因素清单（医护阅读用，不参与打分）
 - `excluded_reasons[].points` 为负值（扣分）；扣分总额以命中得分的 50% 封顶
+- `hit_symptoms[].distinctive` = 该症状的**区分度系数**（0.5~2.0）：出现在越多病种的症状系数越低（共享症状说明力弱），只在一两个病种出现的系数接近 2.0（独有线索说明力强）
+- `distinctive_symptoms` = **只命中本候选**的症状（支持本病的关键线索）
+- `shared_symptoms` = **多个候选同时命中**的症状，附 `shared_with`（还有哪些候选命中）与区分度提示
+- `pattern_hits` = 命中的**症状组合**（医生初诊看的是组合）；组合内症状全部命中时额外加分
 
 ### GET `/matching/runs?patient_id=` ✅ → 裸数组（最多 50 条）
 ### GET `/matching/runs/{run_id}` ✅ → 同 POST 响应结构
