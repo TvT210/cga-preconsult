@@ -110,7 +110,14 @@ async function main() {
     {
       account: "nurse",
       label: "staff",
-      routes: ["/staff", "/staff/patients", "/staff/patients/1", "/staff/review/1", "/staff/config"],
+      routes: [
+        "/staff",
+        "/staff/patients",
+        "/staff/patients/1",
+        "/staff/review/1",
+        "/staff/quality",
+        "/staff/config",
+      ],
     },
   ];
 

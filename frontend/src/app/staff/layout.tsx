@@ -7,6 +7,7 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 const NAV = [
   { href: "/staff", label: "评估任务" },
   { href: "/staff/patients", label: "患者管理" },
+  { href: "/staff/quality", label: "质控看板" },
   { href: "/staff/config", label: "配置与质控" },
 ];
 

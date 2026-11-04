@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { BigButton } from "./BigButton";
 import type { AlertItem, AlertLevel } from "@/lib/types";
 
@@ -20,7 +21,12 @@ const STATUS_LABEL: Record<string, string> = {
   handled: "已处理",
   closed: "已关闭",
   escalated: "已升级",
+  escalate: "已升级",
+  ack: "已知悉",
 };
+
+/** 提醒处理动作（契约 §9） */
+export type AlertAction = "ack" | "escalate" | "close" | "mark_false" | "revoke_false";
 
 export function alertStatusLabel(status?: string): string {
   if (!status) return "未知状态";
@@ -29,6 +35,7 @@ export function alertStatusLabel(status?: string): string {
 
 /**
  * 就医提醒卡片。提醒固定附带免责声明。
+ * 支持「标记误报」，该动作用于累计质控看板上的误报率。
  */
 export function AlertCard({
   alert,
@@ -37,9 +44,12 @@ export function AlertCard({
 }: {
   alert: AlertItem;
   /** 医护端处理回调，传入 action 与备注 */
-  onHandle?: (action: "ack" | "escalate" | "close", comment: string) => void;
+  onHandle?: (action: AlertAction, comment: string) => void;
   handling?: boolean;
 }) {
+  const [confirmFalse, setConfirmFalse] = useState(false);
+  const [markedFalse, setMarkedFalse] = useState(Boolean(alert.is_false_positive));
+
   const meta = LEVEL_META[alert.level] ?? {
     label: alert.level ?? "未分级",
     cls: "bg-slate-100 text-ink-soft border-slate-300",
@@ -54,6 +64,11 @@ export function AlertCard({
         <span className="rounded-full bg-slate-100 px-3 py-1 text-elder text-ink-soft">
           {alertStatusLabel(alert.status)}
         </span>
+        {markedFalse ? (
+          <span className="rounded-full border-2 border-red-300 bg-red-50 px-3 py-1 text-elder font-semibold text-red-800">
+            已标记误报
+          </span>
+        ) : null}
         {alert.created_at ? (
           <span className="text-elder text-ink-mute">{formatTime(alert.created_at)}</span>
         ) : null}
@@ -65,33 +80,94 @@ export function AlertCard({
         <p className="mt-2 text-elder text-ink-soft">建议就诊科室：{alert.department}</p>
       ) : null}
 
+      {alert.handle_comment ? (
+        <p className="mt-2 text-elder text-ink-soft">
+          处理备注：{alert.handle_comment}
+          {alert.handled_by ? `（${alert.handled_by}）` : ""}
+        </p>
+      ) : null}
+
       <p className="mt-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2 text-elder text-amber-900">
-        结果仅供参考，不构成诊断，请及时咨询医生。
+        {alert.disclaimer ?? "结果仅供参考，不构成诊断，请及时咨询医生。"}
       </p>
 
       {onHandle ? (
-        <div className="mt-4 flex flex-wrap gap-3">
-          <BigButton
-            variant="secondary"
-            disabled={handling}
-            onClick={() => onHandle("ack", "已阅知")}
-          >
-            已知晓
-          </BigButton>
-          <BigButton
-            variant="warning"
-            disabled={handling}
-            onClick={() => onHandle("escalate", "升级处理")}
-          >
-            升级处理
-          </BigButton>
-          <BigButton
-            variant="ghost"
-            disabled={handling}
-            onClick={() => onHandle("close", "已关闭")}
-          >
-            关闭
-          </BigButton>
+        <div className="mt-4">
+          <div className="flex flex-wrap gap-3">
+            <BigButton
+              variant="secondary"
+              disabled={handling}
+              onClick={() => onHandle("ack", "已阅知")}
+            >
+              已知晓
+            </BigButton>
+            <BigButton
+              variant="warning"
+              disabled={handling}
+              onClick={() => onHandle("escalate", "升级处理")}
+            >
+              升级处理
+            </BigButton>
+            <BigButton
+              variant="ghost"
+              disabled={handling}
+              onClick={() => onHandle("close", "已关闭")}
+            >
+              关闭
+            </BigButton>
+            {markedFalse ? (
+              <BigButton
+                variant="ghost"
+                disabled={handling}
+                onClick={() => {
+                  setMarkedFalse(false);
+                  onHandle("revoke_false", "撤销误报标记");
+                }}
+              >
+                撤销误报
+              </BigButton>
+            ) : (
+              <BigButton
+                variant="danger"
+                disabled={handling}
+                onClick={() => setConfirmFalse(true)}
+              >
+                标记误报
+              </BigButton>
+            )}
+          </div>
+
+          {confirmFalse ? (
+            <div className="mt-4 rounded-xl2 border-2 border-red-300 bg-red-50 p-4">
+              <p className="text-elder font-semibold text-red-800">
+                确认将该提醒标记为误报？
+              </p>
+              <p className="mt-2 text-elder text-red-800">
+                标记后该提醒会关闭，并计入质控看板的「误报率」指标
+                （误报率 = 标记误报数 ÷ 高等级提醒数），用于持续校准提醒触发规则。
+              </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <BigButton
+                  variant="danger"
+                  disabled={handling}
+                  onClick={() => {
+                    setConfirmFalse(false);
+                    setMarkedFalse(true);
+                    onHandle("mark_false", "经医护判断为误报");
+                  }}
+                >
+                  确认标记误报
+                </BigButton>
+                <BigButton
+                  variant="ghost"
+                  disabled={handling}
+                  onClick={() => setConfirmFalse(false)}
+                >
+                  取消
+                </BigButton>
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </article>

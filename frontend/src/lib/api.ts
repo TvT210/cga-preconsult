@@ -1,5 +1,17 @@
 import { toast } from "./toast";
 import { clearSession, getToken, setToken } from "./session";
+import type {
+  AlertItem,
+  AssessmentListItem,
+  DiseaseListResponse,
+  MatchRunDetail,
+  MatchRunListItem,
+  Paged,
+  Patient,
+  QualityMetrics,
+  ScaleStatBucket,
+  StatsOverview,
+} from "./types";
 
 /**
  * 后端接口统一封装。
@@ -138,4 +150,302 @@ export const api = {
 /** 登录接口使用：保存 token */
 export function persistToken(token: string): void {
   setToken(token);
+}
+
+/* ------------------------------------------------------------------ */
+/* 质控指标：管理员接口 + 权限降级路径                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 质控数据获取结果。
+ * - `degraded = false`：直接来自 `GET /admin/quality-metrics`（管理员账号）。
+ * - `degraded = true`：管理员接口返回 403，已改用公开接口自行聚合，
+ *   此时 `unavailable` 里列出的指标前端需要标注「需管理员权限」。
+ */
+export interface QualityMetricsResult {
+  metrics: QualityMetrics;
+  degraded: boolean;
+  /** 降级模式下无法获得的指标键 */
+  unavailable: string[];
+  /** 降级说明，直接展示在页面上 */
+  degradedNote?: string;
+}
+
+/** 列表接口的两种返回形态统一取数组 */
+function toItems<T>(payload: T[] | Paged<T> | null | undefined): T[] {
+  if (!payload) return [];
+  if (Array.isArray(payload)) return payload;
+  return payload.items ?? [];
+}
+
+/** 计算比例，分母为 0 时返回 null（表示暂无数据，不编造 0） */
+function ratio(numerator: number, denominator: number): number | null {
+  if (!denominator) return null;
+  return Math.round((numerator / denominator) * 10000) / 10000;
+}
+
+/** 计算均值，空数组返回 null */
+function mean(values: number[]): number | null {
+  if (!values.length) return null;
+  const sum = values.reduce((acc, item) => acc + item, 0);
+  return Math.round((sum / values.length) * 100) / 100;
+}
+
+/** 降级聚合时最多覆盖多少位患者的评估明细 */
+const FALLBACK_PATIENT_LIMIT = 20;
+/** 降级聚合时最多解析多少个匹配批次 */
+const FALLBACK_RUN_LIMIT = 20;
+
+/**
+ * 质控指标的降级聚合：管理员接口 403 时，用医护角色可访问的公开接口自行计算。
+ *
+ * 可计算：评估完成率 / 复核率 / 异常检出率 / 待确认率 / 量表分布 /
+ *         提醒响应率 / 高等级提醒占比 / Top1 匹配度均值 / Top1-Top2 差值 /
+ *         AI 复核覆盖率 / 疾病库覆盖率。
+ * 不可计算：计分一致率（需复核改分明细）、误报率（提醒列表未返回误报标记）、
+ *         匹配准确率与召回率（需人工标注集）。
+ */
+async function aggregateQualityMetrics(): Promise<QualityMetricsResult> {
+  const unavailable: string[] = [];
+
+  const [statsResult, patientsResult, alertsResult, runsResult, diseasesResult] =
+    await Promise.allSettled([
+      request<StatsOverview>("/admin/stats/overview", { silent: true }),
+      request<Patient[] | Paged<Patient>>("/patients", {
+        query: { size: 100 },
+        silent: true,
+      }),
+      request<AlertItem[] | Paged<AlertItem>>("/alerts", { silent: true }),
+      request<MatchRunListItem[] | Paged<MatchRunListItem>>("/matching/runs", {
+        silent: true,
+      }),
+      request<DiseaseListResponse>("/diseases", { silent: true }),
+    ]);
+
+  const stats =
+    statsResult.status === "fulfilled" ? (statsResult.value ?? {}) : ({} as StatsOverview);
+  const patients =
+    patientsResult.status === "fulfilled" ? toItems(patientsResult.value) : [];
+  const alerts = alertsResult.status === "fulfilled" ? toItems(alertsResult.value) : [];
+  const runs = runsResult.status === "fulfilled" ? toItems(runsResult.value) : [];
+  const diseases =
+    diseasesResult.status === "fulfilled" ? (diseasesResult.value?.diseases ?? []) : [];
+
+  // ---- 评估明细：逐患者拉取（受限于降级聚合上限）----
+  const scopedPatients = patients.slice(0, FALLBACK_PATIENT_LIMIT);
+  const perPatient = await Promise.allSettled(
+    scopedPatients.map((patient) =>
+      request<AssessmentListItem[] | Paged<AssessmentListItem>>(
+        `/patients/${patient.id}/assessments`,
+        { silent: true },
+      ),
+    ),
+  );
+  const sessions: AssessmentListItem[] = [];
+  perPatient.forEach((item) => {
+    if (item.status === "fulfilled") sessions.push(...toItems(item.value));
+  });
+
+  const scored = sessions.filter((item) => Boolean(item.score));
+  const finished = sessions.filter(
+    (item) => item.status === "finished" || item.status === "reviewed",
+  );
+  const reviewed = sessions.filter((item) => item.status === "reviewed");
+  const abnormal = scored.filter((item) => item.score?.abnormal);
+  const pending = scored.filter(
+    (item) => item.score?.needs_manual_review && item.status !== "reviewed",
+  );
+
+  const scaleStats: Record<string, ScaleStatBucket> = {};
+  sessions.forEach((item) => {
+    const bucket = scaleStats[item.scale_code] ?? { total: 0, abnormal: 0, pending: 0 };
+    bucket.total = (bucket.total ?? 0) + 1;
+    if (item.score?.abnormal) bucket.abnormal = (bucket.abnormal ?? 0) + 1;
+    if (item.score?.needs_manual_review && item.status !== "reviewed") {
+      bucket.pending = (bucket.pending ?? 0) + 1;
+    }
+    scaleStats[item.scale_code] = bucket;
+  });
+
+  // ---- 提醒闭环 ----
+  const handled = alerts.filter((item) =>
+    ["ack", "closed", "escalate", "escalated"].includes(item.status ?? ""),
+  ).length;
+  const escalated = alerts.filter((item) =>
+    ["escalate", "escalated"].includes(item.status ?? ""),
+  ).length;
+  const triggered = alerts.filter(
+    (item) => item.level === "immediate" || item.level === "urgent",
+  ).length;
+
+  // ---- 匹配效果：逐批次取候选 ----
+  const runDetails = await Promise.allSettled(
+    runs.slice(0, FALLBACK_RUN_LIMIT).map((run) =>
+      request<MatchRunDetail>(`/matching/runs/${run.id}`, { silent: true }),
+    ),
+  );
+  const topScores: number[] = [];
+  const gaps: number[] = [];
+  const hitDiseases = new Set<string>();
+  runDetails.forEach((item) => {
+    if (item.status !== "fulfilled") return;
+    const candidates = [...(item.value?.candidates ?? [])].sort(
+      (left, right) => (left.rank ?? 0) - (right.rank ?? 0),
+    );
+    if (candidates.length) topScores.push(candidates[0].match_score ?? 0);
+    if (candidates.length > 1) {
+      gaps.push(
+        Math.round(((candidates[0].match_score ?? 0) - (candidates[1].match_score ?? 0)) * 100) /
+          100,
+      );
+    }
+    candidates.forEach((candidate) => {
+      if (candidate.disease_code) hitDiseases.add(candidate.disease_code);
+    });
+  });
+
+  const totalRuns = Number(stats.match_runs ?? runs.length) || runs.length;
+  const aiReviews = Number(stats.ai_reviews ?? 0);
+
+  const metrics: QualityMetrics = {
+    assessment_completion_rate: ratio(finished.length, sessions.length),
+    review_rate: ratio(reviewed.length, scored.length),
+    abnormal_detection_rate: ratio(abnormal.length, scored.length),
+    pending_confirmation_rate: ratio(pending.length, scored.length),
+    // 复核改分明细不公开，降级模式无法计算
+    scoring_consistency: null,
+    scoring_consistency_samples: 0,
+    alert_response_rate: ratio(handled, alerts.length),
+    alert_escalation_rate: ratio(escalated, alerts.length),
+    high_level_alert_ratio: ratio(triggered, alerts.length),
+    // 提醒列表未返回误报标记，降级模式无法计算
+    false_alert_rate: null,
+    false_alert_samples: 0,
+    match_accuracy: null,
+    match_recall: null,
+    top1_match_score_avg: mean(topScores),
+    top1_top2_gap_avg: mean(gaps),
+    ai_review_coverage: ratio(aiReviews, totalRuns),
+    disease_library_coverage: ratio(hitDiseases.size, diseases.length),
+    disease_library_size: diseases.length,
+    disease_hit_count: hitDiseases.size,
+    scale_stats: scaleStats,
+    stats: stats as unknown as Record<string, unknown>,
+    note: "降级模式：由公开接口自行聚合，部分指标口径与管理员接口略有差异。",
+  };
+
+  unavailable.push("scoring_consistency", "false_alert_rate");
+
+  return {
+    metrics,
+    degraded: true,
+    unavailable,
+    degradedNote:
+      "当前账号无质控接口权限（管理员专用），以下指标由公开接口自行聚合，计分一致率与误报率需管理员权限。",
+  };
+}
+
+/**
+ * 拉取质控指标。
+ * 优先走管理员接口 `GET /admin/quality-metrics`；
+ * 医护（staff/doctor）账号会拿到 403，此时自动降级为公开接口聚合结果。
+ */
+export async function fetchQualityMetrics(): Promise<QualityMetricsResult> {
+  try {
+    const metrics = await request<QualityMetrics>("/admin/quality-metrics", {
+      silent: true,
+    });
+    return { metrics: metrics ?? {}, degraded: false, unavailable: [] };
+  } catch (err) {
+    if (!(err instanceof ApiError) || err.status !== 403) throw err;
+    return aggregateQualityMetrics();
+  }
+}
+
+/** 单个匹配批次的 Top1 匹配度与 Top1-Top2 差值（趋势图数据点） */
+export interface MatchScorePoint {
+  runId: string | number;
+  createdAt?: string;
+  /** Top1 候选的匹配度 */
+  top1: number;
+  /** Top1 与 Top2 的匹配度差值，批次只有 1 个候选时为 null */
+  gap: number | null;
+  diseaseName?: string;
+}
+
+/**
+ * 拉取匹配批次的 Top1 趋势序列。
+ * 管理员质控接口只提供均值，画趋势图需要逐批次数据，故单独取。
+ */
+export async function fetchMatchScoreSeries(
+  limit = 20,
+): Promise<MatchScorePoint[]> {
+  const runs = await request<MatchRunListItem[] | Paged<MatchRunListItem>>(
+    "/matching/runs",
+    { silent: true },
+  );
+  const list = toItems(runs).slice(0, limit);
+  const details = await Promise.allSettled(
+    list.map((run) => request<MatchRunDetail>(`/matching/runs/${run.id}`, { silent: true })),
+  );
+
+  const points: MatchScorePoint[] = [];
+  details.forEach((item, index) => {
+    if (item.status !== "fulfilled") return;
+    const run = list[index];
+    const candidates = [...(item.value?.candidates ?? [])].sort(
+      (left, right) => (left.rank ?? 0) - (right.rank ?? 0),
+    );
+    if (!candidates.length) return;
+    const top1 = candidates[0].match_score ?? 0;
+    points.push({
+      runId: run.id,
+      createdAt: run.created_at,
+      top1,
+      gap:
+        candidates.length > 1
+          ? Math.round(((top1 - (candidates[1].match_score ?? 0)) * 100)) / 100
+          : null,
+      diseaseName: candidates[0].disease_name,
+    });
+  });
+
+  // 按运行时间从早到晚排列，折线图时间轴才正确
+  return points.reverse();
+}
+
+/**
+ * 下载报告文件（Word / PDF）。
+ * 导出接口需要 Authorization 头，不能直接用浏览器地址栏跳转，故在此处带令牌取回二进制。
+ */export async function downloadReportFile(
+  reportId: string | number,
+  format: "docx" | "pdf",
+  fileName: string,
+): Promise<void> {
+  if (typeof document === "undefined") return;
+
+  const headers: Record<string, string> = { Accept: "*/*" };
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const response = await fetch(
+    buildUrl(`/reports/${reportId}/export`, { format }),
+    { headers, cache: "no-store" },
+  );
+
+  if (!response.ok) {
+    const error = new ApiError("报告导出失败，请稍后重试。", response.status, response.status);
+    toast(error.message, "error");
+    throw error;
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
 }
