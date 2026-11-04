@@ -1,0 +1,77 @@
+{
+  "code": "plain",
+  "name": "通俗版（老人与家属）",
+  "version": "0.2.0-draft",
+  "scene": "plain",
+  "review_status": "draft_pending_medical_review",
+  "template": {
+    "cover": {
+      "title": "我的健康评估报告",
+      "subtitle": "看得懂的老年综合评估",
+      "fields": [
+        { "key": "name", "label": "姓名" },
+        { "key": "age", "label": "年龄" },
+        { "key": "assessment_time", "label": "评估日期" },
+        { "key": "organization", "label": "评估机构" }
+      ],
+      "footer": "看不懂的地方，随时可以问工作人员"
+    },
+    "toc": [
+      { "ref": "basic", "label": "您的基本情况" },
+      { "ref": "scales", "label": "生活能做的事" },
+      { "ref": "positive", "label": "需要留意的地方" },
+      { "ref": "match", "label": "建议就医提醒" },
+      { "ref": "intervention", "label": "接下来可以怎么做" },
+      { "ref": "followup", "label": "下次什么时候再来" }
+    ],
+    "blocks": [
+      {
+        "ref": "basic",
+        "type": "kv",
+        "title": "一、您的基本情况",
+        "source": "basic",
+        "fields": [
+          { "key": "name", "label": "姓名" },
+          { "key": "gender", "label": "性别" },
+          { "key": "age", "label": "年龄" },
+          { "key": "assessment_time", "label": "评估日期" },
+          { "key": "organization", "label": "评估机构" }
+        ]
+      },
+      {
+        "ref": "scales",
+        "type": "plain_scales",
+        "title": "二、您日常生活能做到的事",
+        "source": "scale_results"
+      },
+      {
+        "ref": "positive",
+        "type": "plain_positive",
+        "title": "三、需要多留意的地方",
+        "source": "positive_list"
+      },
+      {
+        "ref": "match",
+        "type": "plain_match",
+        "title": "四、就医提醒",
+        "source": "disease_match"
+      },
+      {
+        "ref": "intervention",
+        "type": "categories",
+        "title": "五、接下来可以怎么做",
+        "source": "interventions"
+      },
+      {
+        "ref": "followup",
+        "type": "followup",
+        "title": "六、下次什么时候再来",
+        "source": "followup_plan"
+      }
+    ],
+    "signatures": [{ "role": "评估者", "name_key": "assessor" }],
+    "header": { "left": "我的健康评估报告", "right": "评估时间" },
+    "footer": { "left": "结果仅供参考，请听医生的", "right": "第 X 页 / 共 Y 页" },
+    "disclaimer": "这份报告帮您了解目前的情况，不能代替医生诊断。有疑问请咨询您的医生或家庭医生。"
+  }
+}

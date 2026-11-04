@@ -314,17 +314,34 @@ def handle_alert(
     user: User = Depends(require_staff),
     db: Session = Depends(get_db),
 ):
+    """处理就医提醒。
+
+    action：ack（已知悉）/ escalate（升级处理）/ close（关闭）/ mark_false（标记为误报）/ revoke_false（撤销误报标记）。
+    标记误报用于累计「误报率」这一质控指标。
+    """
     alert = db.get(Alert, alert_id)
     if alert is None:
         raise HTTPException(status_code=404, detail="提醒不存在")
     action = payload.get("action", "ack")
-    if action not in {"ack", "escalate", "close"}:
-        raise HTTPException(status_code=400, detail="action 仅支持 ack / escalate / close")
-    alert.status = action
+    if action not in {"ack", "escalate", "close", "mark_false", "revoke_false"}:
+        raise HTTPException(status_code=400, detail="action 仅支持 ack / escalate / close / mark_false / revoke_false")
+    if action == "mark_false":
+        alert.is_false_positive = True
+        alert.status = "closed"
+    elif action == "revoke_false":
+        alert.is_false_positive = False
+        alert.status = payload.get("status", "ack")
+    else:
+        alert.status = action
     alert.handled_by = user.full_name or user.username
     alert.handled_at = dt.datetime.now(dt.timezone.utc)
     alert.handle_comment = payload.get("comment", "")
     db.commit()
     audit.record(db, user, action, "alert", alert_id, {"comment": alert.handle_comment})
     db.commit()
-    return {"id": alert.id, "status": alert.status, "handled_by": alert.handled_by}
+    return {
+        "id": alert.id,
+        "status": alert.status,
+        "is_false_positive": alert.is_false_positive,
+        "handled_by": alert.handled_by,
+    }

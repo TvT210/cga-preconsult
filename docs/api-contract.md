@@ -350,9 +350,21 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
 
 ### POST `/reports` ✅（staff+）
 ```json
-{ "patient_id": 2, "title": "" }
+{ "patient_id": 2, "title": "", "template_code": "professional" }
 ```
-每次调用**新建一个版本**（v1、v2…），不幂等。响应 `data` 为报告对象。
+- `template_code` 可选，取值见 `GET /report-templates`；缺省为 `professional`。
+- 每次调用**新建一个版本**（v1、v2…），不幂等。响应 `data` 为报告对象。
+
+### GET `/report-templates` ✅
+```json
+[ { "code": "professional", "name": "专业版（临床医护）", "version": "0.2.0-draft",
+    "scene": "professional", "review_status": "draft_pending_medical_review", "active": true,
+    "created_at": "…" },
+  { "code": "plain", "name": "通俗版（老人与家属）", "version": "0.2.0-draft",
+    "scene": "plain", "review_status": "draft_pending_medical_review", "active": true,
+    "created_at": "…" } ]
+```
+报告结构由模板定义（封面/目录/分区/签署/页眉页脚/免责声明），模板基线见 `docs/structured/report-templates/`。
 
 ### GET `/reports?patient_id=` ✅ → 裸数组
 元素：`{ id, patient_id, version, title, locked, created_at }`
@@ -479,9 +491,41 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
 { "thresholds": [ { "id": 1, "scope": "global|disease", "disease_code": "I21", "threshold": 55.0,
                     "level": "immediate", "review_status": "…", "updated_by": "系统初始化",
                     "updated_at": "…", "comment": "…" } ],
-  "weights": { "core": 3.0, "secondary": 1.0, "history_bonus": 15.0,
-               "temperature": 10.0, "global_threshold": 60.0 } }
+  "weights": { "core": 3.0, "secondary": 1.0, "history_bonus": 15.0, "protective_penalty": 2.0,
+               "temperature": 10.0, "global_threshold": 60.0,
+               "distinctive_weighting": true, "idf_floor": 0.5, "idf_cap": 2.0, "pattern_bonus": 3.0 } }
 ```
+
+### POST `/matching/runs/{run_id}/ai-review` ✅（staff+）
+**AI 语义复核**：在规则引擎给出的候选之上做**语义消歧**，只给**建议**，不修改任何结论。
+
+```json
+{
+  "rerank": [ { "disease_code": "I21", "disease_name": "急性心肌梗死", "ai_rank": 1,
+                "rationale": "命中 2 项急症红旗征", "confidence": "high" } ],
+  "follow_ups": [ { "question": "老人有没有出现「心悸」这样的表现？",
+                    "reason": "「心悸」是本病的关键线索，缺失会影响判断的把握", "priority": "high" } ],
+  "explanations": { "I21": "（老年人可无典型胸痛…）请立即去医院急诊或拨打 120…" },
+  "disagreements": [ { "disease_code": "I21", "rule_view": "规则排序第一为 高血压急症",
+                       "ai_view": "语义上更倾向 急性心肌梗死",
+                       "note": "规则与语义判断不一致，请医师复核后决定是否采纳" } ],
+  "model": "mock-deterministic-v1", "prompt_version": "0.1.0-draft", "latency_ms": 12,
+  "notice": "AI 复核意见仅供参考，不构成诊断，请以医师判断为准。"
+}
+```
+
+**红线**：AI 不得输出诊断结论、不得修改 `match_score` / `ref_probability` / 阈值 / 提醒等级。
+`rerank` 是**建议顺序**，与规则排序并列展示，由医护裁决；`disagreements` 显式暴露两者分歧。
+`llm_provider = mock` 时走确定性模拟（离线可用），输出结构完全一致。
+
+### GET `/matching/runs/{run_id}/ai-review` ✅
+返回该批次**最近一次** AI 复核结果；未做过则 404。字段同上，额外含 `id/run_id/patient_id/created_at`。
+
+### POST `/matching/run` 的可选参数
+```json
+{ "patient_id": 2, "with_ai_review": true }
+```
+为 `true` 时在返回体中附带 `ai_review` 字段（结构同上）。
 
 ### PUT `/matching/thresholds/{id}` ✅（doctor/admin）
 ```json
@@ -581,16 +625,45 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
 元素：`{ id, actor_name, action, target_type, target_id, detail, created_at }`
 `action` 取值：`create|update|view|export|lock|run|review|handle|ack|escalate|close|finish|dialogue|consent|update_threshold`
 ### GET `/admin/quality-metrics` ✅
+质控看板数据源。分三类：**可直接计算**（现在就有数）、**由工作流喂养**（随业务推进自动积累）、**需人工标注集**（暂无数据则 `null`，不编造）。
+
 ```json
-{ "scoring_consistency": null, "match_accuracy": null, "false_alert_rate": null,
-  "alert_response_rate": 0.75, "pending_reviews": 1, "escalation_count": 0,
-  "triggered_alert_count": 1,
-  "stats": { "patients": 4, "users": 4, "assessments": 3, "abnormal_assessments": 1,
-             "reports": 1, "match_runs": 1, "alerts": 1, "pending_review": 1 },
-  "note": "计分一致率、匹配准确率、误报率需在真实标注数据积累后统计，当前留空。",
-  "generated_at": "…" }
+{
+  "assessment_completion_rate": 0.83,
+  "review_rate": 0.6,
+  "abnormal_detection_rate": 0.4,
+  "pending_confirmation_rate": 0.2,
+  "scoring_consistency": 0.96,
+  "scoring_consistency_samples": 12,
+  "alert_response_rate": 0.75,
+  "alert_escalation_rate": 0.1,
+  "high_level_alert_ratio": 0.4,
+  "false_alert_rate": 0.08,
+  "false_alert_samples": 1,
+  "match_accuracy": null,
+  "match_recall": null,
+  "top1_match_score_avg": 41.2,
+  "top1_top2_gap_avg": 12.6,
+  "ai_review_coverage": 0.35,
+  "disease_library_coverage": 0.79,
+  "disease_library_size": 28,
+  "disease_hit_count": 22,
+  "scale_stats": { "B.1": { "total": 12, "abnormal": 5, "pending": 2 } },
+  "stats": { "patients": 4, "users": 4, "assessments": 12, "abnormal_assessments": 5,
+             "reports": 3, "match_runs": 8, "alerts": 10, "pending_review": 2, "ai_reviews": 3 },
+  "note": "计分一致率、误报率随「复核改分」与「标记误报」自动积累；匹配准确率与召回率需要人工标注集…",
+  "generated_at": "2026-11-04T15:00:00"
+}
 ```
-> 前三个指标为 `null` 是**预期行为**（尚无标注集），不是 bug；前端需按「暂无数据」渲染而非报错。
+
+指标口径：
+- `scoring_consistency` = 1 −（复核中发生改分的样本 ÷ 复核样本）；数据来自 `POST /assessments/{id}/review` 时记录的前后分值。
+- `false_alert_rate` = 被标记为误报的提醒数 ÷ 高等级提醒（immediate/urgent）数；数据来自 `POST /alerts/{id}/handle` 的 `action=mark_false`。
+- `top1_top2_gap_avg` = Top1 与 Top2 匹配度的平均差值，**越小说明越难区分**（是难例的客观信号）。
+- `match_accuracy` / `match_recall` 需要人工标注集，暂无数据故为 `null`（前端须按「暂无数据」渲染，不得当作 0）。
+
+### POST `/alerts/{id}/handle` 的 action 取值
+`ack`（已知悉）/ `escalate`（升级处理）/ `close`（关闭）/ `mark_false`（**标记为误报**，用于累计误报率）/ `revoke_false`（撤销误报标记）。
 
 ### GET `/admin/stats/overview` ✅ → 同 `stats` 对象 + `generated_at`
 ### GET `/admin/prompt-templates` ✅ → 裸数组

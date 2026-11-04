@@ -6,8 +6,12 @@
 
 from __future__ import annotations
 
+import datetime as dt
+import json
+
 from sqlalchemy.orm import Session
 
+from app.core.config import REPO_ROOT
 from app.core.security import hash_password
 from app.db.base import Base, SessionLocal, engine
 from app.db.models import (
@@ -21,6 +25,7 @@ from app.db.models import (
     PatientMedicalProfile,
     Preconsult,
     PromptTemplate,
+    ReportTemplate,
     ScaleTemplate,
     ScaleVersion,
     User,
@@ -52,6 +57,12 @@ PROMPT_TEMPLATES = [
         "候选疾病通俗说明",
         "用通俗语言解释候选疾病，表述使用「匹配度」「参考概率」，"
         "禁止使用「确诊概率」「患病概率」，不得给出治疗方案。",
+    ),
+    (
+        "match_ai_review",
+        "匹配结果 AI 语义复核",
+        "在规则引擎给出的候选基础上做语义消歧：给出排序建议、补充问诊清单、"
+        "通俗解释与分歧说明；不得给出诊断结论，不得修改分值、阈值或提醒等级。",
     ),
 ]
 
@@ -308,6 +319,39 @@ def seed_matching_rules(db: Session) -> None:
     db.commit()
 
 
+def seed_report_templates(db: Session) -> None:
+    """播种报告模板（来自 docs/structured/report-templates/*.json）。"""
+    directory = REPO_ROOT / "docs" / "structured" / "report-templates"
+    if not directory.exists():
+        return
+    for path in sorted(directory.glob("*.json")):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        code = payload.get("code")
+        if not code:
+            continue
+        row = db.query(ReportTemplate).filter(ReportTemplate.code == code).first()
+        if row is None:
+            row = ReportTemplate(
+                code=code,
+                name=payload.get("name", code),
+                version=payload.get("version", "0.1.0-draft"),
+                scene=payload.get("scene", "professional"),
+                review_status=payload.get("review_status", "draft_pending_medical_review"),
+                payload=payload.get("template", payload),
+                active=True,
+            )
+            db.add(row)
+        else:
+            row.name = payload.get("name", row.name)
+            row.version = payload.get("version", row.version)
+            row.scene = payload.get("scene", row.scene)
+            row.payload = payload.get("template", row.payload)
+    db.commit()
+
+
 def seed_prompts(db: Session) -> None:
     if db.query(PromptTemplate).count() > 0:
         return
@@ -328,6 +372,7 @@ def init_db(seed: bool = True) -> None:
         seed_diseases(db)
         seed_thresholds(db)
         seed_matching_rules(db)
+        seed_report_templates(db)
         seed_prompts(db)
     finally:
         db.close()
