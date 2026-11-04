@@ -45,6 +45,7 @@
       "symptoms 中 core 为核心症状，2~4 条；secondary 3~5 条。",
       "differentials 至少 2 条，points 为负数。",
       "differentials.features 写「本病自身的鉴别性特征」（不是对方疾病的症状）：引擎仅在 features 一个都没命中时对本病扣分，因此 features 全不命中 = 本病证据不足。",
+      "patterns 为症状组合模式：组合中的症状全部命中时额外加分（医生初诊看的是组合，不是单个症状）。",
       "red_flags 命中时不得降级提醒等级；protective_signs 命中时降低匹配度。",
       "aliases 不得与其他病种的 name/aliases 重复；不要把近邻病种的名字收进来。",
       "scale_links 只能引用已存在的量表 code；该量表尚无条目时 item 必须为空字符串。"
@@ -103,6 +104,13 @@
           "features": ["chest_pain", "dyspnea"],
           "points": -6,
           "reason": "无胸痛与气促线索而以咳嗽咳痰为主时，更倾向吸入性肺炎"
+        }
+      ],
+      "patterns": [
+        {
+          "symptoms": ["chest_pain", "dyspnea", "palpitations"],
+          "bonus": 3.0,
+          "note": "胸痛 + 气促 + 心悸同时出现，提示急性心肌缺血（老年人可仅表现为气促与心慌）"
         }
       ],
       "scale_links": [

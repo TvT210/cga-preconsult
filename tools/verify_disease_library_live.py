@@ -52,10 +52,17 @@ def main() -> int:
         for candidate in match["candidates"][:3]:
             flags = "、".join(item["term"] for item in candidate.get("red_flags") or []) or "—"
             protect = "、".join(item["term"] for item in candidate.get("protective_signs") or []) or "—"
+            distinctive = "、".join(item["term"] for item in candidate.get("distinctive_symptoms") or []) or "—"
+            shared = "、".join(item["term"] for item in candidate.get("shared_symptoms") or []) or "—"
+            patterns = "、".join(item["term"] for item in candidate.get("pattern_hits") or []) or "—"
             print(
                 f"    #{candidate['rank']} {candidate['disease_name']}｜匹配度 {candidate['match_score']}"
-                f"｜参考概率 {candidate['ref_probability']}｜红旗：{flags}｜保护征象：{protect}"
+                f"｜参考概率 {candidate['ref_probability']}"
             )
+            print(f"        区分性症状：{distinctive}")
+            print(f"        共享症状：{shared}")
+            print(f"        症状组合命中：{patterns}")
+            print(f"        红旗：{flags}｜保护征象：{protect}")
         alert = match["alert"]
         print(f"[4] 分级提醒：[{alert['level']}] {alert['message']}")
         print(f"    免责声明：{match['disclaimer']}")

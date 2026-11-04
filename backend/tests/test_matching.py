@@ -199,3 +199,84 @@ def test_risk_factor_hit_is_reported():
     outcome = _run_v2(["chest_pain", "dyspnea", "smoking_history"])
     hits = outcome.candidates[0]["risk_factor_hits"]
     assert hits and hits[0]["factor"] == "吸烟"
+
+
+# ---------------------------------------------------------------------------
+# 区分度加权 / 症状组合 / 区分性症状
+# ---------------------------------------------------------------------------
+
+SHARED = "fatigue"  # 两个病都有的共享症状
+UNIQUE = "chest_pain"  # 只有病甲有的独有症状
+
+
+def _two_diseases() -> list[dict]:
+    def make(code: str, name: str, unique_code: str) -> dict:
+        return {
+            "code": code,
+            "name": name,
+            "aliases": [],
+            "system": "测试",
+            "risk_level": "urgent",
+            "review_status": "draft_pending_medical_review",
+            "payload": {
+                "risk_level": "urgent",
+                "symptoms": [
+                    {"code": unique_code, "weight": "core"},
+                    {"code": SHARED, "weight": "core"},
+                ],
+                "differentials": [],
+                "advice": {"department": "内科", "urgency": "尽快就医", "text": "请就医。"},
+            },
+        }
+
+    return [make("D1", "病甲", UNIQUE), make("D2", "病乙", "cough")]
+
+
+def test_shared_symptom_has_lower_distinctive_multiplier():
+    """共享症状的区分度系数应低于独有症状（相对比较，不与固定基准比）。"""
+    evidence = build_evidence([], [{"code": SHARED}], [])
+    shared_outcome = run_matching(_two_diseases(), evidence, WEIGHTS, {"global": 60.0})
+    shared_points = next(
+        item["points"] for item in shared_outcome.candidates[0]["hit_symptoms"] if item["code"] == SHARED
+    )
+
+    unique_evidence = build_evidence([], [{"code": UNIQUE}], [])
+    unique_outcome = run_matching(_two_diseases(), unique_evidence, WEIGHTS, {"global": 60.0})
+    unique_points = next(
+        item["points"] for item in unique_outcome.candidates[0]["hit_symptoms"] if item["code"] == UNIQUE
+    )
+    assert unique_points > shared_points, "独有症状权重应高于共享症状"
+
+    # 关闭区分度加权后，两者都回到基准权重
+    flat = MatchingWeights(**{**WEIGHTS.__dict__, "distinctive_weighting": False})
+    flat_outcome = run_matching(_two_diseases(), evidence, flat, {"global": 60.0})
+    flat_points = next(
+        item["points"] for item in flat_outcome.candidates[0]["hit_symptoms"] if item["code"] == SHARED
+    )
+    assert abs(flat_points - WEIGHTS.core) < 1e-6
+
+
+def test_distinctive_and_shared_symptoms_are_annotated():
+    """只命中本候选的症状标为区分性，多个候选共有的标为共享。"""
+    evidence = build_evidence([], [{"code": UNIQUE}, {"code": SHARED}], [])
+    outcome = run_matching(_two_diseases(), evidence, WEIGHTS, {"global": 60.0})
+    top = outcome.candidates[0]
+    assert any(item["code"] == UNIQUE for item in top["distinctive_symptoms"])
+    assert any(item["code"] == SHARED for item in top["shared_symptoms"])
+    shared = next(item for item in top["shared_symptoms"] if item["code"] == SHARED)
+    assert "D2" in shared["shared_with"]
+
+
+def test_pattern_hit_gives_bonus():
+    """症状组合全中时额外加分。"""
+    diseases = _two_diseases()
+    diseases[0]["payload"]["patterns"] = [
+        {"symptoms": [UNIQUE, SHARED], "bonus": 3.0, "note": "组合命中"}
+    ]
+    evidence = build_evidence([], [{"code": UNIQUE}, {"code": SHARED}], [])
+    with_pattern = run_matching(diseases, evidence, WEIGHTS, {"global": 60.0})
+    diseases[0]["payload"].pop("patterns")
+    without = run_matching(diseases, evidence, WEIGHTS, {"global": 60.0})
+    assert with_pattern.candidates[0]["raw_score"] > without.candidates[0]["raw_score"]
+    assert with_pattern.candidates[0]["pattern_hits"]
+    assert with_pattern.candidates[0]["pattern_hits"][0]["term"] == "组合命中"
