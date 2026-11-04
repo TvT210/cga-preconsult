@@ -109,7 +109,7 @@ def quality_metrics(db: Session) -> dict[str, Any]:
     hit_diseases = {candidate.disease_code for candidate in candidates}
 
     # ---- 疾病库覆盖 ----
-    from app.services.scales_store import list_diseases
+    from app.services.disease_library import list_diseases
 
     library_size = len(list_diseases(db))
 

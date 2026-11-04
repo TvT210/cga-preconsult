@@ -171,6 +171,11 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
 ### GET / PUT `/patients/{patient_id}/preconsult` ✅
 **增量保存**：请求体只带要改的字段，服务器做浅合并；顶层键为分区名。
 
+> **归属**：预问诊的**采集与录入属线 A（患者端 / 家属端）**，写入接口供患者端调用；
+> 医护端对预问诊**只读**，只保留「记录知情同意」，不提供二次编辑表单。
+> 线 B（结论与运营）只做**只读消费**：把已采集内容转成匹配引擎的证据、汇入报告的
+> 「疾病与用药摘要」分区，读取入口统一在 `backend/app/services/disease_library.py`。
+
 ```json
 {
   "basic": { "gender": "女", "birth_date": "1948-05-12", "marital_status": "丧偶",

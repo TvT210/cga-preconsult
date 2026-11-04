@@ -144,11 +144,8 @@ export function PatientWorkspace({ pathPatientId }: { pathPatientId?: string }) 
               {tab === "preconsult" ? (
                 <PreconsultTab
                   preconsult={workspace.preconsult}
-                  onChange={workspace.setPreconsult}
                   consents={workspace.consents}
                   onRecordConsent={() => void workspace.recordConsent()}
-                  onSave={() => void workspace.savePreconsult()}
-                  saving={workspace.saving}
                 />
               ) : null}
 

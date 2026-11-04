@@ -12,7 +12,20 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 
-from app.api import EnvelopeRoute, admin, assessments, auth, dialogue, matching, patients, reports, scales
+from app.api import (
+    EnvelopeRoute,
+    admin,
+    alerts,
+    assessments,
+    auth,
+    dialogue,
+    followups,
+    matching,
+    patients,
+    reports,
+    reviews,
+    scales,
+)
 from app.core.config import settings
 from app.db.init_db import init_db
 
@@ -76,7 +89,19 @@ async def envelope_middleware(request: Request, call_next):
     return JSONResponse(status_code=response.status_code, content=payload, headers=headers)
 
 
-for module in (auth, patients, scales, assessments, reports, matching, dialogue, admin):
+for module in (
+    auth,
+    patients,
+    scales,
+    assessments,
+    reviews,
+    dialogue,
+    followups,
+    alerts,
+    reports,
+    matching,
+    admin,
+):
     app.include_router(module.router, prefix=settings.api_prefix)
 
 

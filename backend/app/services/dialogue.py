@@ -60,54 +60,15 @@ def _symptom_index() -> list[tuple[str, str]]:
     return index
 
 
-def extract_symptoms(text: str, source: str = "dialogue") -> list[dict[str, Any]]:
-    """从文本抽取症状词条（受控词表归一化）。
-
-    source 用于区分证据来源：dialogue（对话抽取）/ preconsult（预问诊录入）。
-    """
+def extract_symptoms(text: str) -> list[dict[str, Any]]:
+    """从对话文本抽取症状词条（受控词表归一化）。"""
     lowered = (text or "").lower()
     found: dict[str, dict] = {}
     for term, code in _symptom_index():
         if term and term.lower() in lowered:
-            found.setdefault(code, {"code": code, "term": term, "confidence": 0.8, "source": source})
+            entry = found.setdefault(code, {"code": code, "term": term, "confidence": 0.8, "source": "dialogue"})
+            entry["confidence"] = max(entry.get("confidence", 0), 0.85 if term == term else 0.8)
     return list(found.values())
-
-
-def extract_preconsult_symptoms(payload: dict) -> list[dict[str, Any]]:
-    """从预问诊结构化内容中抽取症状证据（主诉 + 病史 + 生活方式 + 跌倒记录）。
-
-    预问诊是信息采集的主入口，其描述必须参与疾病匹配，否则老人在量表与对话之外的
-    自述信息会被浪费掉。
-    """
-    if not payload:
-        return []
-    texts: list[str] = []
-
-    chief = payload.get("chief_complaint") or {}
-    for key in ("text", "site", "nature", "associated"):
-        value = chief.get(key)
-        if isinstance(value, list):
-            texts.extend(str(item) for item in value)
-        elif value:
-            texts.append(str(value))
-
-    history = payload.get("history") or {}
-    for key in ("conditions",):
-        texts.extend(str(item) for item in history.get(key) or [])
-    for allergy in history.get("allergies") or []:
-        if isinstance(allergy, dict):
-            texts.append(str(allergy.get("reaction", "")))
-
-    lifestyle = payload.get("lifestyle") or {}
-    for key in ("diet", "activity", "sleep", "other"):
-        if lifestyle.get(key):
-            texts.append(str(lifestyle[key]))
-    for fall in lifestyle.get("falls") or []:
-        if isinstance(fall, dict):
-            texts.extend(str(fall.get(key, "")) for key in ("place", "cause", "injury"))
-
-    symptoms = extract_symptoms(" ".join(texts), source="preconsult")
-    return symptoms
 
 
 def check_safety(text: str) -> str:

@@ -36,19 +36,33 @@ backend/
 │  │  └─ deps.py           # get_current_user / require_* / 老人数据隔离
 │  ├─ db/
 │  │  ├─ base.py           # engine / SessionLocal / Base
-│  │  ├─ models.py         # 27 张表：配置类 / 业务类 / 审计类
+│  │  ├─ models.py         # 表结构（共享文件，新增字段需两边约定）
 │  │  └─ init_db.py        # 建表 + 播种（幂等）
-│  ├─ api/                 # 路由层：auth patients scales assessments reports matching dialogue admin
+│  ├─ api/                 # 路由层
+│  │  ├─ auth.py patients.py scales.py assessments.py dialogue.py   # 线 A：采集侧
+│  │  └─ reports.py matching.py alerts.py reviews.py admin.py        # 线 B：结论侧
 │  └─ services/
-│     ├─ scales_store.py   # 题库/疾病库读取（JSON 基线 → 数据库版本）
-│     ├─ scoring.py        # 计分与判读引擎
-│     ├─ matching.py       # 症状—疾病匹配引擎
-│     ├─ report.py         # 报告组装 + Word/PDF 导出
-│     ├─ dialogue.py       # 对话、抽取、安全边界、冲突标记、定期评估
-│     └─ audit.py          # 审计日志与质控指标
+│     ├─ scales_store.py         # 线 A：题库读取
+│     ├─ scoring.py dialogue.py  # 线 A：计分引擎、对话与抽取
+│     ├─ disease_library.py      # 线 B：疾病库/症状词表读取 + 证据准备
+│     ├─ matching.py report.py ai_review.py audit.py                # 线 B：匹配、报告、AI复核、质控
 ├─ packages/medagent/llm.py  # 可插拔大模型 Provider
-└─ tests/                   # pytest：计分 / 匹配 / API 端到端
+└─ tests/                   # pytest：计分 / 匹配 / 对话 / AI复核 / API 端到端
 ```
+
+## 2.1 两条线的边界（2026-11-04 明确）
+
+| 模块 | 线 | 约定 |
+| --- | --- | --- |
+| 预问诊采集与录入 | **A** | 患者端填写；医护端**只读**（仅「记录知情同意」） |
+| 题库、评估会话、对话抽取 | **A** | `services/scoring.py`、`services/dialogue.py`、`services/scales_store.py` |
+| 疾病库、症状词表、报告模板 | **B** | `docs/structured/disease-library/**`；读取入口 `services/disease_library.py` |
+| 匹配引擎、AI 复核、报告、提醒、复核裁决、质控 | **B** | `services/matching.py` / `ai_review.py` / `report.py` / `audit.py` |
+| `db/models.py`、`db/init_db.py` | 共享 | 改动前知会对方；新增表由 B 统一出 Alembic 迁移 |
+| `api/__init__.py`、`core/`、`main.py` | B 维护 | A 需改动走「变更申请」 |
+
+> 症状词表分两层：**词条本体**（标准词、分类）归 B；**`synonyms`**（老人怎么说）归 A，
+> 改同义词不改变医学定义。
 
 ## 3. 计分与判读引擎（services/scoring.py）
 

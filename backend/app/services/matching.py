@@ -14,7 +14,7 @@ import math
 from dataclasses import dataclass, field
 from typing import Any
 
-from app.services.scales_store import symptom_probe, symptom_term
+from app.services.disease_library import symptom_probe, symptom_term
 
 DISCLAIMER = "结果仅供参考，不构成诊断，请及时咨询医生。"
 
