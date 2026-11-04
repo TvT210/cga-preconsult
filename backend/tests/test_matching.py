@@ -128,3 +128,74 @@ def test_history_bonus_raises_score():
     without = _run(["chest_pain"]).candidates[0]["match_score"]
     with_history = _run(["chest_pain"], ["疾病甲"]).candidates[0]["match_score"]
     assert with_history > without
+
+
+# ---------------------------------------------------------------------------
+# 疾病库 schema v2：保护性征象 / 红旗征 / 高危因素
+# ---------------------------------------------------------------------------
+
+DISEASE_V2 = {
+    "code": "V1",
+    "name": "病甲",
+    "aliases": [],
+    "system": "测试",
+    "risk_level": "immediate",
+    "review_status": "draft_pending_medical_review",
+    "payload": {
+        "risk_level": "immediate",
+        "symptoms": [
+            {"code": "chest_pain", "weight": "core"},
+            {"code": "dyspnea", "weight": "core"},
+            {"code": "palpitations", "weight": "secondary"},
+        ],
+        "protective_signs": [
+            {"code": "fever", "term": "发热", "note": "发热更支持感染性疾病"},
+        ],
+        "red_flags": [
+            {"code": "syncope", "term": "晕厥", "note": "出现即需立即就医"},
+        ],
+        "risk_factors": [
+            {"code": "smoking_history", "factor": "吸烟", "detail": "动脉粥样硬化基础"},
+            {"factor": "高龄", "detail": "症状不典型"},
+        ],
+        "differentials": [],
+        "advice": {"department": "内科", "urgency": "立即就医", "text": "请立即就医。"},
+    },
+}
+
+
+def _run_v2(codes: list[str]):
+    evidence = build_evidence([], [{"code": code} for code in codes], [])
+    return run_matching([DISEASE_V2], evidence, WEIGHTS, {"global": 60.0})
+
+
+def test_protective_sign_lowers_match_score():
+    base = _run_v2(["chest_pain", "dyspnea"]).candidates[0]["match_score"]
+    with_fever = _run_v2(["chest_pain", "dyspnea", "fever"]).candidates[0]["match_score"]
+    assert with_fever < base, "命中保护性征象应降低匹配度"
+
+
+def test_protective_sign_is_recorded_as_exclusion_reason():
+    outcome = _run_v2(["chest_pain", "dyspnea", "fever"])
+    reasons = " ".join(item["reason"] for item in outcome.candidates[0]["excluded_reasons"])
+    assert "保护性征象" in reasons
+
+
+def test_red_flag_blocks_downgrade():
+    """命中红旗征时，即使核心症状不足也不得降级提醒等级。"""
+    outcome = _run_v2(["syncope"])
+    assert outcome.alert["level"] == "immediate"
+    assert outcome.candidates[0]["red_flags"], "红旗征应写入候选"
+    assert "红旗征" in outcome.alert["message"]
+
+
+def test_red_flag_absent_allows_downgrade():
+    outcome = _run_v2(["palpitations"])
+    assert outcome.alert["level"] in {"elective", "observe"}
+    assert outcome.candidates[0]["red_flags"] == []
+
+
+def test_risk_factor_hit_is_reported():
+    outcome = _run_v2(["chest_pain", "dyspnea", "smoking_history"])
+    hits = outcome.candidates[0]["risk_factor_hits"]
+    assert hits and hits[0]["factor"] == "吸烟"

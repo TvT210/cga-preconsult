@@ -214,6 +214,32 @@ def test_elder_can_access_own_patient():
     assert response.status_code == 200
 
 
+def test_preconsult_symptoms_feed_matching():
+    """预问诊自述必须参与疾病匹配（回归：曾只采信量表标记与对话抽取）。"""
+    token = _login("nurse", "nurse12345")["token"]
+    headers = _auth(token)
+    patient = client.post(
+        "/api/v1/patients",
+        headers=headers,
+        json={"name": "预问诊证据测试", "gender": "男", "birth_date": "1942-02-02"},
+    ).json()["data"]
+    client.put(
+        f"/api/v1/patients/{patient['id']}/preconsult",
+        headers=headers,
+        json={
+            "chief_complaint": {"text": "胸口压得慌、喘不上气、晕倒了一次"},
+            "history": {"conditions": ["高血压"]},
+        },
+    )
+    match = client.post("/api/v1/matching/run", headers=headers, json={"patient_id": patient["id"]}).json()["data"]
+    codes = {item["disease_code"] for item in match["candidates"]}
+    assert "I21" in codes, f"预问诊自述的胸痛与气促应召回急性心肌梗死，实际候选 {codes}"
+    top = match["candidates"][0]
+    assert top["hit_symptoms"], "应记录命中的症状证据"
+    assert any(item.get("code") == "chest_pain" for item in top["hit_symptoms"])
+    assert "不构成诊断" in match["disclaimer"]
+
+
 def test_admin_metrics_and_audit():
     token = _login("admin", "admin12345")["token"]
     metrics = client.get("/api/v1/admin/quality-metrics", headers=_auth(token))

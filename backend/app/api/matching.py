@@ -24,6 +24,7 @@ from app.db.models import (
     User,
 )
 from app.services import audit
+from app.services.dialogue import extract_preconsult_symptoms
 from app.services.matching import DISCLAIMER, MatchingWeights, build_evidence, run_matching
 from app.services.scales_store import list_diseases
 
@@ -157,14 +158,19 @@ def create_match_run(
     dialogue_symptoms = (profile.symptoms if profile else []) or []
 
     conditions: list[str] = []
+    preconsult_symptoms: list[dict] = []
     preconsult = db.query(Preconsult).filter(Preconsult.patient_id == patient_id).first()
     if preconsult:
-        history = (preconsult.payload or {}).get("history") or {}
+        payload = preconsult.payload or {}
+        history = payload.get("history") or {}
         conditions = list(history.get("conditions") or [])
+        # 预问诊自述必须参与匹配（采集侧信息的主入口）
+        preconsult_symptoms = extract_preconsult_symptoms(payload)
     if profile and profile.conditions:
         conditions.extend(profile.conditions)
 
-    evidence = build_evidence(scale_flags, dialogue_symptoms, conditions)
+    extracted_symptoms = list(preconsult_symptoms) + list(dialogue_symptoms)
+    evidence = build_evidence(scale_flags, extracted_symptoms, conditions)
     weights = _weights(db)
     thresholds = _thresholds(db, weights)
     outcome = run_matching(diseases, evidence, weights, thresholds)
@@ -174,6 +180,7 @@ def create_match_run(
         input_snapshot={
             "evidence": outcome.evidence,
             "scale_flags": scale_flags,
+            "preconsult_symptoms": preconsult_symptoms,
             "dialogue_symptoms": dialogue_symptoms,
             "conditions": conditions,
         },
@@ -197,6 +204,9 @@ def create_match_run(
                 hit_symptoms=candidate["hit_symptoms"],
                 missing_symptoms=candidate["missing_symptoms"],
                 excluded_reasons=candidate["excluded_reasons"],
+                red_flags=candidate.get("red_flags", []),
+                protective_signs=candidate.get("protective_signs", []),
+                risk_factor_hits=candidate.get("risk_factor_hits", []),
                 risk_level=candidate.get("risk_level", "observe"),
                 advice=candidate.get("advice", {}),
                 evidence_insufficient=candidate.get("evidence_insufficient", False),
@@ -245,6 +255,9 @@ def _run_payload(db: Session, run: MatchRun) -> dict:
                 "hit_symptoms": row.hit_symptoms,
                 "missing_symptoms": row.missing_symptoms,
                 "excluded_reasons": row.excluded_reasons,
+                "red_flags": row.red_flags,
+                "protective_signs": row.protective_signs,
+                "risk_factor_hits": row.risk_factor_hits,
                 "risk_level": row.risk_level,
                 "advice": row.advice,
                 "evidence_insufficient": row.evidence_insufficient,

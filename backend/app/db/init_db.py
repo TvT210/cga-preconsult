@@ -58,6 +58,31 @@ PROMPT_TEMPLATES = [
 
 def create_tables() -> None:
     Base.metadata.create_all(bind=engine)
+    _sync_missing_columns()
+
+
+def _sync_missing_columns() -> None:
+    """轻量迁移：为已存在的库补齐新增字段（Alembic 落地前的过渡方案）。
+
+    create_all 不会给既有表加列，这里比对模型与实际列，缺失的补上。
+    """
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+    with engine.begin() as connection:
+        for table in Base.metadata.tables.values():
+            if table.name not in existing_tables:
+                continue
+            actual = {column["name"] for column in inspector.get_columns(table.name)}
+            for column in table.columns:
+                if column.name in actual:
+                    continue
+                ddl = f"ALTER TABLE {table.name} ADD COLUMN {column.name} {column.type.compile(dialect=engine.dialect)}"
+                try:
+                    connection.execute(text(ddl))
+                except Exception:  # pragma: no cover - 权限或方言差异时忽略
+                    pass
 
 
 def seed_users(db: Session) -> None:
@@ -178,6 +203,12 @@ def seed_scales(db: Session) -> None:
 
 
 def seed_diseases(db: Session) -> None:
+    """播种疾病库。
+
+    以 `docs/structured/disease-library/diseases.json` 为基线：
+    已存在的病种**更新** payload 与元信息（否则改了题库却进不了系统），
+    但保留数据库里的人工评审状态（approved 不被草稿覆盖）。
+    """
     data = load_disease_file()
     for item in data.get("diseases", []):
         code = item.get("code")
@@ -196,39 +227,37 @@ def seed_diseases(db: Session) -> None:
             )
             db.add(row)
             db.flush()
+        else:
+            # 更新基线内容，但人工评审状态优先保留
+            row.name = item.get("name", row.name)
+            row.aliases = item.get("aliases", row.aliases)
+            row.system = item.get("system", row.system)
+            row.risk_level = item.get("risk_level", row.risk_level)
+            row.payload = item
+            if row.review_status == "draft_pending_medical_review":
+                row.review_status = data.get("review_status", row.review_status)
+
+        # 症状权重与鉴别要点按基线重建
+        db.query(DiseaseSymptom).filter(DiseaseSymptom.disease_code == code).delete()
         for symptom in item.get("symptoms", []) or []:
-            exists = (
-                db.query(DiseaseSymptom)
-                .filter(DiseaseSymptom.disease_code == code, DiseaseSymptom.symptom_code == symptom.get("code"))
-                .first()
-            )
-            if exists is None:
-                db.add(
-                    DiseaseSymptom(
-                        disease_code=code,
-                        symptom_code=symptom.get("code", ""),
-                        weight=symptom.get("weight", "secondary"),
-                    )
+            db.add(
+                DiseaseSymptom(
+                    disease_code=code,
+                    symptom_code=symptom.get("code", ""),
+                    weight=symptom.get("weight", "secondary"),
                 )
+            )
+        db.query(DiseaseDifferential).filter(DiseaseDifferential.disease_code == code).delete()
         for differential in item.get("differentials", []) or []:
-            exists = (
-                db.query(DiseaseDifferential)
-                .filter(
-                    DiseaseDifferential.disease_code == code,
-                    DiseaseDifferential.vs_code == differential.get("vs_code", ""),
+            db.add(
+                DiseaseDifferential(
+                    disease_code=code,
+                    vs_code=differential.get("vs_code", ""),
+                    features=differential.get("features", []) or [],
+                    points=float(differential.get("points", 0) or 0),
+                    reason=differential.get("reason", ""),
                 )
-                .first()
             )
-            if exists is None:
-                db.add(
-                    DiseaseDifferential(
-                        disease_code=code,
-                        vs_code=differential.get("vs_code", ""),
-                        features=differential.get("features", []) or [],
-                        points=float(differential.get("points", 0) or 0),
-                        reason=differential.get("reason", ""),
-                    )
-                )
     db.commit()
 
 
