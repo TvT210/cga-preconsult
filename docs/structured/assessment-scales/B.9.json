@@ -6,20 +6,367 @@
   "standard_ref": "WS/T 888—2026 附录B B.9",
   "version": "0.1.0-draft",
   "review_status": "draft_pending_medical_review",
-  "summary": "筛查老年人居家环境风险，14 项之和，得分越低提示居家环境风险越大。",
-  "collection": { "support": ["patient", "staff"], "proxy_allowed": true, "measured": false },
+  "summary": "14 项居家环境安全筛查，0 分=否、1 分=是，总分 0~14 分；得分越低，居家环境风险越大。",
+  "collection": {
+    "support": [
+      "patient",
+      "staff"
+    ],
+    "proxy_allowed": true,
+    "measured": false
+  },
   "sections": [
     {
       "code": "B9-S1",
-      "title": "居家环境风险筛查",
-      "questions": []
+      "title": "居家环境筛查（0 分=否，1 分=是）",
+      "questions": [
+        {
+          "code": "B9-01",
+          "text": "通道是否无杂乱物品",
+          "plain_text": "走廊、过道有没有堆东西挡路？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B9-02",
+          "text": "地板状况是否良好",
+          "plain_text": "地板有没有破损、翘起来的地方？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B9-03",
+          "text": "地板是否防滑",
+          "plain_text": "地板是不是防滑的？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B9-04",
+          "text": "地板上是否有固定的防滑垫",
+          "plain_text": "地上有没有铺固定好的防滑垫？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B9-05",
+          "text": "灯的亮度是否能够让您看清东西",
+          "plain_text": "灯够不够亮，能不能看清东西？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B9-06",
+          "text": "在床上开关灯是否方便",
+          "plain_text": "躺床上开关灯方不方便？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B9-07",
+          "text": "晚上外边的路灯、楼道的灯照明是否良好",
+          "plain_text": "晚上外面路灯、楼道灯亮不亮？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B9-08",
+          "text": "淋浴室和浴池旁是否有扶手",
+          "plain_text": "洗澡的地方有没有扶手？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B9-09",
+          "text": "在浴池和浴室是否有固定的防滑垫",
+          "plain_text": "洗澡的地方有没有固定防滑垫？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B9-10",
+          "text": "厕所是否接近浴室",
+          "plain_text": "厕所离浴室近不近？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B9-11",
+          "text": "室内的楼梯旁是否都有可用的扶手",
+          "plain_text": "屋里的楼梯两边有没有能用的扶手？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B9-12",
+          "text": "室外的楼梯旁是否都有可用的扶手",
+          "plain_text": "屋外楼梯旁有没有能用的扶手？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B9-13",
+          "text": "楼梯的边缘是否清晰",
+          "plain_text": "楼梯踏步的边缘看不看得清？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B9-14",
+          "text": "房屋周围的路况是否良好",
+          "plain_text": "房子周围的路平不平整？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        }
+      ]
     }
   ],
   "scoring": {
     "score": {
       "rule_type": "sum",
-      "config": { "items": [] },
-      "explanation": "条目待补录；补录后按 14 个条目得分求和，总分 0~14 分，得分越低提示居家环境风险越大。"
+      "config": {
+        "items": [
+          {
+            "code": "B9-01",
+            "label": "通道是否无杂乱物品",
+            "max_score": 1
+          },
+          {
+            "code": "B9-02",
+            "label": "地板状况是否良好",
+            "max_score": 1
+          },
+          {
+            "code": "B9-03",
+            "label": "地板是否防滑",
+            "max_score": 1
+          },
+          {
+            "code": "B9-04",
+            "label": "地板上是否有固定的防滑垫",
+            "max_score": 1
+          },
+          {
+            "code": "B9-05",
+            "label": "灯的亮度是否能够让您看清东西",
+            "max_score": 1
+          },
+          {
+            "code": "B9-06",
+            "label": "在床上开关灯是否方便",
+            "max_score": 1
+          },
+          {
+            "code": "B9-07",
+            "label": "晚上外边的路灯、楼道的灯照明是否良好",
+            "max_score": 1
+          },
+          {
+            "code": "B9-08",
+            "label": "淋浴室和浴池旁是否有扶手",
+            "max_score": 1
+          },
+          {
+            "code": "B9-09",
+            "label": "在浴池和浴室是否有固定的防滑垫",
+            "max_score": 1
+          },
+          {
+            "code": "B9-10",
+            "label": "厕所是否接近浴室",
+            "max_score": 1
+          },
+          {
+            "code": "B9-11",
+            "label": "室内的楼梯旁是否都有可用的扶手",
+            "max_score": 1
+          },
+          {
+            "code": "B9-12",
+            "label": "室外的楼梯旁是否都有可用的扶手",
+            "max_score": 1
+          },
+          {
+            "code": "B9-13",
+            "label": "楼梯的边缘是否清晰",
+            "max_score": 1
+          },
+          {
+            "code": "B9-14",
+            "label": "房屋周围的路况是否良好",
+            "max_score": 1
+          }
+        ]
+      },
+      "explanation": "0 分=否、1 分=是，14 项之和，满分 14 分（表B.9 注1）。"
     },
     "levels": {
       "rule_type": "level_map",
@@ -28,16 +375,175 @@
           {
             "min": 0,
             "max": 14,
-            "level": "居家环境风险（分界值待原文确认）",
-            "interpretation": "本表按 14 项合计分判断，得分越低提示居家环境风险越大；风险等级的具体分界值待 WS/T 888—2026 附录 B 原文核对后写入。",
+            "level": "已完成居家环境筛查",
+            "interpretation": "得分越低，表明居家环境风险越大（标准仅给出方向性判断，未设定数值分界）；具体风险项见阳性标记，需由医护人员结合现场查看判断。",
             "abnormal": false,
-            "severity": "none"
+            "severity": "info"
           }
         ]
       }
     },
-    "flags": []
+    "flags": [
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B9-01",
+              "op": "eq",
+              "value": "no"
+            }
+          ]
+        },
+        "flag": "通道堆放杂物，存在绊倒风险",
+        "symptom_codes": [
+          "home_environment_hazard",
+          "fall_history"
+        ],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B9-03",
+              "op": "eq",
+              "value": "no"
+            }
+          ]
+        },
+        "flag": "地板不防滑，存在滑倒风险",
+        "symptom_codes": [
+          "home_environment_hazard",
+          "fall_history"
+        ],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B9-04",
+              "op": "eq",
+              "value": "no"
+            }
+          ]
+        },
+        "flag": "地面无固定防滑垫",
+        "symptom_codes": [
+          "home_environment_hazard"
+        ],
+        "severity": "low"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B9-05",
+              "op": "eq",
+              "value": "no"
+            }
+          ]
+        },
+        "flag": "照明不足，看不清东西",
+        "symptom_codes": [
+          "home_environment_hazard",
+          "fall_history"
+        ],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B9-08",
+              "op": "eq",
+              "value": "no"
+            }
+          ]
+        },
+        "flag": "浴室无扶手",
+        "symptom_codes": [
+          "home_environment_hazard",
+          "fall_history"
+        ],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B9-11",
+              "op": "eq",
+              "value": "no"
+            }
+          ]
+        },
+        "flag": "室内楼梯无可用扶手",
+        "symptom_codes": [
+          "home_environment_hazard",
+          "fall_history"
+        ],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B9-13",
+              "op": "eq",
+              "value": "no"
+            }
+          ]
+        },
+        "flag": "楼梯边缘不清晰，易踏空",
+        "symptom_codes": [
+          "home_environment_hazard",
+          "fall_history"
+        ],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B9-14",
+              "op": "eq",
+              "value": "no"
+            }
+          ]
+        },
+        "flag": "房屋周围路况差",
+        "symptom_codes": [
+          "home_environment_hazard",
+          "fall_history"
+        ],
+        "severity": "low"
+      }
+    ]
   },
-  "branches": [],
-  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。需求文档 §5.2 仅给出「14 项之和；得分越低风险越大」的方向性判读，未给出数值分界，本表按该口径保留单一占位分层，避免臆造阈值；条目与分界待原文核对。"
+  "branches": [
+    {
+      "code": "B9-B1",
+      "when": {
+        "any": [
+          {
+            "question": "B9-08",
+            "op": "eq",
+            "value": "no"
+          }
+        ]
+      },
+      "target_scale": "B.16",
+      "reason": "浴室无扶手且存在活动受限时跌倒与压力性损伤风险叠加，建议加做压力性损伤风险评估。"
+    }
+  ],
+  "notes": "计分口径取自表B.9 注1：0 分=否、1 分=是，最终得分为 14 项之和。注2：得分越低，表明居家环境风险越大——标准未给出数值分界，因此本表不设人为分级，结论固定为方向性说明并置 review_required，风险由条目级阳性标记提示。"
 }

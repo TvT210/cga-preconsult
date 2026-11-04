@@ -6,39 +6,252 @@
   "standard_ref": "WS/T 888—2026 附录B B.12",
   "version": "0.1.0-draft",
   "review_status": "draft_pending_medical_review",
-  "summary": "按症状条目判断老年人有无便秘及其类型，计分为阳性症状条目数。",
-  "collection": { "support": ["patient", "staff"], "proxy_allowed": true, "measured": false },
+  "summary": "记录便秘症状持续时间、症状条目与粪便性状；标准要求由医务人员据症状判断是否存在便秘及便秘类型，本表不自动出结论。",
+  "collection": {
+    "support": [
+      "patient",
+      "staff"
+    ],
+    "proxy_allowed": true,
+    "measured": false
+  },
   "sections": [
     {
       "code": "B12-S1",
-      "title": "便秘相关症状",
-      "questions": []
+      "title": "症状时间与频率",
+      "questions": [
+        {
+          "code": "B12-01",
+          "text": "症状开始到现在持续时间（年/月）",
+          "plain_text": "这些排便的问题，大概从什么时候开始的？",
+          "input_type": "number",
+          "required": false,
+          "record_only": true,
+          "measure": {
+            "unit": "月",
+            "hint": "按月份填写，不足一月按小数"
+          }
+        },
+        {
+          "code": "B12-02",
+          "text": "其中大约有多长时间是有症状的（年/月）",
+          "plain_text": "这段时间里，大概有多久是一直有症状的？",
+          "input_type": "number",
+          "required": false,
+          "record_only": true,
+          "measure": {
+            "unit": "月",
+            "hint": "按月份填写"
+          }
+        }
+      ]
+    },
+    {
+      "code": "B12-S2",
+      "title": "是否有以下症状（可多选）",
+      "questions": [
+        {
+          "code": "B12-03",
+          "text": "便秘相关症状（可多选）",
+          "plain_text": "下面这些情况，您有哪几条？我一条一条念给您听。",
+          "input_type": "multi",
+          "required": true,
+          "options": [
+            {
+              "value": "fewer_than_3",
+              "label": "排便次数减少（每周 <3 次）",
+              "score": 1
+            },
+            {
+              "value": "incomplete",
+              "label": "排便不尽感",
+              "score": 1
+            },
+            {
+              "value": "obstruction",
+              "label": "排便时肛门直肠堵塞感",
+              "score": 1
+            },
+            {
+              "value": "straining",
+              "label": "排便费时",
+              "score": 1
+            },
+            {
+              "value": "manual",
+              "label": "需要手法辅助排便",
+              "score": 1
+            },
+            {
+              "value": "abdominal_pain_relief",
+              "label": "有腹痛、腹部不适症状，排便后症状可缓解",
+              "score": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B12-S3",
+      "title": "有症状时的粪便性状（布里斯托分型，仅记录）",
+      "questions": [
+        {
+          "code": "B12-04",
+          "text": "最常见的有症状时粪便性状",
+          "plain_text": "大便一般是什么样子？我给您念几种，您选最像的那种。",
+          "input_type": "single",
+          "required": false,
+          "record_only": true,
+          "options": [
+            {
+              "value": "type1",
+              "label": "数个干球状便，如坚果，很难排出",
+              "score": 0
+            },
+            {
+              "value": "type2",
+              "label": "腊肠样，很硬",
+              "score": 0
+            },
+            {
+              "value": "type3",
+              "label": "腊肠样，表面有裂缝",
+              "score": 0
+            },
+            {
+              "value": "type4",
+              "label": "腊肠样或蛇状，光滑而柔软",
+              "score": 0
+            },
+            {
+              "value": "type5",
+              "label": "柔软团块，切缘清楚（容易排出）",
+              "score": 0
+            },
+            {
+              "value": "type6",
+              "label": "松散的碎片，边缘破糟，或糊状便",
+              "score": 0
+            },
+            {
+              "value": "type7",
+              "label": "水样便",
+              "score": 0
+            }
+          ]
+        }
+      ]
     }
   ],
   "scoring": {
     "score": {
       "rule_type": "sum",
-      "config": { "items": [] },
-      "explanation": "条目待补录；补录后按阳性症状条目数累计计分（0 表示未提示便秘，≥1 表示提示便秘症状）。"
+      "config": {
+        "items": [
+          {
+            "code": "B12-03",
+            "label": "便秘相关症状条目数",
+            "max_score": 6
+          }
+        ]
+      },
+      "explanation": "统计第 B12-03 题命中的症状条目数（0~6 条），仅作医护人员判断的输入，不作为诊断分值。"
     },
     "levels": {
       "rule_type": "level_map",
       "config": {
         "levels": [
-          { "min": 0, "max": 0, "level": "无便秘", "interpretation": "未提示便秘症状。", "abnormal": false, "severity": "none" },
           {
-            "min": 1,
-            "max": 99,
-            "level": "存在便秘",
-            "interpretation": "提示存在便秘症状，具体类型（如慢传输型、排便困难型等）待条目补录后细分。",
-            "abnormal": true,
-            "severity": "low"
+            "min": 0,
+            "max": 6,
+            "level": "待医务人员判断",
+            "interpretation": "标准要求由医务人员根据症状判断是否存在便秘及便秘类型（表B.12 注），本表不给出自动结论。",
+            "abnormal": false,
+            "severity": "info"
           }
         ]
       }
     },
-    "flags": []
+    "flags": [
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B12-03",
+              "op": "in",
+              "value": [
+                "fewer_than_3"
+              ]
+            }
+          ]
+        },
+        "flag": "排便次数减少（每周 <3 次）",
+        "symptom_codes": [
+          "constipation"
+        ],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B12-03",
+              "op": "in",
+              "value": [
+                "manual"
+              ]
+            }
+          ]
+        },
+        "flag": "需手法辅助排便，提示便秘程度较重",
+        "symptom_codes": [
+          "constipation"
+        ],
+        "severity": "high"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B12-03",
+              "op": "in",
+              "value": [
+                "abdominal_pain_relief"
+              ]
+            }
+          ]
+        },
+        "flag": "伴腹痛腹胀且排便后缓解",
+        "symptom_codes": [
+          "constipation",
+          "abdominal_pain"
+        ],
+        "severity": "medium"
+      }
+    ]
   },
-  "branches": [],
-  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。判读按需求文档 §5.2「按症状条目判断有无便秘及类型」预置，有无之分按阳性条目数 0 / ≥1 表达，类型判定细则待原文核对。"
+  "branches": [
+    {
+      "code": "B12-B1",
+      "when": {
+        "any": [
+          {
+            "question": "B12-03",
+            "op": "in",
+            "value": [
+              "fewer_than_3",
+              "manual"
+            ]
+          }
+        ]
+      },
+      "target_scale": "B.19",
+      "reason": "存在排便次数减少或需手法辅助，提示膳食纤维与水分摄入可能不足，建议加做微营养评定。"
+    }
+  ],
+  "notes": "表B.12 注：根据评估症状，由医务人员判断是否存在便秘及便秘类型。因此本表置 review_required，症状条目仅计数供判断，不折算为判读等级。粪便性状按表B.12 列出的 7 类（对应布里斯托 1~7 型）记录，用于区分慢传输型与出口梗阻型倾向，类型判定由医务人员完成。",
+  "review_required": true
 }

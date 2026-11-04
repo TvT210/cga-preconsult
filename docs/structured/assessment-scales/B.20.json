@@ -6,38 +6,549 @@
   "standard_ref": "WS/T 888—2026 附录B B.20",
   "version": "0.1.0-draft",
   "review_status": "draft_pending_medical_review",
-  "summary": "按营养不良诊断、肌肉减少、病因型指标与严重程度分级四项标准综合判定老年人营养不良，计分为满足的标准条目数（0~4 项）。",
-  "collection": { "support": ["patient", "staff"], "proxy_allowed": true, "measured": true },
+  "summary": "按全球领导人营养不良倡议（GLIM）标准，由表现型指标与病因型指标组合判定营养不良，再按体重下降与低体质指数分级为中度或重度。",
+  "collection": {
+    "support": [
+      "staff"
+    ],
+    "proxy_allowed": false,
+    "measured": true
+  },
   "sections": [
     {
       "code": "B20-S1",
-      "title": "GLIM 四项标准判定",
-      "questions": []
+      "title": "表B.20-1 表现型指标",
+      "questions": [
+        {
+          "code": "B20-01",
+          "text": "过去 6 个月以内体质量减轻 >5%",
+          "plain_text": "这半年里，体重有没有掉超过百分之五？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B20-02",
+          "text": "过去 6 个月以上体质量减轻 >10%",
+          "plain_text": "半年以前到现在，体重有没有掉超过百分之十？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B20-03",
+          "text": "<70 岁，体质指数 <18.5 kg/m²",
+          "plain_text": "（70 岁以下）身高体重算出来的 BMI 有没有低于 18.5？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B20-04",
+          "text": "≥70 岁，体质指数 <20 kg/m²",
+          "plain_text": "（70 岁及以上）BMI 有没有低于 20？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B20-05",
+          "text": "肌肉减少（骨骼肌指数或去脂体质指数达表B.20-2 标准）",
+          "plain_text": "肌肉量检查结果有没有达到肌少症的标准？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B20-S2",
+      "title": "表B.20-3 病因型指标",
+      "questions": [
+        {
+          "code": "B20-06",
+          "text": "能量摄入 ≤50% 且需求量持续 >1 周",
+          "plain_text": "吃的量是不是不到平时一半，而且超过一个星期了？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B20-07",
+          "text": "摄入持续减少 >2 周",
+          "plain_text": "吃得少这种情况是不是持续两个星期以上？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B20-08",
+          "text": "任何导致消化、吸收障碍的慢性消化道症状",
+          "plain_text": "有没有长期消化道症状，影响吃进去的东西消化吸收？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B20-09",
+          "text": "急性疾病或损伤",
+          "plain_text": "最近有没有急性病或者受伤？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B20-10",
+          "text": "慢性疾病相关炎症",
+          "plain_text": "有没有慢性病引起的炎症状态？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B20-S3",
+      "title": "表B.20-4 营养不良严重程度分级",
+      "questions": [
+        {
+          "code": "B20-11",
+          "text": "过去 6 个月以内体质量减轻 >10%",
+          "plain_text": "这半年里体重有没有掉超过百分之十？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B20-12",
+          "text": "过去 6 个月以上体质量减轻 >20%",
+          "plain_text": "半年以前到现在体重有没有掉超过百分之二十？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B20-13",
+          "text": "<70 岁，体质指数 <18.5 kg/m²",
+          "plain_text": "（70 岁以下）BMI 有没有低于 18.5？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B20-14",
+          "text": "≥70 岁，体质指数 <20 kg/m²",
+          "plain_text": "（70 岁及以上）BMI 有没有低于 20？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        }
+      ]
     }
   ],
   "scoring": {
     "score": {
       "rule_type": "sum",
-      "config": { "items": [] },
-      "explanation": "条目待补录；补录后按「营养不良诊断、肌肉减少、病因型指标、严重程度分级」四项标准各计 1 分（满足计 1 分），总分 0~4 项。"
+      "config": {
+        "items": [
+          {
+            "code": "B20-01",
+            "label": "",
+            "max_score": 1
+          },
+          {
+            "code": "B20-02",
+            "label": "",
+            "max_score": 1
+          },
+          {
+            "code": "B20-03",
+            "label": "",
+            "max_score": 1
+          },
+          {
+            "code": "B20-04",
+            "label": "",
+            "max_score": 1
+          },
+          {
+            "code": "B20-05",
+            "label": "",
+            "max_score": 1
+          },
+          {
+            "code": "B20-06",
+            "label": "",
+            "max_score": 1
+          },
+          {
+            "code": "B20-07",
+            "label": "",
+            "max_score": 1
+          },
+          {
+            "code": "B20-08",
+            "label": "",
+            "max_score": 1
+          },
+          {
+            "code": "B20-09",
+            "label": "",
+            "max_score": 1
+          },
+          {
+            "code": "B20-10",
+            "label": "",
+            "max_score": 1
+          },
+          {
+            "code": "B20-11",
+            "label": "",
+            "max_score": 1
+          },
+          {
+            "code": "B20-12",
+            "label": "",
+            "max_score": 1
+          },
+          {
+            "code": "B20-13",
+            "label": "",
+            "max_score": 1
+          },
+          {
+            "code": "B20-14",
+            "label": "",
+            "max_score": 1
+          }
+        ]
+      },
+      "explanation": "本表不折算总分，total 记录命中的指标条目数（0~14），判读按表B.20-1/20-3/20-4 的布尔组合判定。"
     },
     "levels": {
-      "rule_type": "level_map",
+      "rule_type": "criteria",
       "config": {
-        "levels": [
+        "groups": {
+          "phenotype": {
+            "label": "表现型指标阳性",
+            "any": [
+              "B20-01",
+              "B20-02",
+              "B20-03",
+              "B20-04",
+              "B20-05"
+            ]
+          },
+          "etiology": {
+            "label": "病因型指标阳性",
+            "any": [
+              "B20-06",
+              "B20-07",
+              "B20-08",
+              "B20-09",
+              "B20-10"
+            ]
+          },
+          "severe": {
+            "label": "达重度分级标准",
+            "any": [
+              "B20-11",
+              "B20-12",
+              "B20-13",
+              "B20-14"
+            ]
+          }
+        },
+        "rules": [
           {
-            "min": 0,
-            "max": 4,
-            "level": "GLIM 营养不良判定（分项标准待原文确认）",
-            "interpretation": "本表按诊断、肌肉减少、病因型指标、严重程度分级四项标准综合判定；各项具体指标界值与判定组合规则待 WS/T 888—2026 附录 B 原文核对后写入。",
+            "expr": "phenotype and etiology and severe",
+            "level": "营养不良（重度）",
+            "interpretation": "表现型指标与病因型指标同时阳性，且符合体质量显著下降或低体质指数，按 GLIM 标准为重度营养不良，建议尽快由临床营养科评估并启动营养干预。",
+            "abnormal": true,
+            "severity": "high"
+          },
+          {
+            "expr": "phenotype and etiology",
+            "level": "营养不良（中度）",
+            "interpretation": "表现型指标与病因型指标同时阳性，按 GLIM 标准诊断营养不良，未达重度标准，建议由临床营养科评估并启动营养干预。",
+            "abnormal": true,
+            "severity": "medium"
+          },
+          {
+            "expr": "phenotype or etiology",
+            "level": "未达营养不良诊断标准（存在单项指标异常）",
+            "interpretation": "仅单项指标阳性，按 GLIM 标准尚不构成营养不良诊断，建议定期复评并关注体重与进食量变化。",
+            "abnormal": false,
+            "severity": "info"
+          },
+          {
+            "expr": "default",
+            "level": "未达营养不良诊断标准",
+            "interpretation": "各项指标均未见异常，未达 GLIM 营养不良诊断标准，建议按期复评。",
             "abnormal": false,
             "severity": "none"
           }
         ]
       }
     },
-    "flags": []
+    "flags": [
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B20-01",
+              "op": "eq",
+              "value": "yes"
+            },
+            {
+              "question": "B20-02",
+              "op": "eq",
+              "value": "yes"
+            }
+          ]
+        },
+        "flag": "体重明显下降",
+        "symptom_codes": [
+          "weight_loss"
+        ],
+        "severity": "high"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B20-03",
+              "op": "eq",
+              "value": "yes"
+            },
+            {
+              "question": "B20-04",
+              "op": "eq",
+              "value": "yes"
+            }
+          ]
+        },
+        "flag": "低体质指数",
+        "symptom_codes": [
+          "low_bmi",
+          "weight_loss"
+        ],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B20-05",
+              "op": "eq",
+              "value": "yes"
+            }
+          ]
+        },
+        "flag": "肌肉减少",
+        "symptom_codes": [
+          "muscle_mass_loss",
+          "muscle_weakness"
+        ],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B20-06",
+              "op": "eq",
+              "value": "yes"
+            },
+            {
+              "question": "B20-07",
+              "op": "eq",
+              "value": "yes"
+            }
+          ]
+        },
+        "flag": "摄入量持续不足",
+        "symptom_codes": [
+          "poor_appetite"
+        ],
+        "severity": "medium"
+      }
+    ]
   },
-  "branches": [],
-  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。需求文档 §5.2 仅给出「含诊断、肌肉减少、病因型指标、严重程度分级 4 项分标准」的框架性判读，未给出数值分界，本表按该口径保留单一占位分层，避免臆造阈值；各分项指标与判定组合规则待原文核对。"
+  "branches": [
+    {
+      "code": "B20-B1",
+      "when": {
+        "any": [
+          {
+            "question": "B20-05",
+            "op": "eq",
+            "value": "yes"
+          }
+        ]
+      },
+      "target_scale": "B.3",
+      "reason": "存在肌肉减少，建议加做简易体能状况量表（SPPB）评估躯体功能，并评估跌倒风险。"
+    }
+  ],
+  "notes": "判读按表B.20-1 与表B.20-3 注：任何一种表现型指标同时合并任何一种病因型指标，诊断营养不良；再按表B.20-4 分级：符合体质量显著下降或低体质指数为重度，不符合为中度。表B.20-2 肌肉减少标准：骨骼肌指数（双能 X 线吸收法）男 <7.0、女 <5.4 kg/m²；骨骼肌指数（生物电阻抗法）男 <7.0、女 <5.7 kg/m²；去脂体质指数 男 <17.0、女 <15.0 kg/m²；满足任一项即判断为肌肉减少。本表结论为营养状况评估结果，不替代临床诊断，需由医师确认。",
+  "review_required": true
 }

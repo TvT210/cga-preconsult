@@ -6,32 +6,288 @@
   "standard_ref": "WS/T 888—2026 附录B B.21",
   "version": "0.1.0-draft",
   "review_status": "draft_pending_medical_review",
-  "summary": "依据意识状态相关条目判断老年人有无谵妄，判定结果编码为 0（无）/1（有）。",
-  "collection": { "support": ["staff"], "proxy_allowed": true, "measured": false },
+  "summary": "按 CAM 四条目评估：急性起病与病情波动、注意力不集中、思维混乱、意识水平改变；条目 1 和 2 阳性且满足条目 3 或 4 时判为谵妄评估阳性。",
+  "collection": {
+    "support": [
+      "staff"
+    ],
+    "proxy_allowed": true,
+    "measured": false
+  },
   "sections": [
     {
       "code": "B21-S1",
-      "title": "意识状态与谵妄判定",
-      "questions": []
+      "title": "四条目评估（回答为「是」即该条目阳性）",
+      "questions": [
+        {
+          "code": "B21-01",
+          "text": "条目 1-问题 1：与基础水平相比，是否有证据表明精神状态急性变化",
+          "plain_text": "跟老人平时的状态比，最近精神状态是不是突然变了？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B21-02",
+          "text": "条目 1-问题 2：1 天中（异常）行为是否存在波动性",
+          "plain_text": "这一天里，老人时好时坏、一阵清楚一阵糊涂吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B21-03",
+          "text": "条目 2：注意力是否难以集中",
+          "plain_text": "跟老人说话时，他容易走神、跟不上话题吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B21-04",
+          "text": "条目 3：思维是否混乱或不连贯",
+          "plain_text": "老人说话是不是东一句西一句、前后不搭？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        },
+        {
+          "code": "B21-05",
+          "text": "条目 4：当前意识水平是否异常（过度警觉／嗜睡／昏睡）",
+          "plain_text": "老人现在的清醒程度正常吗？比如特别容易受惊、老是打瞌睡、或者很难叫醒。",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 1
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        }
+      ]
     }
   ],
   "scoring": {
     "score": {
       "rule_type": "sum",
-      "config": { "items": [] },
-      "explanation": "条目待补录；补录后按意识状态条目的判定结果计分（0 表示无谵妄，1 表示存在谵妄）。"
+      "config": {
+        "items": [
+          {
+            "code": "B21-01",
+            "label": "",
+            "max_score": 1
+          },
+          {
+            "code": "B21-02",
+            "label": "",
+            "max_score": 1
+          },
+          {
+            "code": "B21-03",
+            "label": "",
+            "max_score": 1
+          },
+          {
+            "code": "B21-04",
+            "label": "",
+            "max_score": 1
+          },
+          {
+            "code": "B21-05",
+            "label": "",
+            "max_score": 1
+          }
+        ]
+      },
+      "explanation": "本表不折算总分，total 记录阳性条目数（0~5）；判读按 CAM 布尔组合：条目 1 ∧ 条目 2 ∧（条目 3 ∨ 条目 4）。"
     },
     "levels": {
-      "rule_type": "level_map",
+      "rule_type": "criteria",
       "config": {
-        "levels": [
-          { "min": 0, "max": 0, "level": "无谵妄", "interpretation": "未提示谵妄。", "abnormal": false, "severity": "none" },
-          { "min": 1, "max": 1, "level": "存在谵妄", "interpretation": "提示存在谵妄，需尽快查找诱因（感染、脱水、便秘、缺氧、药物等）并由医护处理。", "abnormal": true, "severity": "high" }
+        "groups": {
+          "f1": {
+            "label": "条目 1 急性起病或波动性阳性",
+            "any": [
+              "B21-01",
+              "B21-02"
+            ]
+          },
+          "f2": {
+            "label": "条目 2 注意力不集中阳性",
+            "any": [
+              "B21-03"
+            ]
+          },
+          "f3": {
+            "label": "条目 3 思维混乱阳性",
+            "any": [
+              "B21-04"
+            ]
+          },
+          "f4": {
+            "label": "条目 4 意识水平改变阳性",
+            "any": [
+              "B21-05"
+            ]
+          }
+        },
+        "rules": [
+          {
+            "expr": "f1 and f2 and (f3 or f4)",
+            "level": "谵妄评估阳性",
+            "interpretation": "符合 CAM 谵妄评估阳性条件，提示存在谵妄可能，需立即由临床医师评估处理；本结果不作为诊断结论。",
+            "abnormal": true,
+            "severity": "high"
+          },
+          {
+            "expr": "default",
+            "level": "谵妄评估阴性",
+            "interpretation": "未达到 CAM 阳性条件，本次未见谵妄表现；如病情变化需重新评估。",
+            "abnormal": false,
+            "severity": "none"
+          }
         ]
       }
     },
-    "flags": []
+    "flags": [
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B21-03",
+              "op": "eq",
+              "value": "yes"
+            }
+          ]
+        },
+        "flag": "注意力不集中",
+        "symptom_codes": [
+          "attention_deficit"
+        ],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B21-04",
+              "op": "eq",
+              "value": "yes"
+            }
+          ]
+        },
+        "flag": "思维混乱",
+        "symptom_codes": [
+          "thought_disorder",
+          "delirium_fluctuation"
+        ],
+        "severity": "high"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B21-05",
+              "op": "eq",
+              "value": "yes"
+            }
+          ]
+        },
+        "flag": "意识水平异常",
+        "symptom_codes": [
+          "consciousness_decreased",
+          "delirium_fluctuation"
+        ],
+        "severity": "high"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B21-01",
+              "op": "eq",
+              "value": "yes"
+            }
+          ]
+        },
+        "flag": "精神状态急性变化",
+        "symptom_codes": [
+          "delirium_fluctuation"
+        ],
+        "severity": "high"
+      }
+    ]
   },
-  "branches": [],
-  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。判读按需求文档 §5.2「依据意识状态条目判断有无谵妄」预置，以判定结果 0/1 表达，意识状态条目与判定细则待原文核对。"
+  "branches": [
+    {
+      "code": "B21-B1",
+      "when": {
+        "all": [
+          {
+            "question": "B21-03",
+            "op": "eq",
+            "value": "yes"
+          }
+        ]
+      },
+      "target_scale": "B.8",
+      "reason": "存在注意力不集中，建议加做简易智力评估以区分痴呆与谵妄（谵妄多有急性起病与波动性）。"
+    }
+  ],
+  "notes": "条目与判读取自表B.21：条目 1 中任一问题答案为「是」即条目 1 阳性；条目 2、3 回答「是」即阳性；存在条目 4 中任何一种临床表现异常即条目 4 阳性。注2 评判标准：条目 1 和条目 2 均为阳性，且满足条目 3 或条目 4，判为谵妄。标准此处表述为「诊断为谵妄」，但按项目红线 AI 不输出诊断结论，故本表结论表述为「谵妄评估阳性」并置 review_required，须由临床医师确认。",
+  "review_required": true
 }

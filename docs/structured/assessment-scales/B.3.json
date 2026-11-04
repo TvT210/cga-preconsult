@@ -6,33 +6,153 @@
   "standard_ref": "WS/T 888—2026 附录B B.3",
   "version": "0.1.0-draft",
   "review_status": "draft_pending_medical_review",
-  "summary": "由平衡、步速与 5 次起坐三部分实测构成的老年人体能状况评估，总分 0~12 分。",
+  "summary": "由平衡测试、4 m 步速测试与 5 次起-坐试验三项实测构成，总分 0~12 分。",
   "collection": { "support": ["staff"], "proxy_allowed": false, "measured": true },
   "sections": [
     {
       "code": "B3-S1",
-      "title": "平衡、步速与 5 次起坐",
-      "questions": []
+      "title": "第一项 平衡测试（3 个位置原地站立各 10 s）",
+      "questions": [
+        {
+          "code": "B3-01",
+          "text": "A. 并排站立",
+          "plain_text": "两只脚并排站好，尽量站住十秒，我在旁边给您计时。",
+          "input_type": "single",
+          "required": true,
+          "measure": { "unit": "s", "hint": "记录实际保持秒数（0~10）" },
+          "options": [
+            { "value": "hold", "label": "保持 10 s", "score": 1, "min": 10, "max": 10 },
+            { "value": "fail", "label": "未保持 10 s", "score": 0, "min": 0, "max": 9.99 },
+            { "value": "no_try", "label": "不尝试（结束平衡测试）", "score": 0 }
+          ]
+        },
+        {
+          "code": "B3-02",
+          "text": "B. 半足距站立",
+          "plain_text": "一只脚的脚跟放到另一只脚的大脚趾旁边，站住十秒。",
+          "input_type": "single",
+          "required": true,
+          "measure": { "unit": "s", "hint": "记录实际保持秒数（0~10）" },
+          "options": [
+            { "value": "hold", "label": "保持 10 s", "score": 1, "min": 10, "max": 10 },
+            { "value": "fail", "label": "未保持 10 s", "score": 0, "min": 0, "max": 9.99 },
+            { "value": "no_try", "label": "不尝试（结束平衡测试）", "score": 0 }
+          ]
+        },
+        {
+          "code": "B3-03",
+          "text": "C. 全足距站立",
+          "plain_text": "一只脚的脚跟顶住另一只脚的脚尖，站住十秒。",
+          "input_type": "single",
+          "required": true,
+          "measure": { "unit": "s", "hint": "记录实际保持秒数（0~10）" },
+          "options": [
+            { "value": "hold", "label": "保持 10 s", "score": 2, "min": 10, "max": 10 },
+            { "value": "hold_3_9", "label": "保持 3~9.99 s", "score": 1, "min": 3, "max": 9.99 },
+            { "value": "fail", "label": "保持 <3 s", "score": 0, "min": 0, "max": 2.99 },
+            { "value": "no_try", "label": "不尝试", "score": 0 }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B3-S2",
+      "title": "第二项 步速测试（步行 4 m，测量两次取最佳值）",
+      "questions": [
+        {
+          "code": "B3-04",
+          "text": "4 m 步行时间",
+          "plain_text": "按平常走路的速度走完这四米，我计一下时间，走两次取快的那次。",
+          "input_type": "single",
+          "required": true,
+          "measure": { "unit": "s", "hint": "填写两次测量中的最佳值（秒）" },
+          "options": [
+            { "value": "lt_4_82", "label": "<4.82 s", "score": 4, "min": 0, "max": 4.82 },
+            { "value": "4_82_6_20", "label": "4.82~6.20 s", "score": 3, "min": 4.821, "max": 6.2 },
+            { "value": "6_21_8_70", "label": "6.21~8.70 s", "score": 2, "min": 6.201, "max": 8.7 },
+            { "value": "gt_8_70", "label": ">8.70 s", "score": 1, "min": 8.701, "max": 600 },
+            { "value": "unable", "label": "不能完成", "score": 0 }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B3-S3",
+      "title": "第三项 5 次起-坐试验（双手交叉胸前，尽可能快地起立坐下）",
+      "questions": [
+        {
+          "code": "B3-05",
+          "text": "5 次起-坐时间",
+          "plain_text": "双手抱在胸前，连续站起来坐下五次，越快越好，我给您计时。",
+          "input_type": "single",
+          "required": true,
+          "measure": { "unit": "s", "hint": "记录完成 5 次起-坐的总秒数" },
+          "options": [
+            { "value": "lte_11_19", "label": "≤11.19 s", "score": 4, "min": 0, "max": 11.19 },
+            { "value": "11_20_13_69", "label": "11.20~13.69 s", "score": 3, "min": 11.191, "max": 13.69 },
+            { "value": "13_70_16_69", "label": "13.70~16.69 s", "score": 2, "min": 13.691, "max": 16.69 },
+            { "value": "16_70_60", "label": "16.70~60 s", "score": 1, "min": 16.691, "max": 60 },
+            { "value": "unable", "label": ">60 s 或不能完成", "score": 0, "min": 60.001, "max": 600 }
+          ]
+        }
+      ]
     }
   ],
   "scoring": {
     "score": {
       "rule_type": "sum",
-      "config": { "items": [] },
-      "explanation": "条目待补录；补录后按平衡、步速、5 次起坐各分项得分求和，满分 12 分。"
+      "config": {
+        "items": [
+          { "code": "B3-01", "label": "平衡 A 并排站立", "max_score": 1 },
+          { "code": "B3-02", "label": "平衡 B 半足距站立", "max_score": 1 },
+          { "code": "B3-03", "label": "平衡 C 全足距站立", "max_score": 2 },
+          { "code": "B3-04", "label": "4 m 步速测试", "max_score": 4 },
+          { "code": "B3-05", "label": "5 次起-坐试验", "max_score": 4 }
+        ]
+      },
+      "explanation": "三项测试得分之和，满分 12 分（表B.3 注1）。"
     },
     "levels": {
       "rule_type": "level_map",
       "config": {
         "levels": [
-          { "min": 0, "max": 6, "level": "较差", "interpretation": "体能状况较差，下肢功能与平衡能力明显下降，跌倒风险升高。", "abnormal": true, "severity": "high" },
-          { "min": 7, "max": 9, "level": "中等", "interpretation": "体能状况中等，可维持日常活动但储备能力有限。", "abnormal": true, "severity": "medium" },
-          { "min": 10, "max": 12, "level": "良好", "interpretation": "体能状况良好。", "abnormal": false, "severity": "none" }
+          { "min": 0, "max": 6, "level": "较差", "interpretation": "体能状况较差，下肢功能与平衡能力明显下降，跌倒风险升高，建议尽快由康复科评估。", "abnormal": true, "severity": "high" },
+          { "min": 7, "max": 9, "level": "中等", "interpretation": "体能状况中等，可维持日常活动但储备能力有限，建议进行平衡与下肢力量训练后复评。", "abnormal": true, "severity": "medium" },
+          { "min": 10, "max": 12, "level": "良好", "interpretation": "体能状况良好，建议保持规律活动并按期复评。", "abnormal": false, "severity": "none" }
         ]
       }
     },
-    "flags": []
+    "flags": [
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B3-03", "op": "lt", "value": 2 }] },
+        "flag": "平衡能力下降",
+        "symptom_codes": ["gait_instability", "muscle_weakness"],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B3-04", "op": "lte", "value": 2 }] },
+        "flag": "步速明显减慢",
+        "symptom_codes": ["gait_slow", "difficulty_walking", "low_activity"],
+        "severity": "high"
+      },
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B3-05", "op": "lte", "value": 2 }] },
+        "flag": "起坐困难提示下肢肌力下降",
+        "symptom_codes": ["muscle_weakness", "chair_transfer_difficulty"],
+        "severity": "medium"
+      }
+    ]
   },
-  "branches": [],
-  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。判读分界按需求文档 §5.2 预置（10~12 良好、7~9 中等、0~6 较差），实测动作、计时与停止标准待原文核对。"
+  "branches": [
+    {
+      "code": "B3-B1",
+      "when": { "any": [{ "question": "B3-04", "op": "lte", "value": 2 }] },
+      "target_scale": "B.1",
+      "reason": "步速明显减慢，建议加做基本日常生活活动能力评估，明确失能程度。"
+    }
+  ],
+  "notes": "判读分界取自表B.3 注2：10~12 分良好、7~9 分中等、0~6 分较差。条目分档取自表B.3 原文：平衡 A/B 各 0~1 分、C 0~2 分；步速 <4.82 s 得 4 分、4.82~6.20 s 得 3 分、6.21~8.70 s 得 2 分、>8.70 s 得 1 分、不能完成 0 分；5 次起-坐 ≤11.19 s 得 4 分、11.20~13.69 s 得 3 分、13.70~16.69 s 得 2 分、16.70~60 s 得 1 分、>60 s 或不能完成 0 分。实测前需确认环境有足够大且安全的空间；平衡 A 项选择「不尝试」时按标准结束平衡测试，B、C 项标为跳过并按缺项提示。"
 }

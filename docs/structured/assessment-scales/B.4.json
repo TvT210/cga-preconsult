@@ -6,34 +6,162 @@
   "standard_ref": "WS/T 888—2026 附录B B.4",
   "version": "0.1.0-draft",
   "review_status": "draft_pending_medical_review",
-  "summary": "评估老年人视力状况，0~4 分，可佩戴眼镜评测。",
-  "collection": { "support": ["staff"], "proxy_allowed": false, "measured": true },
+  "summary": "通过能否看清书报标准字体、大字体、辨认物体等五级表现判断视力状况，结果 4/3/2/1/0 分。",
+  "collection": {
+    "support": [
+      "staff"
+    ],
+    "proxy_allowed": false,
+    "measured": true
+  },
   "sections": [
     {
       "code": "B4-S1",
-      "title": "视力实测",
-      "questions": []
+      "title": "视力简易评估",
+      "questions": [
+        {
+          "code": "B4-01",
+          "text": "视力简易评估（五级）",
+          "plain_text": "您看东西能看清到哪一步？我按您说的情况选一个。",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "4",
+              "label": "能看清书报上的标准字体",
+              "score": 4
+            },
+            {
+              "value": "3",
+              "label": "能看清楚大字体，但看不清书报上的标准字体",
+              "score": 3
+            },
+            {
+              "value": "2",
+              "label": "视力有限，看不清报纸大标题，但能辨认物体",
+              "score": 2
+            },
+            {
+              "value": "1",
+              "label": "辨认物体有困难，但眼睛能跟随物体移动，只能看到光、颜色和形状",
+              "score": 1
+            },
+            {
+              "value": "0",
+              "label": "没有视力，眼睛不能跟随物体移动",
+              "score": 0
+            }
+          ]
+        }
+      ]
     }
   ],
   "scoring": {
     "score": {
       "rule_type": "sum",
-      "config": { "items": [] },
-      "explanation": "条目待补录；补录后按各测视条目得分求和，总分 0~4 分。"
+      "config": {
+        "items": [
+          {
+            "code": "B4-01",
+            "label": "视力简易评估",
+            "max_score": 4
+          }
+        ]
+      },
+      "explanation": "单题得分即为总分（表B.4）。"
     },
     "levels": {
       "rule_type": "level_map",
       "config": {
         "levels": [
-          { "min": 4, "max": 4, "level": "正常", "interpretation": "视力正常（评测时可佩戴眼镜）。", "abnormal": false, "severity": "none" },
-          { "min": 3, "max": 3, "level": "低视力", "interpretation": "视力低下但保留部分有用视功能。", "abnormal": true, "severity": "low" },
-          { "min": 1, "max": 2, "level": "盲", "interpretation": "视力严重受损，属盲的范围，生活需大量协助。", "abnormal": true, "severity": "high" },
-          { "min": 0, "max": 0, "level": "完全失明", "interpretation": "完全失明（评测时可佩戴眼镜）。", "abnormal": true, "severity": "high" }
+          {
+            "min": 4,
+            "max": 4,
+            "level": "视力正常",
+            "interpretation": "能看清书报标准字体，视力正常。",
+            "abnormal": false,
+            "severity": "none"
+          },
+          {
+            "min": 3,
+            "max": 3,
+            "level": "低视力",
+            "interpretation": "只能看清大字体，建议到眼科进一步评估。",
+            "abnormal": true,
+            "severity": "low"
+          },
+          {
+            "min": 1,
+            "max": 2,
+            "level": "盲",
+            "interpretation": "视力严重受损，建议尽快到眼科评估，并注意居家防跌倒。",
+            "abnormal": true,
+            "severity": "high"
+          },
+          {
+            "min": 0,
+            "max": 0,
+            "level": "完全失明",
+            "interpretation": "无视力，需照护支持与无障碍环境改造。",
+            "abnormal": true,
+            "severity": "high"
+          }
         ]
       }
     },
-    "flags": []
+    "flags": [
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B4-01",
+              "op": "lte",
+              "value": 3
+            }
+          ]
+        },
+        "flag": "视力下降",
+        "symptom_codes": [
+          "vision_impairment"
+        ],
+        "severity": "low"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B4-01",
+              "op": "lte",
+              "value": 2
+            }
+          ]
+        },
+        "flag": "视力严重受损",
+        "symptom_codes": [
+          "vision_impairment",
+          "fall_history"
+        ],
+        "severity": "high"
+      }
+    ]
   },
-  "branches": [],
-  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。判读分界按需求文档 §5.2 预置（4 正常、3 低视力、1~2 盲、0 完全失明），视力测试方法与器械要求待原文核对。"
+  "branches": [
+    {
+      "code": "B4-B1",
+      "when": {
+        "any": [
+          {
+            "question": "B4-01",
+            "op": "lte",
+            "value": 3
+          }
+        ]
+      },
+      "target_scale": "B.5",
+      "reason": "视力筛查 ≤3 分，按标准应进一步到眼科评估；先加做视觉功能简易评估补充视野与视物变形情况。"
+    }
+  ],
+  "notes": "判读分界取自表B.4 注2：4 分视力正常、3 分低视力、1~2 分盲、0 分完全失明。注1：若平日佩戴老花镜或近视镜，应在佩戴眼镜的情况下评估。标准 7.2.3：视力筛查≤3 分应进一步到眼科评估。"
 }
