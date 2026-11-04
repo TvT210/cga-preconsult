@@ -176,6 +176,36 @@ def test_elder_cannot_access_other_patient():
     assert response.status_code == 403
 
 
+def test_elder_list_endpoints_do_not_error():
+    """老人角色的列表接口必须可访问（回归：曾因过滤表达式优先级错误导致 500）。"""
+    elder = _login("elder", "elder12345")
+    headers = _auth(elder["token"])
+    for path in ("/assessments", "/reports", "/alerts", "/periodic", "/followups"):
+        response = client.get(f"/api/v1{path}", headers=headers)
+        assert response.status_code == 200, f"{path} -> {response.status_code} {response.text}"
+        assert response.json()["code"] == 0
+
+
+def test_elder_only_sees_own_data():
+    elder = _login("elder", "elder12345")
+    nurse = _login("nurse", "nurse12345")
+    created = client.post(
+        "/api/v1/patients",
+        headers=_auth(nurse["token"]),
+        json={"name": "非本人患者", "gender": "男", "birth_date": "1950-01-01"},
+    )
+    other_id = created.json()["data"]["id"]
+    elder_headers = _auth(elder["token"])
+    own_id = elder["user"]["patient_id"]
+    assessments = client.get("/api/v1/assessments", headers=elder_headers).json()["data"]
+    for item in assessments["items"]:
+        assert item["patient_id"] == own_id
+    reports = client.get("/api/v1/reports", headers=elder_headers).json()["data"]
+    for item in reports:
+        assert item["patient_id"] == own_id
+    assert other_id != own_id
+
+
 def test_elder_can_access_own_patient():
     elder = _login("elder", "elder12345")
     patient_id = elder["user"]["patient_id"]
