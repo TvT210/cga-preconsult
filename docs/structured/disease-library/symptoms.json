@@ -6,7 +6,7 @@
     { "code": "fall_history", "term": "跌倒史", "category": "躯体功能", "synonyms": ["摔倒", "跌过跤", "走路摔倒"] },
     { "code": "fall_injury", "term": "跌倒致伤", "category": "躯体功能", "synonyms": ["摔倒受伤", "跌倒骨折"] },
     { "code": "gait_slow", "term": "步速缓慢", "category": "躯体功能", "synonyms": ["走得慢", "走路慢", "步速下降"] },
-    { "code": "gait_instability", "term": "步态不稳", "category": "躯体功能", "synonyms": ["走路摇晃", "站不稳", "打晃"] },
+    { "code": "gait_instability", "term": "步态不稳", "category": "躯体功能", "synonyms": ["走路摇晃", "走路不稳", "走路发飘", "走不稳", "走路打晃", "站不稳", "打晃"] },
     { "code": "muscle_weakness", "term": "肌力下降", "category": "躯体功能", "synonyms": ["没力气", "力气小", "提不动东西"] },
     { "code": "muscle_mass_loss", "term": "肌量减少", "category": "躯体功能", "synonyms": ["肌肉萎缩", "瘦了没力气", "肌少症"] },
     { "code": "difficulty_walking", "term": "行走困难", "category": "躯体功能", "synonyms": ["走不动", "走路费劲", "行走受限"] },

@@ -121,6 +121,35 @@ def build_messages(patient_name: str, history: list[dict], user_text: str) -> li
     return messages
 
 
+def _latest_scale_results(db: Session, patient_id: int) -> list[dict]:
+    """取该患者各量表的最新结果，供冲突检测使用。"""
+    from app.db.models import AssessmentScore
+
+    latest: dict[str, AssessmentScore] = {}
+    for score in (
+        db.query(AssessmentScore)
+        .filter(AssessmentScore.patient_id == patient_id)
+        .order_by(AssessmentScore.created_at.desc())
+        .all()
+    ):
+        latest.setdefault(score.scale_code, score)
+    results: list[dict] = []
+    for score in latest.values():
+        symptom_codes: list[str] = []
+        for flag in score.flags or []:
+            symptom_codes.extend(flag.get("symptom_codes", []) or [])
+        results.append(
+            {
+                "scale_code": score.scale_code,
+                "scale_name": score.scale_code,
+                "level": score.level,
+                "abnormal": score.abnormal,
+                "symptom_codes": symptom_codes,
+            }
+        )
+    return results
+
+
 def run_dialogue_turn(
     db: Session,
     session: DialogueSession,
@@ -138,6 +167,7 @@ def run_dialogue_turn(
 
     extracted_symptoms = extract_symptoms(user_text)
     safety_note = check_safety(user_text) or check_safety(reply)
+    conflict_flags = detect_conflicts(extracted_symptoms, _latest_scale_results(db, session.patient_id))
 
     db.add(
         DialogueTurn(
@@ -146,6 +176,7 @@ def run_dialogue_turn(
             content=user_text,
             extracted={"symptoms": extracted_symptoms, "proxy": proxy or {}},
             safety_note=safety_note,
+            conflict_flags=conflict_flags,
         )
     )
     db.add(
@@ -174,7 +205,7 @@ def run_dialogue_turn(
         "reply": reply,
         "extracted": {"symptoms": extracted_symptoms, "proxy": proxy or {}},
         "safety_note": safety_note,
-        "conflict_flags": [],
+        "conflict_flags": conflict_flags,
         "disclaimer": SAFETY_DISCLAIMER,
         "model": getattr(provider, "model", "mock"),
         "prompt_version": DIALOGUE_PROMPT_VERSION,
