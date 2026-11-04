@@ -1061,6 +1061,91 @@
         "嗅觉不灵",
         "闻不出饭菜味"
       ]
+    },
+    {
+      "code": "vision_impairment",
+      "term": "视力下降",
+      "category": "躯体功能",
+      "synonyms": [
+        "看不清",
+        "眼花",
+        "看东西模糊",
+        "看不见大字"
+      ]
+    },
+    {
+      "code": "visual_field_deficit",
+      "term": "视野缺损",
+      "category": "躯体功能",
+      "synonyms": [
+        "有东西挡着",
+        "边上看不见",
+        "视野缺一块"
+      ]
+    },
+    {
+      "code": "hearing_impairment",
+      "term": "听力下降",
+      "category": "躯体功能",
+      "synonyms": [
+        "听不清",
+        "耳背",
+        "听不见",
+        "要大声说"
+      ]
+    },
+    {
+      "code": "home_environment_hazard",
+      "term": "居家环境危险因素",
+      "category": "社会与环境",
+      "synonyms": [
+        "家里容易摔",
+        "地面滑",
+        "没扶手",
+        "灯不亮"
+      ]
+    },
+    {
+      "code": "cognitive_impairment",
+      "term": "认知功能障碍",
+      "category": "精神心理",
+      "synonyms": [
+        "记性差",
+        "反应慢",
+        "算不清账",
+        "糊涂"
+      ]
+    },
+    {
+      "code": "attention_deficit",
+      "term": "注意力不集中",
+      "category": "精神心理",
+      "synonyms": [
+        "走神",
+        "跟不上话",
+        "容易分心"
+      ]
+    },
+    {
+      "code": "thought_disorder",
+      "term": "思维混乱",
+      "category": "精神心理",
+      "synonyms": [
+        "说话东一句西一句",
+        "前言不搭后语",
+        "说不清楚"
+      ]
+    },
+    {
+      "code": "consciousness_decreased",
+      "term": "意识水平下降",
+      "category": "精神心理",
+      "synonyms": [
+        "嗜睡",
+        "叫不醒",
+        "昏睡",
+        "迷迷糊糊"
+      ]
     }
   ]
 }

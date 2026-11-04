@@ -6,35 +6,165 @@
   "standard_ref": "WS/T 888—2026 附录B B.17",
   "version": "0.1.0-draft",
   "review_status": "draft_pending_medical_review",
-  "summary": "通过定量饮水观察呛咳与饮水量，评估老年人吞咽功能，判定为 Ⅰ~Ⅴ 级，级别越高吞咽障碍越重。",
-  "collection": { "support": ["staff"], "proxy_allowed": false, "measured": true },
+  "summary": "嘱老人喝下 30 ml 温开水，观察所需时间、呛咳情况与异常征象，对照分级标准判为 1~5 级，级别越高吞咽障碍越重。",
+  "collection": {
+    "support": [
+      "staff"
+    ],
+    "proxy_allowed": false,
+    "measured": true
+  },
   "sections": [
     {
       "code": "B17-S1",
-      "title": "定量饮水观察",
-      "questions": []
+      "title": "饮水试验（30 ml 温开水）",
+      "questions": [
+        {
+          "code": "B17-01",
+          "text": "饮水试验分级",
+          "plain_text": "请像平常一样把这小杯水喝完，我看看您喝的情况。",
+          "input_type": "single",
+          "required": true,
+          "measure": {
+            "unit": "s",
+            "hint": "记录喝完 30 ml 的时间（秒）"
+          },
+          "options": [
+            {
+              "value": "l1_within5",
+              "label": "1 级：一次喝完，没有呛咳（≤5 s）",
+              "score": 1,
+              "level": "1 级（正常）",
+              "abnormal": false,
+              "severity": "none",
+              "min": 0,
+              "max": 5
+            },
+            {
+              "value": "l1_over5",
+              "label": "1 级：一次喝完，没有呛咳（>5 s）",
+              "score": 1,
+              "level": "1 级（可疑异常）",
+              "abnormal": true,
+              "severity": "low",
+              "min": 5.001,
+              "max": 600
+            },
+            {
+              "value": "l2",
+              "label": "2 级：两次或两次以上喝完，没有呛咳",
+              "score": 2,
+              "level": "2 级（可疑异常）",
+              "abnormal": true,
+              "severity": "low"
+            },
+            {
+              "value": "l3",
+              "label": "3 级：一次喝完，但有呛咳",
+              "score": 3,
+              "level": "3 级（异常）",
+              "abnormal": true,
+              "severity": "medium"
+            },
+            {
+              "value": "l4",
+              "label": "4 级：两次或两次以上喝完，有呛咳",
+              "score": 4,
+              "level": "4 级（异常）",
+              "abnormal": true,
+              "severity": "high"
+            },
+            {
+              "value": "l5",
+              "label": "5 级：饮水中频繁呛咳，很难全部喝完",
+              "score": 5,
+              "level": "5 级（异常）",
+              "abnormal": true,
+              "severity": "high"
+            }
+          ]
+        }
+      ]
     }
   ],
   "scoring": {
     "score": {
       "rule_type": "sum",
-      "config": { "items": [] },
-      "explanation": "条目待补录；补录后按观察到的吞咽障碍级别编码（Ⅰ~Ⅴ 级对应 1~5）计分。"
+      "config": {
+        "items": [
+          {
+            "code": "B17-01",
+            "label": "饮水试验分级",
+            "max_score": 5
+          }
+        ]
+      },
+      "explanation": "本表不折算总分，total 记录所选分级序号（1~5），用于排序与趋势；判读结论直接取所选分级对应的评判结果（表B.17）。"
     },
     "levels": {
-      "rule_type": "level_map",
+      "rule_type": "single_option_level",
       "config": {
-        "levels": [
-          { "min": 1, "max": 1, "level": "Ⅰ级", "interpretation": "饮水顺利、无呛咳，吞咽功能良好。", "abnormal": false, "severity": "none" },
-          { "min": 2, "max": 2, "level": "Ⅱ级", "interpretation": "分次饮完、无呛咳，提示吞咽功能轻度受限。", "abnormal": false, "severity": "none" },
-          { "min": 3, "max": 3, "level": "Ⅲ级", "interpretation": "一次饮完但伴呛咳，存在误吸风险。", "abnormal": true, "severity": "low" },
-          { "min": 4, "max": 4, "level": "Ⅳ级", "interpretation": "分次饮完且伴呛咳，误吸风险较高。", "abnormal": true, "severity": "medium" },
-          { "min": 5, "max": 5, "level": "Ⅴ级", "interpretation": "多次呛咳、不能完成饮水，吞咽障碍严重。", "abnormal": true, "severity": "high" }
-        ]
+        "question": "B17-01"
       }
     },
-    "flags": []
+    "flags": [
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B17-01",
+              "op": "gte",
+              "value": 3
+            }
+          ]
+        },
+        "flag": "饮水呛咳，存在误吸风险",
+        "symptom_codes": [
+          "aspiration_risk",
+          "dysphagia"
+        ],
+        "severity": "high"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B17-01",
+              "op": "eq",
+              "value": "l1_over5"
+            },
+            {
+              "question": "B17-01",
+              "op": "eq",
+              "value": "l2"
+            }
+          ]
+        },
+        "flag": "饮水时间延长或需分次喝完",
+        "symptom_codes": [
+          "dysphagia"
+        ],
+        "severity": "medium"
+      }
+    ]
   },
-  "branches": [],
-  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。判读按需求文档 §5.2「Ⅰ~Ⅴ 级，级别越高吞咽障碍越重」预置，以级别序号作为计分编码；饮水量、观察时间与各级判定细则待原文核对。"
+  "branches": [
+    {
+      "code": "B17-B1",
+      "when": {
+        "any": [
+          {
+            "question": "B17-01",
+            "op": "gte",
+            "value": 3
+          }
+        ]
+      },
+      "target_scale": "B.19",
+      "reason": "存在呛咳提示吞咽障碍，进食量可能不足，建议加做微营养评定并转康复科评估。"
+    }
+  ],
+  "notes": "分级与评判结果取自表B.17：1 级（≤5 s 一次喝完无呛咳）正常；1 级（>5 s）与 2 级（两次或以上喝完无呛咳）可疑异常；3、4、5 级为异常。注1 饮水中的异常征象：啜饮，喝水时嘴里含着水，水从口中流出，尽管有呛咳但仍勉强自己饮水，饮水时小心翼翼。注2 施测方法：请老年人坐在稳定的椅子上，交给其 1 杯 30 ml 温开水，嘱其按平常喝水的方式饮水，观察并记录所需时间、呛咳情况及饮水过程中的异常征象，对照分级标准给出评判结果。"
 }

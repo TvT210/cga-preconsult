@@ -6,20 +6,228 @@
   "standard_ref": "WS/T 888—2026 附录B B.15",
   "version": "0.1.0-draft",
   "review_status": "draft_pending_medical_review",
-  "summary": "由观察者根据老年人疼痛相关行为评分，3~12 分，分值越高提示疼痛越重。",
-  "collection": { "support": ["staff"], "proxy_allowed": true, "measured": false },
+  "summary": "对无法自述疼痛的老年人，由评估人员观察面部表情、上肢运动与发声（或机械通气顺应性）三项行为，每项 1~4 分，总分 3~12 分；总分越高疼痛程度越高。",
+  "collection": {
+    "support": [
+      "staff"
+    ],
+    "proxy_allowed": false,
+    "measured": false
+  },
   "sections": [
     {
+      "code": "B15-S0",
+      "title": "计分路径选择（决定第 3 项观察内容）",
+      "questions": [
+        {
+          "code": "B15-00",
+          "text": "评估对象是否使用机械通气（气管插管）",
+          "plain_text": "这位老人现在有没有用呼吸机、插着管？",
+          "input_type": "single",
+          "required": true,
+          "record_only": true,
+          "options": [
+            {
+              "value": "vent",
+              "label": "是（插管，观察机械通气顺应性）",
+              "score": 0
+            },
+            {
+              "value": "non_vent",
+              "label": "否（未插管，观察发声）",
+              "score": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
       "code": "B15-S1",
-      "title": "疼痛相关行为观察评分",
-      "questions": []
+      "title": "疼痛行为观察（每项 1~4 分）",
+      "questions": [
+        {
+          "code": "B15-01",
+          "text": "面部表情",
+          "plain_text": "看老人的表情。",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "1",
+              "label": "1 分：表情放松",
+              "score": 1
+            },
+            {
+              "value": "2",
+              "label": "2 分：部分紧绷（如皱眉）",
+              "score": 2
+            },
+            {
+              "value": "3",
+              "label": "3 分：完全紧绷（如眼睛紧闭）",
+              "score": 3
+            },
+            {
+              "value": "4",
+              "label": "4 分：面部扭曲",
+              "score": 4
+            }
+          ]
+        },
+        {
+          "code": "B15-02",
+          "text": "上肢运动",
+          "plain_text": "看老人的胳膊和手。",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "1",
+              "label": "1 分：没有活动",
+              "score": 1
+            },
+            {
+              "value": "2",
+              "label": "2 分：部分弯曲",
+              "score": 2
+            },
+            {
+              "value": "3",
+              "label": "3 分：完全弯曲且手指弯曲",
+              "score": 3
+            },
+            {
+              "value": "4",
+              "label": "4 分：持续回缩",
+              "score": 4
+            }
+          ]
+        },
+        {
+          "code": "B15-03",
+          "text": "机械通气顺应性（插管）",
+          "plain_text": "看老人和呼吸机配合得怎么样。",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "1",
+              "label": "1 分：完全能耐受",
+              "score": 1
+            },
+            {
+              "value": "2",
+              "label": "2 分：呛咳，大部分时间能耐受",
+              "score": 2
+            },
+            {
+              "value": "3",
+              "label": "3 分：对抗呼吸机",
+              "score": 3
+            },
+            {
+              "value": "4",
+              "label": "4 分：不能控制通气",
+              "score": 4
+            }
+          ],
+          "when": {
+            "all": [
+              {
+                "question": "B15-00",
+                "op": "eq",
+                "value": "vent"
+              }
+            ]
+          }
+        },
+        {
+          "code": "B15-04",
+          "text": "发声（非插管）",
+          "plain_text": "听老人有没有发出声音。",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "1",
+              "label": "1 分：无疼痛相关发声",
+              "score": 1
+            },
+            {
+              "value": "2",
+              "label": "2 分：呻吟≤3 次/min 且每次持续时间≤3 s",
+              "score": 2
+            },
+            {
+              "value": "3",
+              "label": "3 分：呻吟>3 次/min 且每次持续时间>3 s",
+              "score": 3
+            },
+            {
+              "value": "4",
+              "label": "4 分：咆哮或使用“哦”“哎哟”等言语抱怨，或屏住呼吸",
+              "score": 4
+            }
+          ],
+          "when": {
+            "all": [
+              {
+                "question": "B15-00",
+                "op": "eq",
+                "value": "non_vent"
+              }
+            ]
+          }
+        }
+      ]
     }
   ],
   "scoring": {
     "score": {
       "rule_type": "sum",
-      "config": { "items": [] },
-      "explanation": "条目待补录；补录后按各行为条目得分求和，总分 3~12 分，分值越高提示疼痛越重。"
+      "config": {
+        "items": [
+          {
+            "code": "B15-01",
+            "label": "面部表情",
+            "max_score": 4
+          },
+          {
+            "code": "B15-02",
+            "label": "上肢运动",
+            "max_score": 4
+          },
+          {
+            "code": "B15-03",
+            "label": "机械通气顺应性",
+            "max_score": 4,
+            "when": {
+              "all": [
+                {
+                  "question": "B15-00",
+                  "op": "eq",
+                  "value": "vent"
+                }
+              ]
+            }
+          },
+          {
+            "code": "B15-04",
+            "label": "发声",
+            "max_score": 4,
+            "when": {
+              "all": [
+                {
+                  "question": "B15-00",
+                  "op": "eq",
+                  "value": "non_vent"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "explanation": "最终得分为条目 1、2、3 或条目 1、2、4 得分的总和，总分 3~12 分（表B.15 注1）；插管者计机械通气顺应性，未插管者计发声。"
     },
     "levels": {
       "rule_type": "level_map",
@@ -28,16 +236,84 @@
           {
             "min": 3,
             "max": 12,
-            "level": "疼痛行为评分（分界值待原文确认）",
-            "interpretation": "按观察到的疼痛相关行为评分，分值越高提示疼痛越重；轻中重分级的具体分界值待 WS/T 888—2026 附录 B 原文核对后写入。",
+            "level": "疼痛行为评分",
+            "interpretation": "总分越高，说明疼痛程度越高（标准未给出数值分界）；本结果需由医护人员结合表情、体位与生命体征复核判断。",
             "abnormal": false,
-            "severity": "none"
+            "severity": "info"
           }
         ]
       }
     },
-    "flags": []
+    "flags": [
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B15-01",
+              "op": "gte",
+              "value": 3
+            }
+          ]
+        },
+        "flag": "面部表情紧绷或扭曲，提示疼痛",
+        "symptom_codes": [
+          "pain_chronic"
+        ],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B15-02",
+              "op": "gte",
+              "value": 3
+            }
+          ]
+        },
+        "flag": "上肢持续弯曲或回缩，提示疼痛",
+        "symptom_codes": [
+          "pain_chronic"
+        ],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B15-04",
+              "op": "gte",
+              "value": 3
+            }
+          ]
+        },
+        "flag": "频繁呻吟或言语抱怨，提示疼痛明显",
+        "symptom_codes": [
+          "pain_chronic"
+        ],
+        "severity": "high"
+      }
+    ]
   },
-  "branches": [],
-  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。需求文档 §5.2 仅给出「3~12 分，分值越高疼痛越重」的方向性判读，未给出数值分界，本表按该口径保留单一占位分层，避免臆造阈值；行为条目与分界待原文核对。"
+  "branches": [
+    {
+      "code": "B15-B1",
+      "when": {
+        "any": [
+          {
+            "question": "B15-01",
+            "op": "gte",
+            "value": 3
+          }
+        ]
+      },
+      "target_scale": "B.14",
+      "reason": "疼痛行为提示明显疼痛，建议在老人可自述时加做慢性疼痛数字评分（NRS）对照。"
+    }
+  ],
+  "notes": "计分口径取自表B.15 注1：每个条目赋予 1~4 分，最终得分为条目 1、2、3 或条目 1、2、4 得分的总和（插管者用第 3 项机械通气顺应性，非插管者用第 4 项发声）。注2：总分 3~12 分，总分越高疼痛程度越高——标准未给出分界值，故本表不设人为分级，置 review_required，疼痛程度由医护结合临床复核。",
+  "review_required": true
 }

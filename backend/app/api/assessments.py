@@ -259,6 +259,18 @@ def get_assessment(
     return payload
 
 
+def _band_for(measured: float, options: list[dict]) -> dict | None:
+    """按实测值匹配分档选项：用于 SPPB 步速/起坐、洼田饮水时间等实测项。"""
+    for option in options:
+        low = option.get("min")
+        high = option.get("max")
+        if low is None and high is None:
+            continue
+        if (low is None or measured >= float(low)) and (high is None or measured <= float(high)):
+            return option
+    return None
+
+
 def _apply_answer(
     db: Session,
     session: AssessmentSession,
@@ -279,6 +291,20 @@ def _apply_answer(
     input_type = question.get("input_type", "single")
     if input_type in {"single", "multi"}:
         options = question.get("options", []) or []
+        # 实测分档题：只提交实测值时按区间自动定档，避免把秒数当分值
+        if (
+            input_type == "single"
+            and (value is None or value == "")
+            and measured is not None
+            and any(opt.get("min") is not None or opt.get("max") is not None for opt in options)
+        ):
+            try:
+                band = _band_for(float(measured), options)
+            except (TypeError, ValueError):
+                band = None
+            if band is None:
+                raise HTTPException(status_code=422, detail="实测值不在任何分档区间内，请核对或交由医护人员判定")
+            value = band.get("value")
         if input_type == "multi":
             values = value if isinstance(value, list) else [value]
             chosen = [opt for opt in options if opt.get("value") in values]

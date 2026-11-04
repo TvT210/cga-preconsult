@@ -6,32 +6,163 @@
   "standard_ref": "WS/T 888—2026 附录B B.7",
   "version": "0.1.0-draft",
   "review_status": "draft_pending_medical_review",
-  "summary": "通过耳语条件下词语复述测试评估老年人听力，以复述失败词语数计分（双耳各 3 个词语，0~6 个）。",
-  "collection": { "support": ["staff"], "proxy_allowed": false, "measured": true },
+  "summary": "评估人员在一臂距离外轻声说出 4 个词语，评估对象逐一复述；任一侧无法正确复述 3 个及以上词语即为阳性。",
+  "collection": {
+    "support": [
+      "staff"
+    ],
+    "proxy_allowed": false,
+    "measured": true
+  },
   "sections": [
     {
       "code": "B7-S1",
-      "title": "耳语词语复述",
-      "questions": []
+      "title": "耳语试验（左右侧分别测试）",
+      "questions": [
+        {
+          "code": "B7-01",
+          "text": "左耳（对侧耳屏关闭后测试）",
+          "plain_text": "请把另一只耳朵按住，我小声说几个词，您跟着重复一遍。",
+          "input_type": "single",
+          "required": true,
+          "measure": {
+            "unit": "个",
+            "hint": "记录该侧能正确复述的词语数（0~4）"
+          },
+          "options": [
+            {
+              "value": "pass",
+              "label": "能正确复述 3 个及以上词语（阴性）",
+              "score": 0,
+              "min": 3,
+              "max": 4
+            },
+            {
+              "value": "fail",
+              "label": "无法正确复述 3 个及以上词语（阳性）",
+              "score": 1,
+              "min": 0,
+              "max": 2
+            }
+          ]
+        },
+        {
+          "code": "B7-02",
+          "text": "右耳（对侧耳屏关闭后测试）",
+          "plain_text": "换另一边耳朵，再听几个词，跟着重复一遍。",
+          "input_type": "single",
+          "required": true,
+          "measure": {
+            "unit": "个",
+            "hint": "记录该侧能正确复述的词语数（0~4）"
+          },
+          "options": [
+            {
+              "value": "pass",
+              "label": "能正确复述 3 个及以上词语（阴性）",
+              "score": 0,
+              "min": 3,
+              "max": 4
+            },
+            {
+              "value": "fail",
+              "label": "无法正确复述 3 个及以上词语（阳性）",
+              "score": 1,
+              "min": 0,
+              "max": 2
+            }
+          ]
+        }
+      ]
     }
   ],
   "scoring": {
     "score": {
       "rule_type": "sum",
-      "config": { "items": [] },
-      "explanation": "条目待补录；补录后按复述失败的词语个数累计计分，双耳各 3 个词语，总分 0~6 个。"
+      "config": {
+        "items": [
+          {
+            "code": "B7-01",
+            "label": "左耳耳语试验",
+            "max_score": 1
+          },
+          {
+            "code": "B7-02",
+            "label": "右耳耳语试验",
+            "max_score": 1
+          }
+        ]
+      },
+      "explanation": "每侧阳性计 1 分，两侧之和 0~2 分；0 分为阴性，≥1 分为阳性（表B.7 注）。"
     },
     "levels": {
       "rule_type": "level_map",
       "config": {
         "levels": [
-          { "min": 0, "max": 2, "level": "阴性", "interpretation": "耳语复述基本正常，各侧均能正确复述多数词语。", "abnormal": false, "severity": "none" },
-          { "min": 3, "max": 6, "level": "阳性", "interpretation": "任一侧无法正确重复 3 个及以上词语，提示听力异常，需进一步评估。", "abnormal": true, "severity": "medium" }
+          {
+            "min": 0,
+            "max": 0,
+            "level": "阴性",
+            "interpretation": "两侧均可正确复述 3 个及以上词语，耳语试验阴性。",
+            "abnormal": false,
+            "severity": "none"
+          },
+          {
+            "min": 1,
+            "max": 2,
+            "level": "阳性",
+            "interpretation": "存在一侧无法正确复述 3 个及以上词语，耳语试验阳性，建议到耳鼻喉科评估。",
+            "abnormal": true,
+            "severity": "medium"
+          }
         ]
       }
     },
-    "flags": []
+    "flags": [
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B7-01",
+              "op": "eq",
+              "value": "fail"
+            },
+            {
+              "question": "B7-02",
+              "op": "eq",
+              "value": "fail"
+            }
+          ]
+        },
+        "flag": "耳语试验阳性",
+        "symptom_codes": [
+          "hearing_impairment"
+        ],
+        "severity": "medium"
+      }
+    ]
   },
-  "branches": [],
-  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。判读按需求文档 §5.2「任一侧无法正确重复 ≥3 个词语为阳性」预置；本表暂以「复述失败词语数」作为计分口径（双耳各 3 个词语），具体词语表、施测距离与判定细则待原文核对。"
+  "branches": [
+    {
+      "code": "B7-B1",
+      "when": {
+        "any": [
+          {
+            "question": "B7-01",
+            "op": "eq",
+            "value": "fail"
+          },
+          {
+            "question": "B7-02",
+            "op": "eq",
+            "value": "fail"
+          }
+        ]
+      },
+      "target_scale": "B.6",
+      "reason": "耳语试验阳性，按标准应到耳鼻喉科评估；建议同时完成听力简易评估分级。"
+    }
+  ],
+  "notes": "判读口径取自表B.7 注：任何一侧耳语试验中无法正确重复出 3 个及以上词语，即评判为阳性。施测步骤：评估人员站在评估对象一侧一臂距离之后；由评估对象或助手按下对侧耳耳屏关闭对侧耳；评估人员呼气后轻声说出 4 个常见且无关联的词语（如金鱼、自行车、花园、黄色）；逐一说出并等待每个词语的反馈；换另一侧并更换词语。本表以「每侧能否正确复述 ≥3 个词语」二分记录，与标准判读口径一致。"
 }

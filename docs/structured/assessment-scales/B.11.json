@@ -6,20 +6,228 @@
   "standard_ref": "WS/T 888—2026 附录B B.11",
   "version": "0.1.0-draft",
   "review_status": "draft_pending_medical_review",
-  "summary": "评估老年人尿失禁症状及其对生活的影响，取第 1、2、3 项之和，分值越高症状越重。",
-  "collection": { "support": ["patient", "staff"], "proxy_allowed": true, "measured": false },
+  "summary": "国际尿失禁咨询委员会尿失禁问卷简表，由漏尿频次（0~5）、漏尿量（0/2/4/6）与影响程度（0~10）三项计分，总分 0~21 分；总分越高，尿失禁程度越严重。",
+  "collection": {
+    "support": [
+      "patient",
+      "staff"
+    ],
+    "proxy_allowed": true,
+    "measured": false
+  },
   "sections": [
     {
       "code": "B11-S1",
-      "title": "尿失禁症状与影响",
-      "questions": []
+      "title": "近 4 周漏尿情况（第 1~3 项计分，第 4 项仅记录类型）",
+      "questions": [
+        {
+          "code": "B11-01",
+          "text": "漏尿频次",
+          "plain_text": "最近四周，您漏尿大概有多频繁？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "0",
+              "label": "从不",
+              "score": 0
+            },
+            {
+              "value": "1",
+              "label": "大约每周 1 次或更少",
+              "score": 1
+            },
+            {
+              "value": "2",
+              "label": "每周 2~3 次",
+              "score": 2
+            },
+            {
+              "value": "3",
+              "label": "大约每天 1 次",
+              "score": 3
+            },
+            {
+              "value": "4",
+              "label": "每天 >1 次",
+              "score": 4
+            },
+            {
+              "value": "5",
+              "label": "一直",
+              "score": 5
+            }
+          ]
+        },
+        {
+          "code": "B11-02",
+          "text": "漏尿量",
+          "plain_text": "每次漏出来的尿量大概有多少？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "0",
+              "label": "没有",
+              "score": 0
+            },
+            {
+              "value": "2",
+              "label": "少量",
+              "score": 2
+            },
+            {
+              "value": "4",
+              "label": "中等量",
+              "score": 4
+            },
+            {
+              "value": "6",
+              "label": "大量",
+              "score": 6
+            }
+          ]
+        },
+        {
+          "code": "B11-03",
+          "text": "漏尿对日常生活的影响程度（0~10）",
+          "plain_text": "漏尿对您平时生活的影响有多大？0 是一点不影响，10 是影响极重。",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "0",
+              "label": "0 分",
+              "score": 0
+            },
+            {
+              "value": "1",
+              "label": "1 分",
+              "score": 1
+            },
+            {
+              "value": "2",
+              "label": "2 分",
+              "score": 2
+            },
+            {
+              "value": "3",
+              "label": "3 分",
+              "score": 3
+            },
+            {
+              "value": "4",
+              "label": "4 分",
+              "score": 4
+            },
+            {
+              "value": "5",
+              "label": "5 分",
+              "score": 5
+            },
+            {
+              "value": "6",
+              "label": "6 分",
+              "score": 6
+            },
+            {
+              "value": "7",
+              "label": "7 分",
+              "score": 7
+            },
+            {
+              "value": "8",
+              "label": "8 分",
+              "score": 8
+            },
+            {
+              "value": "9",
+              "label": "9 分",
+              "score": 9
+            },
+            {
+              "value": "10",
+              "label": "10 分",
+              "score": 10
+            }
+          ]
+        },
+        {
+          "code": "B11-04",
+          "text": "什么时候发生漏尿（可多选，仅记录类型）",
+          "plain_text": "您一般在什么情况下会漏尿？可以多选。",
+          "input_type": "multi",
+          "required": false,
+          "record_only": true,
+          "options": [
+            {
+              "value": "never",
+              "label": "从不漏尿",
+              "score": 0
+            },
+            {
+              "value": "urge",
+              "label": "在未到达厕所之前就有漏尿",
+              "score": 0
+            },
+            {
+              "value": "stress",
+              "label": "在咳嗽和打喷嚏时漏尿",
+              "score": 0
+            },
+            {
+              "value": "sleep",
+              "label": "在睡着时漏尿",
+              "score": 0
+            },
+            {
+              "value": "activity",
+              "label": "在活动和体育运动时漏尿",
+              "score": 0
+            },
+            {
+              "value": "post_micturition",
+              "label": "在小便结束和穿好衣服时漏尿",
+              "score": 0
+            },
+            {
+              "value": "unexplained",
+              "label": "没有明显原因的漏尿",
+              "score": 0
+            },
+            {
+              "value": "continuous",
+              "label": "一直漏尿",
+              "score": 0
+            }
+          ]
+        }
+      ]
     }
   ],
   "scoring": {
     "score": {
       "rule_type": "sum",
-      "config": { "items": [] },
-      "explanation": "条目待补录；补录后按第 1、2、3 项得分求和（每项 0~6 分，总分 0~18 分），分值越高症状越重。"
+      "config": {
+        "items": [
+          {
+            "code": "B11-01",
+            "label": "漏尿频次",
+            "max_score": 5
+          },
+          {
+            "code": "B11-02",
+            "label": "漏尿量",
+            "max_score": 6
+          },
+          {
+            "code": "B11-03",
+            "label": "影响程度",
+            "max_score": 10
+          }
+        ]
+      },
+      "explanation": "第 1、2、3 项得分之和，满分 21 分（表B.11 注2）；第 4 项仅记录漏尿类型，不计分。"
     },
     "levels": {
       "rule_type": "level_map",
@@ -27,17 +235,111 @@
         "levels": [
           {
             "min": 0,
-            "max": 18,
-            "level": "尿失禁程度（分界值待原文确认）",
-            "interpretation": "按第 1、2、3 项之和评价，分值越高提示尿失禁症状越重；轻中重分级的具体分界值待 WS/T 888—2026 附录 B 原文核对后写入。",
+            "max": 0,
+            "level": "无漏尿",
+            "interpretation": "近 4 周无漏尿，未见尿失禁表现。",
             "abnormal": false,
             "severity": "none"
+          },
+          {
+            "min": 1,
+            "max": 21,
+            "level": "存在尿失禁",
+            "interpretation": "存在漏尿，总分越高表示尿失禁程度越严重（标准未给出数值分界，程度判断需结合频次、漏尿量与影响程度由医护人员确认）。",
+            "abnormal": true,
+            "severity": "medium"
           }
         ]
       }
     },
-    "flags": []
+    "flags": [
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B11-01",
+              "op": "gte",
+              "value": 3
+            }
+          ]
+        },
+        "flag": "漏尿频次达每天 1 次及以上",
+        "symptom_codes": [
+          "continence_urinary"
+        ],
+        "severity": "high"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B11-02",
+              "op": "gte",
+              "value": 6
+            }
+          ]
+        },
+        "flag": "漏尿量大",
+        "symptom_codes": [
+          "continence_urinary"
+        ],
+        "severity": "high"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B11-03",
+              "op": "gte",
+              "value": 7
+            }
+          ]
+        },
+        "flag": "漏尿对生活影响严重",
+        "symptom_codes": [
+          "continence_urinary",
+          "social_isolation"
+        ],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B11-01",
+              "op": "gte",
+              "value": 1
+            }
+          ]
+        },
+        "flag": "夜间漏尿",
+        "symptom_codes": [
+          "nocturia",
+          "continence_urinary"
+        ],
+        "severity": "medium"
+      }
+    ]
   },
-  "branches": [],
-  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。需求文档 §5.2 仅给出「第 1、2、3 项之和；分值越高症状越重」的方向性判读，未给出数值分界，本表按该口径保留单一占位分层，避免臆造阈值；选项与分界待原文核对。"
+  "branches": [
+    {
+      "code": "B11-B1",
+      "when": {
+        "any": [
+          {
+            "question": "B11-01",
+            "op": "gte",
+            "value": 3
+          }
+        ]
+      },
+      "target_scale": "B.16",
+      "reason": "每日漏尿提示皮肤长期潮湿，建议加做压力性损伤风险评估。"
+    }
+  ],
+  "notes": "计分口径取自表B.11 注2：最终得分为第 1、2、3 项得分的总和，总分越高表示尿失禁程度越严重；注1 评估范围为最近 4 周。总分上限为 5+6+10=21 分。标准未给出程度分界值，故本表仅区分「0 分=无漏尿」与「>0 分=存在尿失禁」两种定义性结论，严重程度由阳性标记与医护判断表达。第 4 项漏尿类型仅作分型记录，不计分。"
 }

@@ -6,32 +6,208 @@
   "standard_ref": "WS/T 888—2026 附录B B.8",
   "version": "0.1.0-draft",
   "review_status": "draft_pending_medical_review",
-  "summary": "由名词回忆与画钟测验构成的老年人认知筛查，总分 0~5 分。",
-  "collection": { "support": ["staff"], "proxy_allowed": false, "measured": true },
+  "summary": "由 3 个词语的即时复述、画钟试验与延迟回忆组成；名词回忆每词 1 分，画钟正确 2 分，总分 0~5 分。",
+  "collection": {
+    "support": [
+      "staff"
+    ],
+    "proxy_allowed": false,
+    "measured": false
+  },
   "sections": [
     {
       "code": "B8-S1",
-      "title": "名词回忆与画钟",
-      "questions": []
+      "title": "第一步 即时复述 3 个不相关词语（记录用，不计分）",
+      "questions": [
+        {
+          "code": "B8-01",
+          "text": "即时复述 3 个词语（记录用）",
+          "plain_text": "我念三个词，您听好并跟着重复一遍：苹果、手表、火车。",
+          "input_type": "single",
+          "required": true,
+          "record_only": true,
+          "options": [
+            {
+              "value": "3",
+              "label": "复述出 3 个",
+              "score": 0
+            },
+            {
+              "value": "2",
+              "label": "复述出 2 个",
+              "score": 0
+            },
+            {
+              "value": "1",
+              "label": "复述出 1 个",
+              "score": 0
+            },
+            {
+              "value": "0",
+              "label": "复述出 0 个",
+              "score": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B8-S2",
+      "title": "第二步 画钟试验（正确 2 分，错误 0 分）",
+      "questions": [
+        {
+          "code": "B8-02",
+          "text": "画钟试验（数字标注与指针时间均正确为正确）",
+          "plain_text": "在纸上画一个圆钟，把数字标上，再把指针拨到十一点十分。",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "correct",
+              "label": "数字标注正确且指针显示时间正确（2 分）",
+              "score": 2
+            },
+            {
+              "value": "wrong",
+              "label": "错误（0 分）",
+              "score": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "B8-S3",
+      "title": "第三步 延迟回忆 3 个词语（每词 1 分）",
+      "questions": [
+        {
+          "code": "B8-03",
+          "text": "延迟回忆刚才的 3 个词语",
+          "plain_text": "刚才我念的那三个词，您还记得吗？说出来就行。",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "3",
+              "label": "回忆出 3 个（3 分）",
+              "score": 3
+            },
+            {
+              "value": "2",
+              "label": "回忆出 2 个（2 分）",
+              "score": 2
+            },
+            {
+              "value": "1",
+              "label": "回忆出 1 个（1 分）",
+              "score": 1
+            },
+            {
+              "value": "0",
+              "label": "回忆出 0 个（0 分）",
+              "score": 0
+            }
+          ]
+        }
+      ]
     }
   ],
   "scoring": {
     "score": {
       "rule_type": "sum",
-      "config": { "items": [] },
-      "explanation": "条目待补录；补录后按名词回忆与画钟各分项得分求和，总分 0~5 分。"
+      "config": {
+        "items": [
+          {
+            "code": "B8-02",
+            "label": "画钟试验",
+            "max_score": 2
+          },
+          {
+            "code": "B8-03",
+            "label": "延迟回忆",
+            "max_score": 3
+          }
+        ]
+      },
+      "explanation": "画钟试验得分（0 或 2）+ 名词回忆得分（0~3），满分 5 分（表B.8 注2）。第一步即时复述仅用于建立记忆，不计分。"
     },
     "levels": {
       "rule_type": "level_map",
       "config": {
         "levels": [
-          { "min": 0, "max": 2, "level": "筛查阳性", "interpretation": "提示存在认知功能异常，需进一步专科评估。", "abnormal": true, "severity": "medium" },
-          { "min": 3, "max": 5, "level": "筛查阴性", "interpretation": "本次认知筛查未见异常。", "abnormal": false, "severity": "none" }
+          {
+            "min": 0,
+            "max": 2,
+            "level": "筛查阳性",
+            "interpretation": "认知功能障碍筛查阳性，建议进一步做认知专项评估并由医师判断。",
+            "abnormal": true,
+            "severity": "medium"
+          },
+          {
+            "min": 3,
+            "max": 5,
+            "level": "筛查阴性",
+            "interpretation": "认知功能障碍筛查阴性，建议按期复评。",
+            "abnormal": false,
+            "severity": "none"
+          }
         ]
       }
     },
-    "flags": []
+    "flags": [
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B8-02",
+              "op": "eq",
+              "value": "wrong"
+            }
+          ]
+        },
+        "flag": "画钟试验错误",
+        "symptom_codes": [
+          "cognitive_impairment",
+          "orientation_deficit"
+        ],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B8-03",
+              "op": "lte",
+              "value": 1
+            }
+          ]
+        },
+        "flag": "延迟回忆明显受损",
+        "symptom_codes": [
+          "memory_decline",
+          "cognitive_impairment"
+        ],
+        "severity": "high"
+      }
+    ]
   },
-  "branches": [],
-  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。判读分界按需求文档 §5.2 预置（0~2 筛查阳性、3~5 筛查阴性）；名词表、画钟评分细则与施测流程待原文核对。"
+  "branches": [
+    {
+      "code": "B8-B1",
+      "when": {
+        "any": [
+          {
+            "question": "B8-02",
+            "op": "eq",
+            "value": "wrong"
+          }
+        ]
+      },
+      "target_scale": "B.21",
+      "reason": "画钟错误且存在记忆受损时，需与谵妄鉴别，建议加做谵妄（意识模糊）评估。"
+    }
+  ],
+  "notes": "判读分界取自表B.8 注2：0~2 分认知功能障碍筛查阳性、3~5 分筛查阴性；计分口径为「每回忆 1 个词得 1 分；画钟试验正确为 2 分，错误为 0 分」，两者相加。注1：画钟试验的数字标注正确且指针显示时间正确，判断为正确。本表按标准把第三步的延迟回忆作为名词回忆计分来源，第一步即时复述仅作记录（表B.8 第二步为画钟、第三步为再次复述）。本表为筛查工具，阳性结果不代表诊断，需由医师结合临床判断。"
 }

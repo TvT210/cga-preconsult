@@ -6,34 +6,162 @@
   "standard_ref": "WS/T 888—2026 附录B B.6",
   "version": "0.1.0-draft",
   "review_status": "draft_pending_medical_review",
-  "summary": "评估老年人听力状况，0~4 分，评测时可佩戴助听器。",
-  "collection": { "support": ["patient", "staff"], "proxy_allowed": true, "measured": true },
+  "summary": "通过能否正常交谈、听清轻声与远距离说话等五级表现判断听力状况，结果 4/3/2/1/0 分。",
+  "collection": {
+    "support": [
+      "staff"
+    ],
+    "proxy_allowed": false,
+    "measured": true
+  },
   "sections": [
     {
       "code": "B6-S1",
-      "title": "听力功能",
-      "questions": []
+      "title": "听力简易评估",
+      "questions": [
+        {
+          "code": "B6-01",
+          "text": "听力简易评估（五级）",
+          "plain_text": "您听声音能听到哪一步？我按您的情况选一个。",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "4",
+              "label": "可正常交谈，能听到电视、电话、门铃的声音",
+              "score": 4
+            },
+            {
+              "value": "3",
+              "label": "在轻声说话或说话距离超过 2 m 时听不清",
+              "score": 3
+            },
+            {
+              "value": "2",
+              "label": "正常交流有些困难，需在安静的环境或大声说话才能听到",
+              "score": 2
+            },
+            {
+              "value": "1",
+              "label": "讲话者大声说话或说话很慢，才能部分听见",
+              "score": 1
+            },
+            {
+              "value": "0",
+              "label": "完全听不见",
+              "score": 0
+            }
+          ]
+        }
+      ]
     }
   ],
   "scoring": {
     "score": {
       "rule_type": "sum",
-      "config": { "items": [] },
-      "explanation": "条目待补录；补录后按各条目得分求和，总分 0~4 分。"
+      "config": {
+        "items": [
+          {
+            "code": "B6-01",
+            "label": "听力简易评估",
+            "max_score": 4
+          }
+        ]
+      },
+      "explanation": "单题得分即为总分（表B.6）。"
     },
     "levels": {
       "rule_type": "level_map",
       "config": {
         "levels": [
-          { "min": 4, "max": 4, "level": "正常", "interpretation": "听力正常（评测时可佩戴助听器）。", "abnormal": false, "severity": "none" },
-          { "min": 3, "max": 3, "level": "下降", "interpretation": "听力下降，需提高音量才能听清。", "abnormal": true, "severity": "low" },
-          { "min": 1, "max": 2, "level": "障碍", "interpretation": "听力障碍，影响日常交流与就医沟通。", "abnormal": true, "severity": "high" },
-          { "min": 0, "max": 0, "level": "完全失聪", "interpretation": "完全失聪（评测时可佩戴助听器）。", "abnormal": true, "severity": "high" }
+          {
+            "min": 4,
+            "max": 4,
+            "level": "听力正常",
+            "interpretation": "可正常交谈，听力正常。",
+            "abnormal": false,
+            "severity": "none"
+          },
+          {
+            "min": 3,
+            "max": 3,
+            "level": "听力下降",
+            "interpretation": "轻声或远距离听不清，建议到耳鼻喉科评估。",
+            "abnormal": true,
+            "severity": "low"
+          },
+          {
+            "min": 1,
+            "max": 2,
+            "level": "听力障碍",
+            "interpretation": "正常交流困难，建议尽快到耳鼻喉科评估并考虑助听装置。",
+            "abnormal": true,
+            "severity": "high"
+          },
+          {
+            "min": 0,
+            "max": 0,
+            "level": "完全失聪",
+            "interpretation": "完全听不见，需照护支持与沟通辅助。",
+            "abnormal": true,
+            "severity": "high"
+          }
         ]
       }
     },
-    "flags": []
+    "flags": [
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B6-01",
+              "op": "lte",
+              "value": 3
+            }
+          ]
+        },
+        "flag": "听力下降",
+        "symptom_codes": [
+          "hearing_impairment"
+        ],
+        "severity": "low"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "any": [
+            {
+              "question": "B6-01",
+              "op": "lte",
+              "value": 2
+            }
+          ]
+        },
+        "flag": "听力障碍影响交流",
+        "symptom_codes": [
+          "hearing_impairment",
+          "social_isolation"
+        ],
+        "severity": "high"
+      }
+    ]
   },
-  "branches": [],
-  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。判读分界按需求文档 §5.2 预置（4 正常、3 下降、1~2 障碍、0 完全失聪），实测方法与询问条目待原文核对。"
+  "branches": [
+    {
+      "code": "B6-B1",
+      "when": {
+        "any": [
+          {
+            "question": "B6-01",
+            "op": "lte",
+            "value": 3
+          }
+        ]
+      },
+      "target_scale": "B.7",
+      "reason": "听力筛查≤3 分，按标准应进一步到耳鼻喉科评估；先加做耳语试验确认单侧听力。"
+    }
+  ],
+  "notes": "判读分界取自表B.6 注2：4 分听力正常、3 分听力下降、1~2 分听力障碍、0 分完全失聪。注1：若平日佩戴助听器，应在佩戴助听器的情况下评估。标准 7.2.4：听力简易评估≤3 分或耳语试验阳性者，应进一步到耳鼻喉科评估。"
 }
