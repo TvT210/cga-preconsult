@@ -435,10 +435,15 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
                     "hit_symptoms": [ { "code": "history:I21", "term": "既往病史：2 型糖尿病", "weight": "history" } ],
                     "missing_symptoms": [ { "code": "polyuria", "term": "多尿", "weight": "core" } ],
                     "excluded_reasons": [ { "vs_code": "I10", "reason": "…", "points": -8 } ],
+                    "red_flags": [ { "code": "chest_pain", "term": "持续胸痛或胸部压榨感", "note": "超过 20 分钟不缓解需呼叫 120" } ],
+                    "protective_signs": [ { "code": "fever", "term": "发热", "note": "单纯发热不支持急性心肌梗死" } ],
+                    "risk_factor_hits": [ { "factor": "吸烟", "detail": "动脉粥样硬化基础" } ],
+                    "risk_factors": [ { "factor": "2 型糖尿病", "detail": "神经病变使胸痛感受迟钝" } ],
                     "risk_level": "immediate",
                     "advice": { "department": "心血管内科 / 急诊", "urgency": "立即就医", "text": "…" },
                     "evidence_insufficient": false } ],
-  "alert": { "id": 1, "level": "observe", "message": "…", "department": "…", "status": "pending" },
+  "alert": { "id": 1, "level": "observe", "message": "…", "department": "…", "status": "pending",
+             "red_flags": [ { "code": "chest_pain", "term": "…" } ] },
   "disclaimer": "结果仅供参考，不构成诊断，请及时咨询医生。" }
 ```
 字段语义（前端展示必须按此）：
@@ -446,6 +451,11 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
 - `ref_probability` = **参考概率**（0~100，候选间相对可能性，**非患病概率**）
 - `evidence_insufficient` = true 表示该候选是补位展示（证据不足），前端应弱化展示
 - `hit_symptoms[].weight` 可能为 `core` / `secondary` / `history`（病史命中）
+- `red_flags` = 命中的**急症红旗征**；非空时该候选的提醒等级**不得降级**，并至少托底为「尽快就医」（病种本身为急症则「立即就医」）
+- `protective_signs` = 命中的**保护性征象**；命中说明存在与本病不符的表现，已在 `match_score` 中扣分
+- `risk_factor_hits` = 该老人已具备的高危因素（仅当疾病库条目写了 `code` 时才会出现）
+- `risk_factors` = 该病的完整高危因素清单（医护阅读用，不参与打分）
+- `excluded_reasons[].points` 为负值（扣分）；扣分总额以命中得分的 50% 封顶
 
 ### GET `/matching/runs?patient_id=` ✅ → 裸数组（最多 50 条）
 ### GET `/matching/runs/{run_id}` ✅ → 同 POST 响应结构
