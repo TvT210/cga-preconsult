@@ -1,0 +1,37 @@
+{
+  "code": "B.8",
+  "name": "简易智力评估量表",
+  "dimension": "精神心理",
+  "method": "施测",
+  "standard_ref": "WS/T 888—2026 附录B B.8",
+  "version": "0.1.0-draft",
+  "review_status": "draft_pending_medical_review",
+  "summary": "由名词回忆与画钟测验构成的老年人认知筛查，总分 0~5 分。",
+  "collection": { "support": ["staff"], "proxy_allowed": false, "measured": true },
+  "sections": [
+    {
+      "code": "B8-S1",
+      "title": "名词回忆与画钟",
+      "questions": []
+    }
+  ],
+  "scoring": {
+    "score": {
+      "rule_type": "sum",
+      "config": { "items": [] },
+      "explanation": "条目待补录；补录后按名词回忆与画钟各分项得分求和，总分 0~5 分。"
+    },
+    "levels": {
+      "rule_type": "level_map",
+      "config": {
+        "levels": [
+          { "min": 0, "max": 2, "level": "筛查阳性", "interpretation": "提示存在认知功能异常，需进一步专科评估。", "abnormal": true, "severity": "medium" },
+          { "min": 3, "max": 5, "level": "筛查阴性", "interpretation": "本次认知筛查未见异常。", "abnormal": false, "severity": "none" }
+        ]
+      }
+    },
+    "flags": []
+  },
+  "branches": [],
+  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。判读分界按需求文档 §5.2 预置（0~2 筛查阳性、3~5 筛查阴性）；名词表、画钟评分细则与施测流程待原文核对。"
+}

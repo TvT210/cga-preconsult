@@ -1,0 +1,51 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# ---- Node / Next.js ----
+node_modules/
+.next/
+out/
+dist/
+*.tsbuildinfo
+.turbo/
+.pnpm-store/
+
+# ---- 本地配置与密钥 ----
+config.yaml
+config.local.yaml
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ---- 运行时产物 ----
+backend/data/*.db
+backend/data/*.sqlite3
+backend/storage/
+backend/exports/
+*.log
+logs/
+
+# ---- 浏览器/自动化临时产物 ----
+.qa/
+.workbuddy/
+output/
+作业/
+lose_time/
+文档/
+
+# ---- 编辑器 ----
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

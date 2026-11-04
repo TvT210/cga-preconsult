@@ -1,0 +1,40 @@
+{
+  "code": "B.17",
+  "name": "洼田饮水试验",
+  "dimension": "老年综合征",
+  "method": "实测",
+  "standard_ref": "WS/T 888—2026 附录B B.17",
+  "version": "0.1.0-draft",
+  "review_status": "draft_pending_medical_review",
+  "summary": "通过定量饮水观察呛咳与饮水量，评估老年人吞咽功能，判定为 Ⅰ~Ⅴ 级，级别越高吞咽障碍越重。",
+  "collection": { "support": ["staff"], "proxy_allowed": false, "measured": true },
+  "sections": [
+    {
+      "code": "B17-S1",
+      "title": "定量饮水观察",
+      "questions": []
+    }
+  ],
+  "scoring": {
+    "score": {
+      "rule_type": "sum",
+      "config": { "items": [] },
+      "explanation": "条目待补录；补录后按观察到的吞咽障碍级别编码（Ⅰ~Ⅴ 级对应 1~5）计分。"
+    },
+    "levels": {
+      "rule_type": "level_map",
+      "config": {
+        "levels": [
+          { "min": 1, "max": 1, "level": "Ⅰ级", "interpretation": "饮水顺利、无呛咳，吞咽功能良好。", "abnormal": false, "severity": "none" },
+          { "min": 2, "max": 2, "level": "Ⅱ级", "interpretation": "分次饮完、无呛咳，提示吞咽功能轻度受限。", "abnormal": false, "severity": "none" },
+          { "min": 3, "max": 3, "level": "Ⅲ级", "interpretation": "一次饮完但伴呛咳，存在误吸风险。", "abnormal": true, "severity": "low" },
+          { "min": 4, "max": 4, "level": "Ⅳ级", "interpretation": "分次饮完且伴呛咳，误吸风险较高。", "abnormal": true, "severity": "medium" },
+          { "min": 5, "max": 5, "level": "Ⅴ级", "interpretation": "多次呛咳、不能完成饮水，吞咽障碍严重。", "abnormal": true, "severity": "high" }
+        ]
+      }
+    },
+    "flags": []
+  },
+  "branches": [],
+  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。判读按需求文档 §5.2「Ⅰ~Ⅴ 级，级别越高吞咽障碍越重」预置，以级别序号作为计分编码；饮水量、观察时间与各级判定细则待原文核对。"
+}

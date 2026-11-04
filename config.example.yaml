@@ -1,0 +1,32 @@
+# 后端运行配置示例
+# 复制为仓库根目录 config.yaml（不入库）后按需修改。
+# 环境变量优先级高于本文件：环境变量前缀 CGA_，例如 CGA_DATABASE_URL。
+
+app_name: 老年人就医预问诊与老年综合评估系统
+api_prefix: /api/v1
+debug: false
+
+# 数据层：默认 SQLite（本地演示），生产建议 PostgreSQL
+# database_url: postgresql+psycopg://cga:cga@localhost:5432/cga
+data_dir: ./backend/data
+
+# 鉴权：生产必须替换为随机长字符串
+jwt_secret: change-me-in-production
+jwt_algorithm: HS256
+access_token_expire_minutes: 720
+
+# 大模型：mock 为离线确定性实现；openai_compatible 对接兼容 /chat/completions 的服务
+llm_provider: mock
+llm_base_url: ""
+llm_api_key: ""
+llm_model: ""
+llm_timeout: 60
+
+# 匹配引擎权重（也可在 matching_rules 表中调整并留痕）
+core_symptom_weight: 3.0
+secondary_symptom_weight: 1.0
+history_bonus: 15.0
+probability_temperature: 10.0
+global_alert_threshold: 60.0
+
+cors_origins: http://127.0.0.1:3000,http://localhost:3000

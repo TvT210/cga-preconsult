@@ -1,0 +1,102 @@
+{
+  "version": "0.1.0-draft",
+  "review_status": "draft_pending_medical_review",
+  "note": "老年易发疾病信息库草稿。symptom 的 code 必须来自 symptoms.json；differentials.features 同样引用 symptoms.json 的 code。",
+  "schema": {
+    "disease": {
+      "code": "疾病编码（ICD 风格）",
+      "name": "疾病名称",
+      "aliases": ["别名1", "别名2"],
+      "system": "所属系统",
+      "risk_level": "immediate | urgent | elective | observe",
+      "symptoms": [{ "code": "symptoms.json 中的 code", "weight": "core | secondary" }],
+      "atypical_presentations": ["老年人的非典型表现"],
+      "differentials": [
+        {
+          "vs_code": "被鉴别的疾病 code",
+          "features": ["symptoms.json 中的 code"],
+          "points": -10,
+          "reason": "缺少上述特征时，降低本病匹配度的理由说明"
+        }
+      ],
+      "scale_links": [{ "scale": "量表 code", "item": "题目 code（可空）", "note": "关联说明" }],
+      "advice": { "department": "建议就诊科室", "urgency": "立即就医 | 尽快就医 | 择期就诊 | 居家观察", "text": "给老人看的通俗提醒文案" },
+      "source": "来源与版本说明（草稿阶段写“待医学专家评审”）",
+      "review_note": "评审与发布状态说明"
+    }
+  },
+  "diseases": [
+    {
+      "code": "I21",
+      "name": "急性心肌梗死",
+      "aliases": ["心梗", "AMI", "急性心梗"],
+      "system": "心血管系统",
+      "risk_level": "immediate",
+      "symptoms": [
+        { "code": "chest_pain", "weight": "core" },
+        { "code": "dyspnea", "weight": "core" },
+        { "code": "palpitations", "weight": "core" },
+        { "code": "diaphoresis", "weight": "secondary" },
+        { "code": "syncope", "weight": "secondary" },
+        { "code": "fatigue", "weight": "secondary" },
+        { "code": "nausea_vomiting", "weight": "secondary" }
+      ],
+      "atypical_presentations": [
+        "老年人可无典型胸痛，表现为突发气促、晕厥、上腹痛、乏力或意识改变",
+        "糖尿病老人可仅表现为心慌、极度疲乏"
+      ],
+      "differentials": [
+        {
+          "vs_code": "I10",
+          "features": ["chest_pain", "palpitations"],
+          "points": -8,
+          "reason": "无急性胸痛或心悸线索时，更倾向慢性高血压相关改变而非急性心肌梗死"
+        }
+      ],
+      "scale_links": [
+        { "scale": "B.1", "item": "B1-09", "note": "关注行走能力下降与活动耐量" }
+      ],
+      "advice": {
+        "department": "心血管内科 / 急诊",
+        "urgency": "立即就医",
+        "text": "您描述的胸口不适和喘气需要马上重视，请立即前往医院急诊或拨打 120，不要自行服药。"
+      },
+      "source": "待医学专家评审（拟引用：老年人急性心肌梗死诊疗要点）",
+      "review_note": "草稿，未经评审不得用于正式临床提醒"
+    },
+    {
+      "code": "M17",
+      "name": "膝骨关节炎",
+      "aliases": ["膝关节骨关节炎", "膝退行性关节炎"],
+      "system": "肌肉骨骼系统",
+      "risk_level": "elective",
+      "symptoms": [
+        { "code": "joint_pain", "weight": "core" },
+        { "code": "weight_bearing_pain", "weight": "core" },
+        { "code": "gait_slow", "weight": "secondary" },
+        { "code": "low_activity", "weight": "secondary" },
+        { "code": "pain_chronic", "weight": "secondary" }
+      ],
+      "atypical_presentations": ["疼痛多在负重后出现，休息可缓解，常被描述为“走远了疼”"],
+      "differentials": [
+        {
+          "vs_code": "M05",
+          "features": ["joint_pain"],
+          "points": -6,
+          "reason": "存在明显晨僵与多关节对称受累时，更倾向炎性关节病"
+        }
+      ],
+      "scale_links": [
+        { "scale": "B.3", "item": "", "note": "关注步速与起坐能力下降" },
+        { "scale": "B.14", "item": "", "note": "关注疼痛评分与用药" }
+      ],
+      "advice": {
+        "department": "骨科 / 老年医学科",
+        "urgency": "择期就诊",
+        "text": "您的情况更像膝关节退变，建议门诊评估疼痛与活动度，并在家做适度力量训练与减重。"
+      },
+      "source": "待医学专家评审（拟引用：骨关节炎诊疗指南 2021）",
+      "review_note": "草稿，未经评审不得用于正式临床提醒"
+    }
+  ]
+}

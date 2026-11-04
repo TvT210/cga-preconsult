@@ -1,0 +1,201 @@
+{
+  "code": "B.1",
+  "name": "基本日常生活活动能力评估量表",
+  "dimension": "躯体功能",
+  "method": "询问／他评",
+  "standard_ref": "WS/T 888—2026 附录B B.1",
+  "version": "0.1.0-draft",
+  "review_status": "draft_pending_medical_review",
+  "summary": "评估老年人基本日常生活活动能力，共 10 项，总分 100 分。",
+  "collection": { "support": ["patient", "staff"], "proxy_allowed": true, "measured": false },
+  "sections": [
+    {
+      "code": "B1-S1",
+      "title": "基本日常生活活动",
+      "questions": [
+        {
+          "code": "B1-01",
+          "text": "进食",
+          "plain_text": "吃饭这件事自己能完全独立完成吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "10", "label": "可自行进食", "score": 10 },
+            { "value": "5", "label": "需部分帮助", "score": 5 },
+            { "value": "0", "label": "需极大帮助或完全依赖", "score": 0 }
+          ]
+        },
+        {
+          "code": "B1-02",
+          "text": "洗澡",
+          "plain_text": "洗澡自己能完成吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "5", "label": "可自行洗澡", "score": 5 },
+            { "value": "0", "label": "需极大帮助或完全依赖", "score": 0 }
+          ]
+        },
+        {
+          "code": "B1-03",
+          "text": "修饰（洗脸、梳头、刷牙、剃须）",
+          "plain_text": "洗脸梳头这些自己能弄好吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "5", "label": "可自行修饰", "score": 5 },
+            { "value": "0", "label": "需极大帮助或完全依赖", "score": 0 }
+          ]
+        },
+        {
+          "code": "B1-04",
+          "text": "穿衣",
+          "plain_text": "穿衣服鞋子自己能搞定吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "10", "label": "可自行穿衣", "score": 10 },
+            { "value": "5", "label": "需部分帮助", "score": 5 },
+            { "value": "0", "label": "需极大帮助或完全依赖", "score": 0 }
+          ]
+        },
+        {
+          "code": "B1-05",
+          "text": "控便",
+          "plain_text": "大小便能自己控制吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "10", "label": "可自行控制", "score": 10 },
+            { "value": "5", "label": "偶尔失控", "score": 5 },
+            { "value": "0", "label": "完全失控", "score": 0 }
+          ]
+        },
+        {
+          "code": "B1-06",
+          "text": "控尿",
+          "plain_text": "小便能自己控制吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "10", "label": "可自行控制", "score": 10 },
+            { "value": "5", "label": "偶尔失控", "score": 5 },
+            { "value": "0", "label": "完全失控", "score": 0 }
+          ]
+        },
+        {
+          "code": "B1-07",
+          "text": "如厕",
+          "plain_text": "上厕所自己能做到吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "10", "label": "可自行如厕", "score": 10 },
+            { "value": "5", "label": "需部分帮助", "score": 5 },
+            { "value": "0", "label": "需极大帮助或完全依赖", "score": 0 }
+          ]
+        },
+        {
+          "code": "B1-08",
+          "text": "床椅转移",
+          "plain_text": "从床上到椅子上自己挪得动吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "15", "label": "可自行转移", "score": 15 },
+            { "value": "10", "label": "需部分帮助", "score": 10 },
+            { "value": "5", "label": "需极大帮助", "score": 5 },
+            { "value": "0", "label": "完全依赖", "score": 0 }
+          ]
+        },
+        {
+          "code": "B1-09",
+          "text": "平地行走",
+          "plain_text": "在平地上自己走路没问题吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "15", "label": "可独立行走", "score": 15 },
+            { "value": "10", "label": "需部分帮助", "score": 10 },
+            { "value": "5", "label": "需极大帮助", "score": 5 },
+            { "value": "0", "label": "完全依赖", "score": 0 }
+          ]
+        },
+        {
+          "code": "B1-10",
+          "text": "上下楼梯",
+          "plain_text": "上下楼梯自己能行吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "10", "label": "可自行上下楼", "score": 10 },
+            { "value": "5", "label": "需部分帮助", "score": 5 },
+            { "value": "0", "label": "需极大帮助或完全依赖", "score": 0 }
+          ]
+        }
+      ]
+    }
+  ],
+  "scoring": {
+    "score": {
+      "rule_type": "sum",
+      "config": {
+        "items": [
+          { "code": "B1-01", "label": "进食", "max_score": 10 },
+          { "code": "B1-02", "label": "洗澡", "max_score": 5 },
+          { "code": "B1-03", "label": "修饰", "max_score": 5 },
+          { "code": "B1-04", "label": "穿衣", "max_score": 10 },
+          { "code": "B1-05", "label": "控便", "max_score": 10 },
+          { "code": "B1-06", "label": "控尿", "max_score": 10 },
+          { "code": "B1-07", "label": "如厕", "max_score": 10 },
+          { "code": "B1-08", "label": "床椅转移", "max_score": 15 },
+          { "code": "B1-09", "label": "平地行走", "max_score": 15 },
+          { "code": "B1-10", "label": "上下楼梯", "max_score": 10 }
+        ]
+      },
+      "explanation": "10 项得分之和，满分 100 分。"
+    },
+    "levels": {
+      "rule_type": "level_map",
+      "config": {
+        "levels": [
+          { "min": 0, "max": 40, "level": "重度依赖", "interpretation": "日常生活严重依赖他人照护。", "abnormal": true, "severity": "high" },
+          { "min": 41, "max": 60, "level": "中度依赖", "interpretation": "部分日常生活需他人协助。", "abnormal": true, "severity": "medium" },
+          { "min": 61, "max": 99, "level": "轻度依赖", "interpretation": "多数日常活动可自理，少数项目需协助。", "abnormal": true, "severity": "low" },
+          { "min": 100, "max": 100, "level": "无依赖", "interpretation": "基本日常生活活动完全自理。", "abnormal": false, "severity": "none" }
+        ]
+      }
+    },
+    "flags": [
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B1-09", "op": "lt", "value": 15 }] },
+        "flag": "行走能力受限",
+        "symptom_codes": ["difficulty_walking", "gait_slow"],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B1-07", "op": "lt", "value": 10 }] },
+        "flag": "如厕自理受限",
+        "symptom_codes": ["toileting_difficulty"],
+        "severity": "medium"
+      }
+    ]
+  },
+  "branches": [
+    {
+      "code": "B1-B1",
+      "when": { "any": [{ "question": "B1-09", "op": "lt", "value": 15 }] },
+      "target_scale": "B.3",
+      "reason": "平地行走不能独立，建议加做简易体能状况量表（SPPB）实测体能。"
+    },
+    {
+      "code": "B1-B2",
+      "when": { "any": [{ "question": "B1-07", "op": "lt", "value": 10 }] },
+      "target_scale": "B.11",
+      "reason": "如厕自理受限，建议加做尿失禁问卷（ICIQ-SF）。"
+    }
+  ],
+  "notes": "条目按通用 Barthel 指数预置草稿，发布前须以 WS/T 888—2026 附录 B 原文逐项核对。"
+}

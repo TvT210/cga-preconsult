@@ -1,0 +1,44 @@
+{
+  "code": "B.12",
+  "name": "便秘症状评估表",
+  "dimension": "老年综合征",
+  "method": "询问",
+  "standard_ref": "WS/T 888—2026 附录B B.12",
+  "version": "0.1.0-draft",
+  "review_status": "draft_pending_medical_review",
+  "summary": "按症状条目判断老年人有无便秘及其类型，计分为阳性症状条目数。",
+  "collection": { "support": ["patient", "staff"], "proxy_allowed": true, "measured": false },
+  "sections": [
+    {
+      "code": "B12-S1",
+      "title": "便秘相关症状",
+      "questions": []
+    }
+  ],
+  "scoring": {
+    "score": {
+      "rule_type": "sum",
+      "config": { "items": [] },
+      "explanation": "条目待补录；补录后按阳性症状条目数累计计分（0 表示未提示便秘，≥1 表示提示便秘症状）。"
+    },
+    "levels": {
+      "rule_type": "level_map",
+      "config": {
+        "levels": [
+          { "min": 0, "max": 0, "level": "无便秘", "interpretation": "未提示便秘症状。", "abnormal": false, "severity": "none" },
+          {
+            "min": 1,
+            "max": 99,
+            "level": "存在便秘",
+            "interpretation": "提示存在便秘症状，具体类型（如慢传输型、排便困难型等）待条目补录后细分。",
+            "abnormal": true,
+            "severity": "low"
+          }
+        ]
+      }
+    },
+    "flags": []
+  },
+  "branches": [],
+  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。判读按需求文档 §5.2「按症状条目判断有无便秘及类型」预置，有无之分按阳性条目数 0 / ≥1 表达，类型判定细则待原文核对。"
+}

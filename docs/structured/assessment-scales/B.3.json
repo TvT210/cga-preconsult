@@ -1,0 +1,38 @@
+{
+  "code": "B.3",
+  "name": "简易体能状况量表（SPPB）",
+  "dimension": "躯体功能",
+  "method": "实测",
+  "standard_ref": "WS/T 888—2026 附录B B.3",
+  "version": "0.1.0-draft",
+  "review_status": "draft_pending_medical_review",
+  "summary": "由平衡、步速与 5 次起坐三部分实测构成的老年人体能状况评估，总分 0~12 分。",
+  "collection": { "support": ["staff"], "proxy_allowed": false, "measured": true },
+  "sections": [
+    {
+      "code": "B3-S1",
+      "title": "平衡、步速与 5 次起坐",
+      "questions": []
+    }
+  ],
+  "scoring": {
+    "score": {
+      "rule_type": "sum",
+      "config": { "items": [] },
+      "explanation": "条目待补录；补录后按平衡、步速、5 次起坐各分项得分求和，满分 12 分。"
+    },
+    "levels": {
+      "rule_type": "level_map",
+      "config": {
+        "levels": [
+          { "min": 0, "max": 6, "level": "较差", "interpretation": "体能状况较差，下肢功能与平衡能力明显下降，跌倒风险升高。", "abnormal": true, "severity": "high" },
+          { "min": 7, "max": 9, "level": "中等", "interpretation": "体能状况中等，可维持日常活动但储备能力有限。", "abnormal": true, "severity": "medium" },
+          { "min": 10, "max": 12, "level": "良好", "interpretation": "体能状况良好。", "abnormal": false, "severity": "none" }
+        ]
+      }
+    },
+    "flags": []
+  },
+  "branches": [],
+  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。判读分界按需求文档 §5.2 预置（10~12 良好、7~9 中等、0~6 较差），实测动作、计时与停止标准待原文核对。"
+}

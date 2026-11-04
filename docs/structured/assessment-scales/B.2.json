@@ -1,0 +1,183 @@
+{
+  "code": "B.2",
+  "name": "工具性日常生活活动能力量表",
+  "dimension": "躯体功能",
+  "method": "询问／他评",
+  "standard_ref": "WS/T 888—2026 附录B B.2",
+  "version": "0.1.0-draft",
+  "review_status": "draft_pending_medical_review",
+  "summary": "评估老年人工具性日常生活活动能力，共 8 项（购物、做饭、洗衣、打扫卫生、服药、管理钱财、使用电话、独自出行），按可独立完成的项数计分，0~8 项。",
+  "collection": { "support": ["patient", "staff"], "proxy_allowed": true, "measured": false },
+  "sections": [
+    {
+      "code": "B2-S1",
+      "title": "工具性日常生活活动",
+      "questions": [
+        {
+          "code": "B2-01",
+          "text": "购物",
+          "plain_text": "自己拿钱去商店买东西，这事您能自己办吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "1", "label": "可独立完成", "score": 1 },
+            { "value": "2", "label": "需部分帮助", "score": 0 },
+            { "value": "3", "label": "不能完成", "score": 0 }
+          ]
+        },
+        {
+          "code": "B2-02",
+          "text": "做饭",
+          "plain_text": "自己动手做饭给自己吃，能行吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "1", "label": "可独立完成", "score": 1 },
+            { "value": "2", "label": "需部分帮助", "score": 0 },
+            { "value": "3", "label": "不能完成", "score": 0 }
+          ]
+        },
+        {
+          "code": "B2-03",
+          "text": "洗衣",
+          "plain_text": "自己的衣服自己洗，能行吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "1", "label": "可独立完成", "score": 1 },
+            { "value": "2", "label": "需部分帮助", "score": 0 },
+            { "value": "3", "label": "不能完成", "score": 0 }
+          ]
+        },
+        {
+          "code": "B2-04",
+          "text": "打扫卫生",
+          "plain_text": "家里扫地、擦桌子这些活儿，能自己干吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "1", "label": "可独立完成", "score": 1 },
+            { "value": "2", "label": "需部分帮助", "score": 0 },
+            { "value": "3", "label": "不能完成", "score": 0 }
+          ]
+        },
+        {
+          "code": "B2-05",
+          "text": "服药",
+          "plain_text": "按时吃药，能自己完成吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "1", "label": "可独立完成", "score": 1 },
+            { "value": "2", "label": "需部分帮助", "score": 0 },
+            { "value": "3", "label": "不能完成", "score": 0 }
+          ]
+        },
+        {
+          "code": "B2-06",
+          "text": "管理钱财",
+          "plain_text": "管钱、记账这些事，能自己办吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "1", "label": "可独立完成", "score": 1 },
+            { "value": "2", "label": "需部分帮助", "score": 0 },
+            { "value": "3", "label": "不能完成", "score": 0 }
+          ]
+        },
+        {
+          "code": "B2-07",
+          "text": "使用电话",
+          "plain_text": "打电话（接打手机、电视电话），能自己完成吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "1", "label": "可独立完成", "score": 1 },
+            { "value": "2", "label": "需部分帮助", "score": 0 },
+            { "value": "3", "label": "不能完成", "score": 0 }
+          ]
+        },
+        {
+          "code": "B2-08",
+          "text": "独自出行",
+          "plain_text": "自己坐车出门办事，能做到吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "1", "label": "可独立完成", "score": 1 },
+            { "value": "2", "label": "需部分帮助", "score": 0 },
+            { "value": "3", "label": "不能完成", "score": 0 }
+          ]
+        }
+      ]
+    }
+  ],
+  "scoring": {
+    "score": {
+      "rule_type": "count_positive",
+      "config": {
+        "items": [
+          { "code": "B2-01", "label": "购物", "max_score": 1 },
+          { "code": "B2-02", "label": "做饭", "max_score": 1 },
+          { "code": "B2-03", "label": "洗衣", "max_score": 1 },
+          { "code": "B2-04", "label": "打扫卫生", "max_score": 1 },
+          { "code": "B2-05", "label": "服药", "max_score": 1 },
+          { "code": "B2-06", "label": "管理钱财", "max_score": 1 },
+          { "code": "B2-07", "label": "使用电话", "max_score": 1 },
+          { "code": "B2-08", "label": "独自出行", "max_score": 1 }
+        ],
+        "mode": "max_score_equals"
+      },
+      "explanation": "统计 8 项中「可独立完成」的项数，得分 0~8 项（需部分帮助与不能完成均不计入独立完成项）。"
+    },
+    "levels": {
+      "rule_type": "level_map",
+      "config": {
+        "levels": [
+          { "min": 8, "max": 8, "level": "正常", "interpretation": "8 项工具性活动均可独立完成。", "abnormal": false, "severity": "none" },
+          { "min": 6, "max": 7, "level": "轻度受损", "interpretation": "6~7 项可独立完成，存在轻度功能受限。", "abnormal": true, "severity": "low" },
+          { "min": 3, "max": 5, "level": "中度受损", "interpretation": "3~5 项可独立完成，存在中度功能受限。", "abnormal": true, "severity": "medium" },
+          { "min": 0, "max": 2, "level": "严重依赖", "interpretation": "仅 0~2 项可独立完成，严重依赖他人协助。", "abnormal": true, "severity": "high" }
+        ]
+      }
+    },
+    "flags": [
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B2-05", "op": "ne", "value": "1" }] },
+        "flag": "服药不能独立完成",
+        "symptom_codes": ["medication_nonadherence"],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B2-08", "op": "ne", "value": "1" }] },
+        "flag": "独自出行能力下降",
+        "symptom_codes": ["difficulty_walking", "fall_history"],
+        "severity": "high"
+      },
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B2-06", "op": "ne", "value": "1" }] },
+        "flag": "钱财管理能力下降",
+        "symptom_codes": ["dementia_daily_function", "memory_decline"],
+        "severity": "medium"
+      }
+    ]
+  },
+  "branches": [
+    {
+      "code": "B2-B1",
+      "when": { "any": [{ "question": "B2-08", "op": "ne", "value": "1" }] },
+      "target_scale": "B.3",
+      "reason": "独自出行不能独立完成，建议加做简易体能状况量表（SPPB）实测体能。"
+    },
+    {
+      "code": "B2-B2",
+      "when": { "any": [{ "question": "B2-06", "op": "ne", "value": "1" }] },
+      "target_scale": "B.8",
+      "reason": "钱财管理不能独立完成，建议加做简易智力评估量表筛查认知功能。"
+    }
+  ],
+  "notes": "条目按通用 Lawton-Brody 工具性日常生活活动能力量表预置草稿（各题按「可独立完成」计 1 项，需部分帮助与不能完成均不计入），发布前须以 WS/T 888—2026 附录 B 原文逐项核对题目表述、选项与判读阈值。"
+}

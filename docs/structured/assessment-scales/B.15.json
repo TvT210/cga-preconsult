@@ -1,0 +1,43 @@
+{
+  "code": "B.15",
+  "name": "慢性疼痛行为评估量表",
+  "dimension": "老年综合征",
+  "method": "他评",
+  "standard_ref": "WS/T 888—2026 附录B B.15",
+  "version": "0.1.0-draft",
+  "review_status": "draft_pending_medical_review",
+  "summary": "由观察者根据老年人疼痛相关行为评分，3~12 分，分值越高提示疼痛越重。",
+  "collection": { "support": ["staff"], "proxy_allowed": true, "measured": false },
+  "sections": [
+    {
+      "code": "B15-S1",
+      "title": "疼痛相关行为观察评分",
+      "questions": []
+    }
+  ],
+  "scoring": {
+    "score": {
+      "rule_type": "sum",
+      "config": { "items": [] },
+      "explanation": "条目待补录；补录后按各行为条目得分求和，总分 3~12 分，分值越高提示疼痛越重。"
+    },
+    "levels": {
+      "rule_type": "level_map",
+      "config": {
+        "levels": [
+          {
+            "min": 3,
+            "max": 12,
+            "level": "疼痛行为评分（分界值待原文确认）",
+            "interpretation": "按观察到的疼痛相关行为评分，分值越高提示疼痛越重；轻中重分级的具体分界值待 WS/T 888—2026 附录 B 原文核对后写入。",
+            "abnormal": false,
+            "severity": "none"
+          }
+        ]
+      }
+    },
+    "flags": []
+  },
+  "branches": [],
+  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。需求文档 §5.2 仅给出「3~12 分，分值越高疼痛越重」的方向性判读，未给出数值分界，本表按该口径保留单一占位分层，避免臆造阈值；行为条目与分界待原文核对。"
+}

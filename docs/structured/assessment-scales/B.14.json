@@ -1,0 +1,81 @@
+{
+  "code": "B.14",
+  "name": "慢性疼痛数字评分（NRS）",
+  "dimension": "老年综合征",
+  "method": "自评",
+  "standard_ref": "WS/T 888—2026 附录B B.14",
+  "version": "0.1.0-draft",
+  "review_status": "draft_pending_medical_review",
+  "summary": "由老年人自评当前疼痛程度，0~10 分（0 为不痛，10 为最痛）。",
+  "collection": { "support": ["patient"], "proxy_allowed": false, "measured": false },
+  "sections": [
+    {
+      "code": "B14-S1",
+      "title": "疼痛程度自评",
+      "questions": [
+        {
+          "code": "B14-01",
+          "text": "当前疼痛程度（0~10 分，0 为不痛，10 为最痛）",
+          "plain_text": "您现在这个疼，有多厉害？0 分是不疼，10 分是疼得受不了，请报一个数。",
+          "input_type": "number",
+          "required": true,
+          "unit": "分",
+          "options": []
+        }
+      ]
+    }
+  ],
+  "scoring": {
+    "score": {
+      "rule_type": "sum",
+      "config": {
+        "items": [
+          { "code": "B14-01", "label": "疼痛程度评分", "max_score": 10 }
+        ]
+      },
+      "explanation": "单题 0~10 分自评，直接取作答数值作为总分。"
+    },
+    "levels": {
+      "rule_type": "level_map",
+      "config": {
+        "levels": [
+          { "min": 0, "max": 0, "level": "无疼痛", "interpretation": "当前无疼痛。", "abnormal": false, "severity": "none" },
+          { "min": 1, "max": 3, "level": "轻度疼痛", "interpretation": "轻度疼痛，可观察并按需镇痛。", "abnormal": true, "severity": "low" },
+          { "min": 4, "max": 6, "level": "中度疼痛", "interpretation": "中度疼痛，影响睡眠与日常活动，建议专科评估。", "abnormal": true, "severity": "medium" },
+          { "min": 7, "max": 10, "level": "重度疼痛", "interpretation": "重度疼痛，明显影响生活自理与情绪，建议尽快就诊并评估镇痛方案。", "abnormal": true, "severity": "high" }
+        ]
+      }
+    },
+    "flags": [
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B14-01", "op": "gte", "value": 4 }] },
+        "flag": "中度及以上疼痛",
+        "symptom_codes": ["pain_chronic"],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B14-01", "op": "gte", "value": 7 }] },
+        "flag": "重度疼痛",
+        "symptom_codes": ["pain_chronic"],
+        "severity": "high"
+      }
+    ]
+  },
+  "branches": [
+    {
+      "code": "B14-B1",
+      "when": { "any": [{ "question": "B14-01", "op": "gte", "value": 7 }] },
+      "target_scale": "B.15",
+      "reason": "重度疼痛且部分老年人难以准确自评，建议加做慢性疼痛行为评估量表（他评）。"
+    },
+    {
+      "code": "B14-B2",
+      "when": { "any": [{ "question": "B14-01", "op": "gte", "value": 4 }] },
+      "target_scale": "B.3",
+      "reason": "疼痛达到中度以上，常伴活动受限，建议加做简易体能状况量表（SPPB）实测体能。"
+    }
+  ],
+  "notes": "条目按通用慢性疼痛数字评分法（NRS）预置草稿，发布前须以 WS/T 888—2026 附录 B 原文核对评分锚点与判读分界。判读分界按需求文档 §5.2 预置（1~3 轻度、4~6 中度、7~10 重度），需求文档未列出 0 分，本表补充「0 分为无疼痛」以覆盖取值区间。"
+}

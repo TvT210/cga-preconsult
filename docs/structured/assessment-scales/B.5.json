@@ -1,0 +1,38 @@
+{
+  "code": "B.5",
+  "name": "视觉功能简易评估表",
+  "dimension": "躯体功能",
+  "method": "询问",
+  "standard_ref": "WS/T 888—2026 附录B B.5",
+  "version": "0.1.0-draft",
+  "review_status": "draft_pending_medical_review",
+  "summary": "通过询问了解老年人日常视觉功能状况，0~3 分。",
+  "collection": { "support": ["patient", "staff"], "proxy_allowed": true, "measured": false },
+  "sections": [
+    {
+      "code": "B5-S1",
+      "title": "日常视觉功能",
+      "questions": []
+    }
+  ],
+  "scoring": {
+    "score": {
+      "rule_type": "sum",
+      "config": { "items": [] },
+      "explanation": "条目待补录；补录后按各条目得分求和，总分 0~3 分。"
+    },
+    "levels": {
+      "rule_type": "level_map",
+      "config": {
+        "levels": [
+          { "min": 3, "max": 3, "level": "良好", "interpretation": "日常视觉功能良好。", "abnormal": false, "severity": "none" },
+          { "min": 2, "max": 2, "level": "较差", "interpretation": "日常视觉功能较差。", "abnormal": true, "severity": "low" },
+          { "min": 0, "max": 1, "level": "差", "interpretation": "日常视觉功能差，明显影响生活自理。", "abnormal": true, "severity": "medium" }
+        ]
+      }
+    },
+    "flags": []
+  },
+  "branches": [],
+  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。判读分界按需求文档 §5.2 预置（3 良好、2 较差、≤1 差），具体条目与选项待原文核对。"
+}

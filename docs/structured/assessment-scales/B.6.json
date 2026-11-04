@@ -1,0 +1,39 @@
+{
+  "code": "B.6",
+  "name": "听力简易评估表",
+  "dimension": "躯体功能",
+  "method": "实测／询问",
+  "standard_ref": "WS/T 888—2026 附录B B.6",
+  "version": "0.1.0-draft",
+  "review_status": "draft_pending_medical_review",
+  "summary": "评估老年人听力状况，0~4 分，评测时可佩戴助听器。",
+  "collection": { "support": ["patient", "staff"], "proxy_allowed": true, "measured": true },
+  "sections": [
+    {
+      "code": "B6-S1",
+      "title": "听力功能",
+      "questions": []
+    }
+  ],
+  "scoring": {
+    "score": {
+      "rule_type": "sum",
+      "config": { "items": [] },
+      "explanation": "条目待补录；补录后按各条目得分求和，总分 0~4 分。"
+    },
+    "levels": {
+      "rule_type": "level_map",
+      "config": {
+        "levels": [
+          { "min": 4, "max": 4, "level": "正常", "interpretation": "听力正常（评测时可佩戴助听器）。", "abnormal": false, "severity": "none" },
+          { "min": 3, "max": 3, "level": "下降", "interpretation": "听力下降，需提高音量才能听清。", "abnormal": true, "severity": "low" },
+          { "min": 1, "max": 2, "level": "障碍", "interpretation": "听力障碍，影响日常交流与就医沟通。", "abnormal": true, "severity": "high" },
+          { "min": 0, "max": 0, "level": "完全失聪", "interpretation": "完全失聪（评测时可佩戴助听器）。", "abnormal": true, "severity": "high" }
+        ]
+      }
+    },
+    "flags": []
+  },
+  "branches": [],
+  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。判读分界按需求文档 §5.2 预置（4 正常、3 下降、1~2 障碍、0 完全失聪），实测方法与询问条目待原文核对。"
+}

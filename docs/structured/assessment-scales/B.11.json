@@ -1,0 +1,43 @@
+{
+  "code": "B.11",
+  "name": "尿失禁问卷（ICIQ-SF）",
+  "dimension": "老年综合征",
+  "method": "询问",
+  "standard_ref": "WS/T 888—2026 附录B B.11",
+  "version": "0.1.0-draft",
+  "review_status": "draft_pending_medical_review",
+  "summary": "评估老年人尿失禁症状及其对生活的影响，取第 1、2、3 项之和，分值越高症状越重。",
+  "collection": { "support": ["patient", "staff"], "proxy_allowed": true, "measured": false },
+  "sections": [
+    {
+      "code": "B11-S1",
+      "title": "尿失禁症状与影响",
+      "questions": []
+    }
+  ],
+  "scoring": {
+    "score": {
+      "rule_type": "sum",
+      "config": { "items": [] },
+      "explanation": "条目待补录；补录后按第 1、2、3 项得分求和（每项 0~6 分，总分 0~18 分），分值越高症状越重。"
+    },
+    "levels": {
+      "rule_type": "level_map",
+      "config": {
+        "levels": [
+          {
+            "min": 0,
+            "max": 18,
+            "level": "尿失禁程度（分界值待原文确认）",
+            "interpretation": "按第 1、2、3 项之和评价，分值越高提示尿失禁症状越重；轻中重分级的具体分界值待 WS/T 888—2026 附录 B 原文核对后写入。",
+            "abnormal": false,
+            "severity": "none"
+          }
+        ]
+      }
+    },
+    "flags": []
+  },
+  "branches": [],
+  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。需求文档 §5.2 仅给出「第 1、2、3 项之和；分值越高症状越重」的方向性判读，未给出数值分界，本表按该口径保留单一占位分层，避免臆造阈值；选项与分界待原文核对。"
+}

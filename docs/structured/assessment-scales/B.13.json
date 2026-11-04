@@ -1,0 +1,215 @@
+{
+  "code": "B.13",
+  "name": "阿森斯失眠量表（AIS）",
+  "dimension": "老年综合征",
+  "method": "自评",
+  "standard_ref": "WS/T 888—2026 附录B B.13",
+  "version": "0.1.0-draft",
+  "review_status": "draft_pending_medical_review",
+  "summary": "自评老年人睡眠状况，共 8 个条目、每条 0~3 分，总分 0~24 分。",
+  "collection": { "support": ["patient"], "proxy_allowed": false, "measured": false },
+  "sections": [
+    {
+      "code": "B13-S1",
+      "title": "睡眠状况自评",
+      "questions": [
+        {
+          "code": "B13-01",
+          "text": "入睡时间（从上床到入睡所需时间）",
+          "plain_text": "躺下以后，多久才能睡着？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "0", "label": "0~30 分钟", "score": 0 },
+            { "value": "1", "label": "31~60 分钟", "score": 1 },
+            { "value": "2", "label": "61~120 分钟", "score": 2 },
+            { "value": "3", "label": "超过 120 分钟", "score": 3 }
+          ]
+        },
+        {
+          "code": "B13-02",
+          "text": "夜间醒来次数",
+          "plain_text": "夜里醒来几次？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "0", "label": "每夜不超过 1 次", "score": 0 },
+            { "value": "1", "label": "每夜 2 次", "score": 1 },
+            { "value": "2", "label": "每夜 3 次", "score": 2 },
+            { "value": "3", "label": "每夜 4 次及以上", "score": 3 }
+          ]
+        },
+        {
+          "code": "B13-03",
+          "text": "提前醒来（比期望起床时间提前的时长）",
+          "plain_text": "比您想起床的时间早多久就醒了？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "0", "label": "0~30 分钟", "score": 0 },
+            { "value": "1", "label": "31~60 分钟", "score": 1 },
+            { "value": "2", "label": "61~120 分钟", "score": 2 },
+            { "value": "3", "label": "超过 120 分钟", "score": 3 }
+          ]
+        },
+        {
+          "code": "B13-04",
+          "text": "夜间睡眠总时间",
+          "plain_text": "您夜里一共睡了几个小时？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "0", "label": "超过 6 小时", "score": 0 },
+            { "value": "1", "label": "5~6 小时", "score": 1 },
+            { "value": "2", "label": "4~5 小时", "score": 2 },
+            { "value": "3", "label": "少于 4 小时", "score": 3 }
+          ]
+        },
+        {
+          "code": "B13-05",
+          "text": "白天身体疲乏程度",
+          "plain_text": "白天身体累不累、疲不疲乏？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "0", "label": "没有", "score": 0 },
+            { "value": "1", "label": "轻度", "score": 1 },
+            { "value": "2", "label": "中度", "score": 2 },
+            { "value": "3", "label": "重度", "score": 3 }
+          ]
+        },
+        {
+          "code": "B13-06",
+          "text": "白天情绪状况",
+          "plain_text": "白天心情好不好？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "0", "label": "没有", "score": 0 },
+            { "value": "1", "label": "轻度", "score": 1 },
+            { "value": "2", "label": "中度", "score": 2 },
+            { "value": "3", "label": "重度", "score": 3 }
+          ]
+        },
+        {
+          "code": "B13-07",
+          "text": "白天想睡（瞌睡）的程度",
+          "plain_text": "白天老想打瞌睡吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "0", "label": "没有", "score": 0 },
+            { "value": "1", "label": "轻度", "score": 1 },
+            { "value": "2", "label": "中度", "score": 2 },
+            { "value": "3", "label": "重度", "score": 3 }
+          ]
+        },
+        {
+          "code": "B13-08",
+          "text": "睡眠质量",
+          "plain_text": "您觉得这一觉睡得怎么样？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "0", "label": "好", "score": 0 },
+            { "value": "1", "label": "一般", "score": 1 },
+            { "value": "2", "label": "差", "score": 2 },
+            { "value": "3", "label": "很差", "score": 3 }
+          ]
+        }
+      ]
+    }
+  ],
+  "scoring": {
+    "score": {
+      "rule_type": "sum",
+      "config": {
+        "items": [
+          { "code": "B13-01", "label": "入睡时间", "max_score": 3 },
+          { "code": "B13-02", "label": "夜间醒来次数", "max_score": 3 },
+          { "code": "B13-03", "label": "提前醒来", "max_score": 3 },
+          { "code": "B13-04", "label": "夜间睡眠总时间", "max_score": 3 },
+          { "code": "B13-05", "label": "白天身体疲乏程度", "max_score": 3 },
+          { "code": "B13-06", "label": "白天情绪状况", "max_score": 3 },
+          { "code": "B13-07", "label": "白天想睡的程度", "max_score": 3 },
+          { "code": "B13-08", "label": "睡眠质量", "max_score": 3 }
+        ]
+      },
+      "explanation": "8 个条目得分之和，满分 24 分。"
+    },
+    "levels": {
+      "rule_type": "level_map",
+      "config": {
+        "levels": [
+          { "min": 0, "max": 3, "level": "无睡眠障碍", "interpretation": "本次自评未提示睡眠障碍。", "abnormal": false, "severity": "none" },
+          { "min": 4, "max": 6, "level": "可能存在睡眠障碍", "interpretation": "提示可能存在睡眠障碍，建议结合作息、情绪与躯体疾病进一步评估。", "abnormal": true, "severity": "low" },
+          { "min": 6, "max": 24, "level": "存在睡眠障碍", "interpretation": "提示存在睡眠障碍，建议进一步评估并干预。", "abnormal": true, "severity": "medium" }
+        ]
+      }
+    },
+    "flags": [
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B13-01", "op": "gt", "value": 0 }] },
+        "flag": "入睡困难",
+        "symptom_codes": ["insomnia"],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B13-02", "op": "gt", "value": 0 }] },
+        "flag": "夜间频繁醒来",
+        "symptom_codes": ["nocturnal_awakening", "poor_sleep_quality"],
+        "severity": "low"
+      },
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B13-03", "op": "gt", "value": 0 }] },
+        "flag": "早醒",
+        "symptom_codes": ["insomnia", "nocturnal_awakening"],
+        "severity": "low"
+      },
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B13-04", "op": "gt", "value": 2 }] },
+        "flag": "夜间睡眠时间过短",
+        "symptom_codes": ["poor_sleep_quality", "daytime_somnolence"],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B13-05", "op": "gt", "value": 0 }] },
+        "flag": "日间疲乏",
+        "symptom_codes": ["fatigue"],
+        "severity": "low"
+      },
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B13-07", "op": "gt", "value": 0 }] },
+        "flag": "日间嗜睡",
+        "symptom_codes": ["daytime_somnolence"],
+        "severity": "low"
+      }
+    ]
+  },
+  "branches": [
+    {
+      "code": "B13-B1",
+      "when": {
+        "any": [
+          { "question": "B13-01", "op": "gt", "value": 0 },
+          { "question": "B13-03", "op": "gt", "value": 0 }
+        ]
+      },
+      "target_scale": "B.21",
+      "reason": "入睡困难或早醒明显，老年人夜间意识混乱常被误认为失眠，建议加做谵妄（意识模糊）评估以鉴别。"
+    },
+    {
+      "code": "B13-B2",
+      "when": { "any": [{ "question": "B13-05", "op": "gt", "value": 1 }] },
+      "target_scale": "B.10",
+      "reason": "日间疲乏程度达中度以上，提示衰弱相关风险，建议加做 FRAIL 量表。"
+    }
+  ],
+  "notes": "条目按通用阿森斯失眠量表（AIS）预置草稿，发布前须以 WS/T 888—2026 附录 B 原文逐项核对。注意判读要点的区间重叠：「4~6 可能存在睡眠障碍」与「≥6 存在睡眠障碍」在 6 分处重叠，本表按 level_map「首个命中生效」规则排列（0~3 无 → 4~6 可能 → ≥6 存在），实际 6 分判为「可能存在睡眠障碍」，7 分及以上判为「存在睡眠障碍」，分界以标准原文为准。"
+}

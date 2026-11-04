@@ -1,0 +1,43 @@
+{
+  "code": "B.9",
+  "name": "居家环境筛查表",
+  "dimension": "社会与环境",
+  "method": "询问／查看",
+  "standard_ref": "WS/T 888—2026 附录B B.9",
+  "version": "0.1.0-draft",
+  "review_status": "draft_pending_medical_review",
+  "summary": "筛查老年人居家环境风险，14 项之和，得分越低提示居家环境风险越大。",
+  "collection": { "support": ["patient", "staff"], "proxy_allowed": true, "measured": false },
+  "sections": [
+    {
+      "code": "B9-S1",
+      "title": "居家环境风险筛查",
+      "questions": []
+    }
+  ],
+  "scoring": {
+    "score": {
+      "rule_type": "sum",
+      "config": { "items": [] },
+      "explanation": "条目待补录；补录后按 14 个条目得分求和，总分 0~14 分，得分越低提示居家环境风险越大。"
+    },
+    "levels": {
+      "rule_type": "level_map",
+      "config": {
+        "levels": [
+          {
+            "min": 0,
+            "max": 14,
+            "level": "居家环境风险（分界值待原文确认）",
+            "interpretation": "本表按 14 项合计分判断，得分越低提示居家环境风险越大；风险等级的具体分界值待 WS/T 888—2026 附录 B 原文核对后写入。",
+            "abnormal": false,
+            "severity": "none"
+          }
+        ]
+      }
+    },
+    "flags": []
+  },
+  "branches": [],
+  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。需求文档 §5.2 仅给出「14 项之和；得分越低风险越大」的方向性判读，未给出数值分界，本表按该口径保留单一占位分层，避免臆造阈值；条目与分界待原文核对。"
+}

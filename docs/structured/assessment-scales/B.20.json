@@ -1,0 +1,43 @@
+{
+  "code": "B.20",
+  "name": "GLIM 营养不良诊断",
+  "dimension": "老年综合征",
+  "method": "评估",
+  "standard_ref": "WS/T 888—2026 附录B B.20",
+  "version": "0.1.0-draft",
+  "review_status": "draft_pending_medical_review",
+  "summary": "按营养不良诊断、肌肉减少、病因型指标与严重程度分级四项标准综合判定老年人营养不良，计分为满足的标准条目数（0~4 项）。",
+  "collection": { "support": ["patient", "staff"], "proxy_allowed": true, "measured": true },
+  "sections": [
+    {
+      "code": "B20-S1",
+      "title": "GLIM 四项标准判定",
+      "questions": []
+    }
+  ],
+  "scoring": {
+    "score": {
+      "rule_type": "sum",
+      "config": { "items": [] },
+      "explanation": "条目待补录；补录后按「营养不良诊断、肌肉减少、病因型指标、严重程度分级」四项标准各计 1 分（满足计 1 分），总分 0~4 项。"
+    },
+    "levels": {
+      "rule_type": "level_map",
+      "config": {
+        "levels": [
+          {
+            "min": 0,
+            "max": 4,
+            "level": "GLIM 营养不良判定（分项标准待原文确认）",
+            "interpretation": "本表按诊断、肌肉减少、病因型指标、严重程度分级四项标准综合判定；各项具体指标界值与判定组合规则待 WS/T 888—2026 附录 B 原文核对后写入。",
+            "abnormal": false,
+            "severity": "none"
+          }
+        ]
+      }
+    },
+    "flags": []
+  },
+  "branches": [],
+  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。需求文档 §5.2 仅给出「含诊断、肌肉减少、病因型指标、严重程度分级 4 项分标准」的框架性判读，未给出数值分界，本表按该口径保留单一占位分层，避免臆造阈值；各分项指标与判定组合规则待原文核对。"
+}

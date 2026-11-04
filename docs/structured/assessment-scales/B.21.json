@@ -1,0 +1,37 @@
+{
+  "code": "B.21",
+  "name": "谵妄（意识模糊）评估",
+  "dimension": "老年综合征",
+  "method": "评估",
+  "standard_ref": "WS/T 888—2026 附录B B.21",
+  "version": "0.1.0-draft",
+  "review_status": "draft_pending_medical_review",
+  "summary": "依据意识状态相关条目判断老年人有无谵妄，判定结果编码为 0（无）/1（有）。",
+  "collection": { "support": ["staff"], "proxy_allowed": true, "measured": false },
+  "sections": [
+    {
+      "code": "B21-S1",
+      "title": "意识状态与谵妄判定",
+      "questions": []
+    }
+  ],
+  "scoring": {
+    "score": {
+      "rule_type": "sum",
+      "config": { "items": [] },
+      "explanation": "条目待补录；补录后按意识状态条目的判定结果计分（0 表示无谵妄，1 表示存在谵妄）。"
+    },
+    "levels": {
+      "rule_type": "level_map",
+      "config": {
+        "levels": [
+          { "min": 0, "max": 0, "level": "无谵妄", "interpretation": "未提示谵妄。", "abnormal": false, "severity": "none" },
+          { "min": 1, "max": 1, "level": "存在谵妄", "interpretation": "提示存在谵妄，需尽快查找诱因（感染、脱水、便秘、缺氧、药物等）并由医护处理。", "abnormal": true, "severity": "high" }
+        ]
+      }
+    },
+    "flags": []
+  },
+  "branches": [],
+  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。判读按需求文档 §5.2「依据意识状态条目判断有无谵妄」预置，以判定结果 0/1 表达，意识状态条目与判定细则待原文核对。"
+}

@@ -1,0 +1,164 @@
+{
+  "code": "B.10",
+  "name": "FRAIL 量表",
+  "dimension": "老年综合征",
+  "method": "询问",
+  "standard_ref": "WS/T 888—2026 附录B B.10",
+  "version": "0.1.0-draft",
+  "review_status": "draft_pending_medical_review",
+  "summary": "从体重下降、疲乏、多病共存、肌力下降与步速缓慢 5 个方面筛查老年人衰弱状态，按阳性条目数判读（0 条无衰弱、1~2 条衰弱前期、≥3 条衰弱）。",
+  "collection": { "support": ["patient", "staff"], "proxy_allowed": true, "measured": false },
+  "sections": [
+    {
+      "code": "B10-S1",
+      "title": "衰弱筛查",
+      "questions": [
+        {
+          "code": "B10-01",
+          "text": "体重下降（近 6 个月内下降超过 4.5 kg）",
+          "plain_text": "最近半年，您瘦了 4 公斤半以上吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "1", "label": "是", "score": 1 },
+            { "value": "0", "label": "否", "score": 0 }
+          ]
+        },
+        {
+          "code": "B10-02",
+          "text": "疲乏（自觉疲乏、无力）",
+          "plain_text": "您是不是总觉得浑身没力气、特别容易累？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "1", "label": "是", "score": 1 },
+            { "value": "0", "label": "否", "score": 0 }
+          ]
+        },
+        {
+          "code": "B10-03",
+          "text": "多病共存（同时患有 5 种以上疾病）",
+          "plain_text": "您身上同时有 5 种以上的病吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "1", "label": "是", "score": 1 },
+            { "value": "0", "label": "否", "score": 0 }
+          ]
+        },
+        {
+          "code": "B10-04",
+          "text": "肌力下降（握力低）",
+          "plain_text": "您的手劲是不是比以前小了，拎东西费劲？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "1", "label": "是", "score": 1 },
+            { "value": "0", "label": "否", "score": 0 }
+          ]
+        },
+        {
+          "code": "B10-05",
+          "text": "步速缓慢（步行 6 米速度慢）",
+          "plain_text": "走 6 米路，是不是比以前慢了？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "1", "label": "是", "score": 1 },
+            { "value": "0", "label": "否", "score": 0 }
+          ]
+        }
+      ]
+    }
+  ],
+  "scoring": {
+    "score": {
+      "rule_type": "count_positive",
+      "config": {
+        "items": [
+          { "code": "B10-01", "label": "体重下降", "max_score": 1 },
+          { "code": "B10-02", "label": "疲乏", "max_score": 1 },
+          { "code": "B10-03", "label": "多病共存", "max_score": 1 },
+          { "code": "B10-04", "label": "肌力下降", "max_score": 1 },
+          { "code": "B10-05", "label": "步速缓慢", "max_score": 1 }
+        ],
+        "mode": "score_positive"
+      },
+      "explanation": "统计 5 个条目中阳性（得分 >0）的条目数，得分 0~5 条。"
+    },
+    "levels": {
+      "rule_type": "level_map",
+      "config": {
+        "levels": [
+          { "min": 0, "max": 0, "level": "无衰弱", "interpretation": "未提示衰弱相关表现。", "abnormal": false, "severity": "none" },
+          { "min": 1, "max": 2, "level": "衰弱前期", "interpretation": "提示衰弱前期表现，需加强营养、运动与功能维护。", "abnormal": true, "severity": "low" },
+          { "min": 3, "max": 5, "level": "衰弱", "interpretation": "提示衰弱状态，建议开展老年综合评估与干预。", "abnormal": true, "severity": "high" }
+        ]
+      }
+    },
+    "flags": [
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B10-01", "op": "eq", "value": "1" }] },
+        "flag": "近半年体重下降",
+        "symptom_codes": ["weight_loss", "low_bmi"],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B10-02", "op": "eq", "value": "1" }] },
+        "flag": "疲乏乏力",
+        "symptom_codes": ["fatigue"],
+        "severity": "low"
+      },
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B10-04", "op": "eq", "value": "1" }] },
+        "flag": "肌力下降",
+        "symptom_codes": ["muscle_weakness", "muscle_mass_loss"],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B10-05", "op": "eq", "value": "1" }] },
+        "flag": "步速缓慢",
+        "symptom_codes": ["gait_slow", "difficulty_walking"],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": {
+          "all": [
+            { "question": "B10-01", "op": "eq", "value": "1" },
+            { "question": "B10-04", "op": "eq", "value": "1" },
+            { "question": "B10-05", "op": "eq", "value": "1" }
+          ]
+        },
+        "flag": "体重下降伴肌力与步速下降（衰弱高风险组合）",
+        "symptom_codes": ["muscle_mass_loss", "weight_loss", "gait_instability", "fall_history"],
+        "severity": "high"
+      }
+    ]
+  },
+  "branches": [
+    {
+      "code": "B10-B1",
+      "when": {
+        "any": [
+          { "question": "B10-01", "op": "eq", "value": "1" },
+          { "question": "B10-04", "op": "eq", "value": "1" },
+          { "question": "B10-05", "op": "eq", "value": "1" }
+        ]
+      },
+      "target_scale": "B.3",
+      "reason": "FRAIL 任一条目阳性即提示衰弱相关风险，建议加做简易体能状况量表（SPPB）实测体能。"
+    },
+    {
+      "code": "B10-B2",
+      "when": { "any": [{ "question": "B10-01", "op": "eq", "value": "1" }] },
+      "target_scale": "B.19",
+      "reason": "近半年体重下降，建议加做微营养评定（MNA-SF）评估营养不良风险。"
+    }
+  ],
+  "notes": "条目按通用 FRAIL 量表预置草稿（5 个条目各计 1 分，按阳性条目数判读），发布前须以 WS/T 888—2026 附录 B 原文逐项核对题目表述、判定标准（如体重下降与步速的具体阈值）与判读分界。"
+}

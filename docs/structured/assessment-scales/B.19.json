@@ -1,0 +1,200 @@
+{
+  "code": "B.19",
+  "name": "微营养评定（MNA-SF）",
+  "dimension": "老年综合征",
+  "method": "询问／测量",
+  "standard_ref": "WS/T 888—2026 附录B B.19",
+  "version": "0.1.0-draft",
+  "review_status": "draft_pending_medical_review",
+  "summary": "由食欲、体重下降、行走困难、心理应激、神经心理问题与 BMI 六项构成的营养评定，总分 0~14 分。",
+  "collection": { "support": ["patient", "staff"], "proxy_allowed": true, "measured": true },
+  "sections": [
+    {
+      "code": "B19-S1",
+      "title": "微营养评定",
+      "questions": [
+        {
+          "code": "B19-01",
+          "text": "食欲／食物摄入状况",
+          "plain_text": "您最近胃口怎么样？愿意吃饭吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "0", "label": "完全丧失食欲", "score": 0 },
+            { "value": "1", "label": "食欲部分丧失", "score": 1 },
+            { "value": "2", "label": "食欲正常", "score": 2 }
+          ]
+        },
+        {
+          "code": "B19-02",
+          "text": "体重下降（过去 3 个月内）",
+          "plain_text": "最近 3 个月，您瘦了没有？大概多少？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "0", "label": "下降超过 5 kg", "score": 0 },
+            { "value": "1", "label": "不知道下降多少", "score": 1 },
+            { "value": "2", "label": "下降 1~5 kg", "score": 2 },
+            { "value": "3", "label": "没有下降", "score": 3 }
+          ]
+        },
+        {
+          "code": "B19-03",
+          "text": "行走困难",
+          "plain_text": "走路跟以前比费劲吗？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "0", "label": "无法行走", "score": 0 },
+            { "value": "1", "label": "行走困难", "score": 1 },
+            { "value": "2", "label": "可正常行走", "score": 2 }
+          ]
+        },
+        {
+          "code": "B19-04",
+          "text": "心理应激或急性疾病",
+          "plain_text": "最近有没有心里特别难受的事，或者生了一场急病？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "0", "label": "有", "score": 0 },
+            { "value": "1", "label": "没有", "score": 2 }
+          ]
+        },
+        {
+          "code": "B19-05",
+          "text": "神经心理问题",
+          "plain_text": "最近记性或情绪有没有明显问题？（如记忆力差、情绪低落）",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "0", "label": "严重痴呆或严重抑郁", "score": 0 },
+            { "value": "1", "label": "轻度认知障碍或轻度抑郁", "score": 1 },
+            { "value": "2", "label": "没有", "score": 2 }
+          ]
+        },
+        {
+          "code": "B19-06",
+          "text": "体质指数 BMI（由实测身高体重换算后选择）",
+          "plain_text": "给您量一下身高、称一下体重，算出体型指数后再选一项。",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "0", "label": "BMI 小于 19", "score": 0 },
+            { "value": "1", "label": "BMI 19~21", "score": 1 },
+            { "value": "2", "label": "BMI 21~23", "score": 2 },
+            { "value": "3", "label": "BMI 大于等于 23", "score": 3 }
+          ]
+        },
+        {
+          "code": "B19-07",
+          "text": "身高实测值",
+          "plain_text": "现在给您量一下身高，记下来。",
+          "input_type": "number",
+          "required": false,
+          "unit": "cm",
+          "options": []
+        },
+        {
+          "code": "B19-08",
+          "text": "体重实测值",
+          "plain_text": "现在给您称一下体重，记下来。",
+          "input_type": "number",
+          "required": false,
+          "unit": "kg",
+          "options": []
+        }
+      ]
+    }
+  ],
+  "scoring": {
+    "score": {
+      "rule_type": "sum",
+      "config": {
+        "items": [
+          { "code": "B19-01", "label": "食欲／食物摄入状况", "max_score": 2 },
+          { "code": "B19-02", "label": "体重下降", "max_score": 3 },
+          { "code": "B19-03", "label": "行走困难", "max_score": 2 },
+          { "code": "B19-04", "label": "心理应激或急性疾病", "max_score": 2 },
+          { "code": "B19-05", "label": "神经心理问题", "max_score": 2 },
+          { "code": "B19-06", "label": "体质指数 BMI", "max_score": 3 }
+        ]
+      },
+      "explanation": "6 项得分之和，满分 14 分；身高、体重实测值用于换算 BMI，仅作记录不单独计分。"
+    },
+    "levels": {
+      "rule_type": "level_map",
+      "config": {
+        "levels": [
+          { "min": 0, "max": 11, "level": "营养不良风险", "interpretation": "提示存在营养不良风险，建议尽快由临床营养科评估并干预。", "abnormal": true, "severity": "high" },
+          { "min": 12, "max": 14, "level": "营养状况良好", "interpretation": "营养状况良好，仍需按期复评。", "abnormal": false, "severity": "none" }
+        ]
+      }
+    },
+    "flags": [
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B19-01", "op": "eq", "value": "0" }] },
+        "flag": "完全丧失食欲",
+        "symptom_codes": ["poor_appetite", "weight_loss"],
+        "severity": "high"
+      },
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B19-02", "op": "eq", "value": "0" }] },
+        "flag": "体重下降超过 5 kg",
+        "symptom_codes": ["weight_loss", "low_bmi"],
+        "severity": "high"
+      },
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B19-03", "op": "ne", "value": "2" }] },
+        "flag": "行走困难",
+        "symptom_codes": ["difficulty_walking", "gait_slow"],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B19-04", "op": "eq", "value": "0" }] },
+        "flag": "心理应激或急性疾病",
+        "symptom_codes": ["depression", "anxiety"],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B19-05", "op": "ne", "value": "2" }] },
+        "flag": "神经心理问题",
+        "symptom_codes": ["dementia_daily_function", "depression"],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B19-06", "op": "in", "value": ["0", "1"] }] },
+        "flag": "低体质指数",
+        "symptom_codes": ["low_bmi", "muscle_mass_loss"],
+        "severity": "medium"
+      }
+    ]
+  },
+  "branches": [
+    {
+      "code": "B19-B1",
+      "when": {
+        "any": [
+          { "question": "B19-01", "op": "eq", "value": "0" },
+          { "question": "B19-02", "op": "eq", "value": "0" },
+          { "question": "B19-06", "op": "eq", "value": "0" }
+        ]
+      },
+      "target_scale": "B.20",
+      "reason": "存在完全食欲丧失、体重下降超过 5 kg 或低 BMI，建议加做 GLIM 营养不良诊断评估营养不良及其严重程度。"
+    },
+    {
+      "code": "B19-B2",
+      "when": { "any": [{ "question": "B19-02", "op": "eq", "value": "0" }] },
+      "target_scale": "B.18",
+      "reason": "存在明显体重下降，建议加做营养风险筛查（NRS2002）复核营养风险。"
+    }
+  ],
+  "notes": "条目按通用 MNA-SF 预置草稿（6 项、满分 14 分），发布前须以 WS/T 888—2026 附录 B 原文逐项核对。判读按需求文档 §5.2 口径「总分 ≤11 为营养不良风险」执行（0~11 营养不良风险，12~14 营养状况良好）；需注意 MNA-SF 常用分层为 12~14 营养良好、8~11 营养不良风险、0~7 营养不良，本表按需求文档口径合并判定，两者差异以标准原文核对为准。"
+}

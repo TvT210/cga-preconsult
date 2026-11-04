@@ -1,0 +1,37 @@
+{
+  "code": "B.7",
+  "name": "耳语试验",
+  "dimension": "躯体功能",
+  "method": "实测",
+  "standard_ref": "WS/T 888—2026 附录B B.7",
+  "version": "0.1.0-draft",
+  "review_status": "draft_pending_medical_review",
+  "summary": "通过耳语条件下词语复述测试评估老年人听力，以复述失败词语数计分（双耳各 3 个词语，0~6 个）。",
+  "collection": { "support": ["staff"], "proxy_allowed": false, "measured": true },
+  "sections": [
+    {
+      "code": "B7-S1",
+      "title": "耳语词语复述",
+      "questions": []
+    }
+  ],
+  "scoring": {
+    "score": {
+      "rule_type": "sum",
+      "config": { "items": [] },
+      "explanation": "条目待补录；补录后按复述失败的词语个数累计计分，双耳各 3 个词语，总分 0~6 个。"
+    },
+    "levels": {
+      "rule_type": "level_map",
+      "config": {
+        "levels": [
+          { "min": 0, "max": 2, "level": "阴性", "interpretation": "耳语复述基本正常，各侧均能正确复述多数词语。", "abnormal": false, "severity": "none" },
+          { "min": 3, "max": 6, "level": "阳性", "interpretation": "任一侧无法正确重复 3 个及以上词语，提示听力异常，需进一步评估。", "abnormal": true, "severity": "medium" }
+        ]
+      }
+    },
+    "flags": []
+  },
+  "branches": [],
+  "notes": "本表条目待以 WS/T 888—2026 附录 B 原文补录后再发布；当前题库为空，计分引擎应识别为「题库待补录」并拒绝计分。判读按需求文档 §5.2「任一侧无法正确重复 ≥3 个词语为阳性」预置；本表暂以「复述失败词语数」作为计分口径（双耳各 3 个词语），具体词语表、施测距离与判定细则待原文核对。"
+}

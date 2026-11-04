@@ -1,0 +1,177 @@
+{
+  "code": "B.16",
+  "name": "压力性损伤风险（Braden）",
+  "dimension": "老年综合征",
+  "method": "他评",
+  "standard_ref": "WS/T 888—2026 附录B B.16",
+  "version": "0.1.0-draft",
+  "review_status": "draft_pending_medical_review",
+  "summary": "由感觉、潮湿、活动、移动、营养、摩擦与剪切力 6 个条目评估老年人压力性损伤风险，总分 6~23 分，分值越低风险越高。",
+  "collection": { "support": ["staff"], "proxy_allowed": true, "measured": false },
+  "sections": [
+    {
+      "code": "B16-S1",
+      "title": "压力性损伤风险评估",
+      "questions": [
+        {
+          "code": "B16-01",
+          "text": "感觉能力",
+          "plain_text": "他感觉身体有压痛的地方，能不能感觉到？（如用手背轻压小腿看有无反应）",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "1", "label": "完全受限", "score": 1 },
+            { "value": "2", "label": "非常受限", "score": 2 },
+            { "value": "3", "label": "轻度受限", "score": 3 },
+            { "value": "4", "label": "不受限", "score": 4 }
+          ]
+        },
+        {
+          "code": "B16-02",
+          "text": "潮湿程度",
+          "plain_text": "他身上、床上潮湿的程度如何？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "1", "label": "非常潮湿", "score": 1 },
+            { "value": "2", "label": "经常潮湿", "score": 2 },
+            { "value": "3", "label": "偶尔潮湿", "score": 3 },
+            { "value": "4", "label": "不潮湿", "score": 4 }
+          ]
+        },
+        {
+          "code": "B16-03",
+          "text": "活动能力",
+          "plain_text": "他平时能不能自己活动？在床上、在椅子上还是能走动？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "1", "label": "卧床不起", "score": 1 },
+            { "value": "2", "label": "限于床上", "score": 2 },
+            { "value": "3", "label": "能坐椅子", "score": 3 },
+            { "value": "4", "label": "能够站立并行走", "score": 4 }
+          ]
+        },
+        {
+          "code": "B16-04",
+          "text": "移动能力",
+          "plain_text": "他能不能自己翻身、自己挪动？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "1", "label": "完全不能移动", "score": 1 },
+            { "value": "2", "label": "非常受限", "score": 2 },
+            { "value": "3", "label": "轻度受限", "score": 3 },
+            { "value": "4", "label": "不受限", "score": 4 }
+          ]
+        },
+        {
+          "code": "B16-05",
+          "text": "营养状况",
+          "plain_text": "他平时吃得够不够，营养好不好？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "1", "label": "非常不足", "score": 1 },
+            { "value": "2", "label": "不足", "score": 2 },
+            { "value": "3", "label": "足够", "score": 3 },
+            { "value": "4", "label": "非常好", "score": 4 }
+          ]
+        },
+        {
+          "code": "B16-06",
+          "text": "摩擦力与剪切力",
+          "plain_text": "搬动他的时候，皮肤会不会被拖动、有没有摩擦发红？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            { "value": "1", "label": "有明显剪切力", "score": 1 },
+            { "value": "2", "label": "中度剪切力", "score": 2 },
+            { "value": "3", "label": "无剪切力但有摩擦", "score": 3 },
+            { "value": "4", "label": "无明显问题", "score": 4 }
+          ]
+        }
+      ]
+    }
+  ],
+  "scoring": {
+    "score": {
+      "rule_type": "sum",
+      "config": {
+        "items": [
+          { "code": "B16-01", "label": "感觉能力", "max_score": 4 },
+          { "code": "B16-02", "label": "潮湿程度", "max_score": 4 },
+          { "code": "B16-03", "label": "活动能力", "max_score": 4 },
+          { "code": "B16-04", "label": "移动能力", "max_score": 4 },
+          { "code": "B16-05", "label": "营养状况", "max_score": 4 },
+          { "code": "B16-06", "label": "摩擦力与剪切力", "max_score": 4 }
+        ]
+      },
+      "explanation": "6 个条目得分之和，总分 6~23 分，分值越低提示压力性损伤风险越高。"
+    },
+    "levels": {
+      "rule_type": "level_map",
+      "config": {
+        "levels": [
+          { "min": 19, "max": 23, "level": "无风险", "interpretation": "压力性损伤风险低（≥19 分区间为无风险段，需求文档未列出，待原文核对）。", "abnormal": false, "severity": "none" },
+          { "min": 15, "max": 18, "level": "低度风险", "interpretation": "压力性损伤风险低度，保持翻身与皮肤护理即可。", "abnormal": true, "severity": "low" },
+          { "min": 13, "max": 14, "level": "中度风险", "interpretation": "压力性损伤风险中度，需加强翻身、减压与营养支持。", "abnormal": true, "severity": "medium" },
+          { "min": 10, "max": 12, "level": "高度风险", "interpretation": "压力性损伤风险高度，需制定专项护理与减压方案。", "abnormal": true, "severity": "high" },
+          { "min": 6, "max": 9, "level": "极高度风险", "interpretation": "压力性损伤风险极高，已有皮肤破损者需立即处理与专科处理。", "abnormal": true, "severity": "high" }
+        ]
+      }
+    },
+    "flags": [
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B16-03", "op": "lt", "value": 3 }] },
+        "flag": "活动能力受限",
+        "symptom_codes": ["chair_transfer_difficulty", "bed_transfer_difficulty", "difficulty_walking"],
+        "severity": "high"
+      },
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B16-04", "op": "lt", "value": 3 }] },
+        "flag": "移动能力受限",
+        "symptom_codes": ["bed_transfer_difficulty", "difficulty_walking"],
+        "severity": "high"
+      },
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B16-05", "op": "lt", "value": 3 }] },
+        "flag": "营养状况不足",
+        "symptom_codes": ["poor_appetite", "weight_loss"],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B16-02", "op": "lt", "value": 3 }] },
+        "flag": "潮湿环境皮肤风险",
+        "symptom_codes": ["skin_breakdown", "continence_urinary"],
+        "severity": "medium"
+      },
+      {
+        "rule_type": "condition",
+        "config": { "any": [{ "question": "B16-06", "op": "lt", "value": 3 }] },
+        "flag": "摩擦与剪切力风险",
+        "symptom_codes": ["skin_breakdown"],
+        "severity": "medium"
+      }
+    ]
+  },
+  "branches": [
+    {
+      "code": "B16-B1",
+      "when": { "any": [{ "question": "B16-05", "op": "lt", "value": 3 }] },
+      "target_scale": "B.19",
+      "reason": "营养状况不足，建议加做微营养评定（MNA-SF）评估营养不良风险。"
+    },
+    {
+      "code": "B16-B2",
+      "when": { "any": [{ "question": "B16-03", "op": "lt", "value": 3 }] },
+      "target_scale": "B.3",
+      "reason": "活动与移动能力受限，建议加做简易体能状况量表（SPPB）实测体能。"
+    }
+  ],
+  "notes": "条目按通用 Braden 量表预置草稿（6 个条目各 1~4 分，总分 6~23 分），发布前须以 WS/T 888—2026 附录 B 原文逐项核对。需求文档 §5.2 给出 15~18 低度、13~14 中度、10~12 高度、≤9 极高度，未列出 19~23 区间；本表补充「19~23 无风险」以覆盖量表取值范围，该段分界待原文核对。"
+}
