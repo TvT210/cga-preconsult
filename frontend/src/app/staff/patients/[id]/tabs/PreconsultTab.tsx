@@ -5,51 +5,55 @@ import { formatDateTime } from "@/lib/format";
 import { BigButton } from "@/components/BigButton";
 import { SectionTitle } from "@/components/PageHeader";
 
-/** 以顿号或逗号分隔的文本转数组 */
-function splitList(text: string): string[] {
-  return text
-    .split(/[、,，;；]/)
-    .map((item) => item.trim())
-    .filter(Boolean);
+/**
+ * 预问诊 tab（医护端 · **只读**）。
+ *
+ * 归属说明：预问诊的**采集与录入**属线 A（患者端 / 家属端），
+ * 医护端只做查看，不提供二次编辑表单，避免两端出现两份采集实现。
+ * 需要补充信息时，请引导老人或家属在患者端重新发起采集。
+ */
+
+function text(value: unknown): string {
+  if (value === undefined || value === null || value === "") return "—";
+  if (Array.isArray(value)) {
+    return value.length
+      ? value
+          .map((item) =>
+            item && typeof item === "object"
+              ? Object.values(item as Record<string, unknown>)
+                  .map((one) => (one === undefined || one === null ? "" : String(one)))
+                  .join(" / ")
+              : String(item),
+          )
+          .join("、")
+      : "—";
+  }
+  if (typeof value === "object") {
+    return Object.entries(value as Record<string, unknown>)
+      .filter(([, one]) => one !== undefined && one !== null && one !== "")
+      .map(([key, one]) => `${key}：${String(one)}`)
+      .join("、") || "—";
+  }
+  return String(value);
 }
 
-/** 每行一条，用竖线分隔字段 */
-function splitLines(text: string): string[] {
-  return text
-    .split(/\r?\n/)
-    .map((item) => item.trim())
-    .filter(Boolean);
+function Field({ label, value }: { label: string; value: unknown }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3">
+      <div className="text-sm text-ink-mute">{label}</div>
+      <div className="mt-1 text-elder text-ink">{text(value)}</div>
+    </div>
+  );
 }
 
-function linesToText(items?: unknown[]): string {
-  if (!Array.isArray(items) || !items.length) return "";
-  return items
-    .map((item) => {
-      if (item && typeof item === "object") {
-        return Object.values(item as Record<string, unknown>)
-          .map((value) => (value === undefined || value === null ? "" : String(value)))
-          .join("|");
-      }
-      return item === undefined || item === null ? "" : String(item);
-    })
-    .join("\n");
-}
-
-/** 预问诊 tab：基本信息、主诉、既往史、生活方式与代答信息 */
 export function PreconsultTab({
   preconsult,
-  onChange,
   consents,
   onRecordConsent,
-  onSave,
-  saving,
 }: {
   preconsult: Preconsult;
-  onChange: (next: Preconsult) => void;
   consents: ConsentRecord[];
   onRecordConsent: () => void;
-  onSave: () => void;
-  saving: boolean;
 }) {
   const basic = preconsult.basic ?? {};
   const chief = preconsult.chief_complaint ?? {};
@@ -59,6 +63,11 @@ export function PreconsultTab({
 
   return (
     <div className="space-y-5">
+      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-elder text-amber-900">
+        预问诊内容由老人或家属在<strong>患者端</strong>采集与补充，本页仅供医护查看。
+        如需补充信息，请引导老人/家属在患者端重新发起采集；此处不提供二次编辑。
+      </div>
+
       <section className="card card-pad">
         <SectionTitle
           title="知情同意"
@@ -86,501 +95,62 @@ export function PreconsultTab({
         )}
       </section>
 
-      <section className="card card-pad space-y-5">
+      <section className="card card-pad space-y-4">
         <SectionTitle title="基本信息" />
-        <div className="grid gap-4 md:grid-cols-3">
-          <div>
-            <label className="field-label" htmlFor="basic-gender">
-              性别
-            </label>
-            <input
-              id="basic-gender"
-              className="field-input"
-              value={basic.gender ?? ""}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  basic: { ...basic, gender: event.target.value },
-                })
-              }
-            />
-          </div>
-          <div>
-            <label className="field-label" htmlFor="basic-birth">
-              出生日期
-            </label>
-            <input
-              id="basic-birth"
-              type="date"
-              className="field-input"
-              value={basic.birth_date ?? ""}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  basic: { ...basic, birth_date: event.target.value },
-                })
-              }
-            />
-          </div>
-          <div>
-            <label className="field-label" htmlFor="basic-marital">
-              婚姻状况
-            </label>
-            <input
-              id="basic-marital"
-              className="field-input"
-              value={basic.marital_status ?? ""}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  basic: { ...basic, marital_status: event.target.value },
-                })
-              }
-            />
-          </div>
-          <div>
-            <label className="field-label" htmlFor="basic-education">
-              文化程度
-            </label>
-            <input
-              id="basic-education"
-              className="field-input"
-              value={basic.education ?? ""}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  basic: { ...basic, education: event.target.value },
-                })
-              }
-            />
-          </div>
-          <div>
-            <label className="field-label" htmlFor="basic-living">
-              居住状况
-            </label>
-            <input
-              id="basic-living"
-              className="field-input"
-              value={basic.living_status ?? ""}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  basic: { ...basic, living_status: event.target.value },
-                })
-              }
-            />
-          </div>
-          <div>
-            <label className="field-label" htmlFor="basic-insurance">
-              医疗费别
-            </label>
-            <input
-              id="basic-insurance"
-              className="field-input"
-              value={basic.medical_insurance ?? ""}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  basic: { ...basic, medical_insurance: event.target.value },
-                })
-              }
-            />
-          </div>
-          <div>
-            <label className="field-label" htmlFor="basic-contact">
-              联系人
-            </label>
-            <input
-              id="basic-contact"
-              className="field-input"
-              value={basic.contact_name ?? ""}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  basic: { ...basic, contact_name: event.target.value },
-                })
-              }
-            />
-          </div>
-          <div>
-            <label className="field-label" htmlFor="basic-contact-phone">
-              联系人电话
-            </label>
-            <input
-              id="basic-contact-phone"
-              className="field-input"
-              value={basic.contact_phone ?? ""}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  basic: { ...basic, contact_phone: event.target.value },
-                })
-              }
-            />
-          </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          <Field label="性别" value={basic.gender} />
+          <Field label="出生日期" value={basic.birth_date} />
+          <Field label="婚姻状况" value={basic.marital_status} />
+          <Field label="文化程度" value={basic.education} />
+          <Field label="居住状况" value={basic.living_status} />
+          <Field label="医疗费别" value={basic.medical_insurance} />
+          <Field label="联系人" value={basic.contact_name} />
+          <Field label="联系人电话" value={basic.contact_phone} />
         </div>
       </section>
 
       <section className="card card-pad space-y-4">
         <SectionTitle title="主诉与现病史" />
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="md:col-span-2">
-            <label className="field-label" htmlFor="chief-text">
-              主诉
-            </label>
-            <textarea
-              id="chief-text"
-              className="field-input min-h-[90px]"
-              value={chief.text ?? ""}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  chief_complaint: { ...chief, text: event.target.value },
-                })
-              }
-            />
-          </div>
-          <div>
-            <label className="field-label" htmlFor="chief-onset">
-              起病时间
-            </label>
-            <input
-              id="chief-onset"
-              className="field-input"
-              value={chief.onset ?? ""}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  chief_complaint: { ...chief, onset: event.target.value },
-                })
-              }
-            />
-          </div>
-          <div>
-            <label className="field-label" htmlFor="chief-site">
-              部位
-            </label>
-            <input
-              id="chief-site"
-              className="field-input"
-              value={chief.site ?? ""}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  chief_complaint: { ...chief, site: event.target.value },
-                })
-              }
-            />
-          </div>
-          <div>
-            <label className="field-label" htmlFor="chief-nature">
-              性质
-            </label>
-            <input
-              id="chief-nature"
-              className="field-input"
-              value={chief.nature ?? ""}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  chief_complaint: { ...chief, nature: event.target.value },
-                })
-              }
-            />
-          </div>
-          <div>
-            <label className="field-label" htmlFor="chief-severity">
-              严重程度（0~10）
-            </label>
-            <input
-              id="chief-severity"
-              type="number"
-              min={0}
-              max={10}
-              className="field-input"
-              value={chief.severity ?? ""}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  chief_complaint: {
-                    ...chief,
-                    severity:
-                      event.target.value === ""
-                        ? undefined
-                        : Number(event.target.value),
-                  },
-                })
-              }
-            />
-          </div>
-          <div>
-            <label className="field-label" htmlFor="chief-course">
-              病程
-            </label>
-            <input
-              id="chief-course"
-              className="field-input"
-              value={chief.course ?? ""}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  chief_complaint: { ...chief, course: event.target.value },
-                })
-              }
-            />
-          </div>
-          <div>
-            <label className="field-label" htmlFor="chief-associated">
-              伴随症状（顿号分隔）
-            </label>
-            <input
-              id="chief-associated"
-              className="field-input"
-              value={(chief.associated ?? []).join("、")}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  chief_complaint: {
-                    ...chief,
-                    associated: splitList(event.target.value),
-                  },
-                })
-              }
-            />
-          </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <Field label="主诉" value={chief.text} />
+          <Field label="起病时间" value={chief.onset} />
+          <Field label="部位" value={chief.site} />
+          <Field label="性质" value={chief.nature} />
+          <Field label="严重程度" value={chief.severity} />
+          <Field label="病程" value={chief.course} />
+          <Field label="伴随症状" value={chief.associated} />
         </div>
       </section>
 
       <section className="card card-pad space-y-4">
-        <SectionTitle title="既往史、用药史与过敏史" />
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="field-label" htmlFor="history-conditions">
-              慢性病清单（顿号分隔）
-            </label>
-            <input
-              id="history-conditions"
-              className="field-input"
-              value={(history.conditions ?? []).join("、")}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  history: {
-                    ...history,
-                    conditions: splitList(event.target.value),
-                  },
-                })
-              }
-            />
-          </div>
-          <div>
-            <label className="field-label" htmlFor="history-medications">
-              长期用药（每行一条：名称|剂量|开始时间）
-            </label>
-            <textarea
-              id="history-medications"
-              className="field-input min-h-[110px]"
-              value={linesToText(history.medications)}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  history: {
-                    ...history,
-                    medications: splitLines(event.target.value).map((line) => {
-                      const [name, dose, since] = line.split("|");
-                      return { name: name ?? "", dose, since };
-                    }),
-                  },
-                })
-              }
-            />
-          </div>
-          <div className="md:col-span-2">
-            <label className="field-label" htmlFor="history-allergies">
-              过敏史（每行一条：药物|反应）
-            </label>
-            <textarea
-              id="history-allergies"
-              className="field-input min-h-[90px]"
-              value={linesToText(history.allergies)}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  history: {
-                    ...history,
-                    allergies: splitLines(event.target.value).map((line) => {
-                      const [name, reaction] = line.split("|");
-                      return { name: name ?? "", reaction };
-                    }),
-                  },
-                })
-              }
-            />
-          </div>
+        <SectionTitle title="既往史、用药与过敏" />
+        <div className="grid gap-3 md:grid-cols-3">
+          <Field label="既往病史" value={history.conditions} />
+          <Field label="当前用药" value={history.medications} />
+          <Field label="过敏史" value={history.allergies} />
         </div>
       </section>
 
       <section className="card card-pad space-y-4">
-        <SectionTitle title="生活方式" />
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="flex min-h-btn items-center gap-3 text-elder text-ink">
-            <input
-              type="checkbox"
-              className="h-7 w-7"
-              checked={Boolean(lifestyle.smoking)}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  lifestyle: { ...lifestyle, smoking: event.target.checked },
-                })
-              }
-            />
-            吸烟
-          </label>
-          <label className="flex min-h-btn items-center gap-3 text-elder text-ink">
-            <input
-              type="checkbox"
-              className="h-7 w-7"
-              checked={Boolean(lifestyle.drinking)}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  lifestyle: { ...lifestyle, drinking: event.target.checked },
-                })
-              }
-            />
-            饮酒
-          </label>
-          <div>
-            <label className="field-label" htmlFor="life-diet">
-              饮食
-            </label>
-            <input
-              id="life-diet"
-              className="field-input"
-              value={lifestyle.diet ?? ""}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  lifestyle: { ...lifestyle, diet: event.target.value },
-                })
-              }
-            />
-          </div>
-          <div>
-            <label className="field-label" htmlFor="life-activity">
-              活动
-            </label>
-            <input
-              id="life-activity"
-              className="field-input"
-              value={lifestyle.activity ?? ""}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  lifestyle: { ...lifestyle, activity: event.target.value },
-                })
-              }
-            />
-          </div>
-          <div>
-            <label className="field-label" htmlFor="life-sleep">
-              睡眠
-            </label>
-            <input
-              id="life-sleep"
-              className="field-input"
-              value={lifestyle.sleep ?? ""}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  lifestyle: { ...lifestyle, sleep: event.target.value },
-                })
-              }
-            />
-          </div>
-          <div className="md:col-span-2">
-            <label className="field-label" htmlFor="life-falls">
-              跌倒史（每行一条：时间|地点|诱因|损伤）
-            </label>
-            <textarea
-              id="life-falls"
-              className="field-input min-h-[90px]"
-              value={linesToText(lifestyle.falls)}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  lifestyle: {
-                    ...lifestyle,
-                    falls: splitLines(event.target.value).map((line) => {
-                      const [time, place, cause, injury] = line.split("|");
-                      return { time, place, cause, injury };
-                    }),
-                  },
-                })
-              }
-            />
-          </div>
+        <SectionTitle title="生活方式与跌倒史" />
+        <div className="grid gap-3 md:grid-cols-3">
+          <Field label="吸烟" value={lifestyle.smoking} />
+          <Field label="饮酒" value={lifestyle.drinking} />
+          <Field label="饮食" value={lifestyle.diet} />
+          <Field label="活动" value={lifestyle.activity} />
+          <Field label="睡眠" value={lifestyle.sleep} />
+          <Field label="跌倒史" value={lifestyle.falls} />
         </div>
       </section>
 
       <section className="card card-pad space-y-4">
         <SectionTitle title="代答信息" />
-        <div className="grid gap-4 md:grid-cols-3">
-          <label className="flex min-h-btn items-center gap-3 text-elder text-ink">
-            <input
-              type="checkbox"
-              className="h-7 w-7"
-              checked={Boolean(proxy.is_proxy)}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  proxy: { ...proxy, is_proxy: event.target.checked },
-                })
-              }
-            />
-            由家属代答
-          </label>
-          <div>
-            <label className="field-label" htmlFor="proxy-name">
-              代答人姓名
-            </label>
-            <input
-              id="proxy-name"
-              className="field-input"
-              value={proxy.proxy_name ?? ""}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  proxy: { ...proxy, proxy_name: event.target.value },
-                })
-              }
-            />
-          </div>
-          <div>
-            <label className="field-label" htmlFor="proxy-relation">
-              与老人关系
-            </label>
-            <input
-              id="proxy-relation"
-              className="field-input"
-              value={proxy.proxy_relation ?? ""}
-              onChange={(event) =>
-                onChange({
-                  ...preconsult,
-                  proxy: { ...proxy, proxy_relation: event.target.value },
-                })
-              }
-            />
-          </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          <Field label="是否代答" value={proxy.is_proxy ? "是" : "否"} />
+          <Field label="代答人" value={proxy.proxy_name} />
+          <Field label="与老人关系" value={proxy.proxy_relation} />
         </div>
       </section>
-
-      <div className="flex flex-wrap gap-3">
-        <BigButton size="lg" loading={saving} onClick={onSave}>
-          保存预问诊
-        </BigButton>
-      </div>
     </div>
   );
 }

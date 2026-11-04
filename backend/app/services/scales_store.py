@@ -1,7 +1,8 @@
-"""题库与疾病库的读取：JSON 为基线，数据库为运行时真相。
+"""题库读取：JSON 为基线，数据库为运行时真相。
 
-`docs/structured/` 下的 JSON 是评审前的基线；数据库表保存发布后的版本与评审状态，
-每次评估都会记录所用的 `scale_version`，满足版本留痕要求。
+**归属：线 A（采集与判读）**——本模块只负责 21 张量表题库的读取。
+疾病库与症状词表属线 B，已迁至 `app/services/disease_library.py`；
+下面几行仅为兼容转发，线 A 侧无需改动即可继续使用受控词表。
 """
 
 from __future__ import annotations
@@ -13,11 +14,10 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.core.config import REPO_ROOT
-from app.db.models import DiseaseProfile, ScaleTemplate
+from app.db.models import ScaleTemplate
 
 STRUCTURED_DIR = REPO_ROOT / "docs" / "structured"
 SCALES_DIR = STRUCTURED_DIR / "assessment-scales"
-DISEASE_DIR = STRUCTURED_DIR / "disease-library"
 
 _cache: dict[str, Any] = {}
 
@@ -106,64 +106,28 @@ def _count_items(payload: dict) -> int:
     return sum(len(section.get("questions", [])) for section in payload.get("sections", []))
 
 
-def load_symptoms() -> dict[str, dict]:
-    """症状归一化字典（含鉴别性追问话术 probe）。"""
-    if "symptoms" in _cache:
-        return _cache["symptoms"]
-    path = DISEASE_DIR / "symptoms.json"
-    table: dict[str, dict] = {}
-    if path.exists():
-        data = _read_json(path)
-        for item in data.get("symptoms", []):
-            table[item["code"]] = item
-    _cache["symptoms"] = table
-    return table
+# ---------------------------------------------------------------------------
+# 兼容转发：疾病库与症状词表归线 B，实现在 app/services/disease_library.py
+# ---------------------------------------------------------------------------
 
+from app.services.disease_library import (  # noqa: E402  （放在文件末尾避免循环导入）
+    get_disease,
+    list_diseases,
+    load_disease_file,
+    load_symptoms,
+    symptom_probe,
+    symptom_term,
+)
 
-def symptom_term(code: str) -> str:
-    entry = load_symptoms().get(code)
-    return entry.get("term", code) if entry else code
-
-
-def symptom_probe(code: str) -> str:
-    """该症状的鉴别性追问话术（医生初诊用来区分同症多病）。"""
-    entry = load_symptoms().get(code)
-    return entry.get("probe", "") if entry else ""
-
-
-def load_disease_file() -> dict:
-    path = DISEASE_DIR / "diseases.json"
-    if not path.exists():
-        return {"diseases": []}
-    try:
-        return _read_json(path)
-    except Exception:
-        return {"diseases": []}
-
-
-def list_diseases(db: Session) -> list[dict]:
-    rows = {row.code: row for row in db.query(DiseaseProfile).all()}
-    result: list[dict] = []
-    for item in load_disease_file().get("diseases", []):
-        row = rows.get(item.get("code"))
-        payload = row.payload if row and row.payload else item
-        result.append(
-            {
-                "code": item.get("code"),
-                "name": item.get("name"),
-                "aliases": item.get("aliases", []),
-                "system": item.get("system", ""),
-                "risk_level": item.get("risk_level", "observe"),
-                "review_status": row.review_status if row else "draft_pending_medical_review",
-                "symptom_count": len(item.get("symptoms", [])),
-                "payload": payload,
-            }
-        )
-    return result
-
-
-def get_disease(db: Session, code: str) -> dict | None:
-    for item in list_diseases(db):
-        if item["code"] == code:
-            return item
-    return None
+__all__ = [
+    "list_scale_files",
+    "load_scale_files",
+    "get_scale",
+    "list_scales",
+    "load_symptoms",
+    "symptom_term",
+    "symptom_probe",
+    "load_disease_file",
+    "list_diseases",
+    "get_disease",
+]

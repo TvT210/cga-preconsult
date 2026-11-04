@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.api import new_router, paginate
 
 router = new_router()
-from app.core.deps import ROLE_ELDER, ensure_patient_access, get_current_user, require_staff
+from app.core.deps import ROLE_ELDER, ensure_patient_access, get_current_user
 from app.db.base import get_db
 from app.db.models import AssessmentAnswer, AssessmentScore, AssessmentSession, Patient, User
 from app.services import audit
@@ -483,73 +483,4 @@ def finish_assessment(
             if score.needs_manual_review
             else ""
         ],
-    }
-
-
-@router.post("/assessments/{session_id}/review")
-def review_assessment(
-    session_id: int,
-    payload: dict,
-    user: User = Depends(require_staff),
-    db: Session = Depends(get_db),
-):
-    """医护复核：可修正单题取值后重新计分。"""
-    session = db.get(AssessmentSession, session_id)
-    if session is None:
-        raise HTTPException(status_code=404, detail="评估任务不存在")
-    action = payload.get("action", "approve")
-    corrections = payload.get("corrections") or []
-    # 记录复核前的判读结果，用于计算计分一致率（复核改分 = 计分不一致的样本）
-    existing = (
-        db.query(AssessmentScore)
-        .filter(AssessmentScore.session_id == session.id)
-        .first()
-    )
-    pre_review_total = existing.total if existing else None
-    pre_review_level = existing.level if existing else ""
-    for correction in corrections:
-        code = correction.get("question_code")
-        if not code:
-            continue
-        _apply_answer(
-            db,
-            session,
-            code,
-            correction.get("value"),
-            correction.get("measured"),
-            bool(correction.get("proxy_flag")),
-            correction.get("answered_by", ""),
-        )
-    score, branches = _score_and_store(db, session)
-    score.reviewed = True
-    if pre_review_total is not None:
-        score.pre_review_total = pre_review_total
-        score.pre_review_level = pre_review_level
-    session.status = "reviewed"
-    session.reviewer_id = user.id
-    session.review_comment = payload.get("comment", "")
-    session.reviewed_at = dt.datetime.now(dt.timezone.utc)
-    db.commit()
-    audit.record(
-        db,
-        user,
-        "review",
-        "assessment",
-        session.id,
-        {"action": action, "corrections": len(corrections), "comment": payload.get("comment", "")},
-    )
-    db.commit()
-    return {
-        "session_id": session.id,
-        "status": session.status,
-        "score": {
-            "total": score.total,
-            "level": score.level,
-            "interpretation": score.interpretation,
-            "abnormal": score.abnormal,
-            "flags": score.flags,
-            "rule_refs": score.rule_refs,
-            "needs_manual_review": score.needs_manual_review,
-        },
-        "branches": branches,
     }

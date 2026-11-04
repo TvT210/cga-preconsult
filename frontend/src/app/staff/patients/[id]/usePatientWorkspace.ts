@@ -46,7 +46,6 @@ export function usePatientWorkspace(patientId?: string) {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState(false);
 
   /** 载入该患者的全部档案数据 */
@@ -215,20 +214,12 @@ export function usePatientWorkspace(patientId?: string) {
     }
   }, [patientId]);
 
-  /** 保存预问诊（增量保存） */
-  const savePreconsult = useCallback(async () => {
-    setSaving(true);
-    try {
-      await api.put<Preconsult>(`/patients/${patientId}/preconsult`, preconsult);
-      toast("预问诊内容已保存。", "success");
-    } catch {
-      /* 错误提示已由 api 层统一处理 */
-    } finally {
-      setSaving(false);
-    }
-  }, [patientId, preconsult]);
-
-  /** 记录知情同意 */
+  /**
+   * 记录知情同意
+   *
+   * 注：预问诊内容的**采集与编辑**属线 A（患者端），医护端只读，
+   * 因此这里不再提供 savePreconsult。
+   */
   const recordConsent = useCallback(async () => {
     setBusy(true);
     try {
@@ -305,17 +296,14 @@ export function usePatientWorkspace(patientId?: string) {
     dialogueTurns,
     loading,
     error,
-    saving,
     busy,
     load,
-    setPreconsult,
     setActiveReport,
     openRun,
     requestAiReview,
     createReport,
     runMatching,
     openDialogue,
-    savePreconsult,
     recordConsent,
     handleAlert,
     openReport,

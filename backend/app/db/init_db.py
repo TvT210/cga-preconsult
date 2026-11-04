@@ -30,7 +30,8 @@ from app.db.models import (
     ScaleVersion,
     User,
 )
-from app.services.scales_store import load_disease_file, load_scale_files
+from app.services.disease_library import load_disease_file
+from app.services.scales_store import load_scale_files
 
 DEFAULT_USERS = [
     ("admin", "admin12345", "系统管理员", "admin", "信息科"),

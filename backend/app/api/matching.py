@@ -26,9 +26,8 @@ from app.db.models import (
 )
 from app.services import audit
 from app.services.ai_review import review_match
-from app.services.dialogue import extract_preconsult_symptoms
+from app.services.disease_library import extract_preconsult_symptoms, list_diseases
 from app.services.matching import DISCLAIMER, MatchingWeights, build_evidence, run_matching
-from app.services.scales_store import list_diseases
 
 RULE_VERSION = "0.1.0-draft"
 
