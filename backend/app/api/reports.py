@@ -89,6 +89,7 @@ def list_reports(
             "patient_id": row.patient_id,
             "version": row.version,
             "title": row.title,
+            "template_code": row.template_code,
             "locked": row.locked,
             "created_at": row.created_at.isoformat(),
         }
