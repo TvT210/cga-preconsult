@@ -1,0 +1,224 @@
+"""API 端到端冒烟测试：登录 → 患者 → 预问诊 → 量表 → 判读 → 匹配 → 报告。"""
+
+from __future__ import annotations
+
+from fastapi.testclient import TestClient
+
+from app.main import app
+
+client = TestClient(app)
+
+
+def _login(username: str, password: str) -> dict:
+    response = client.post("/api/v1/auth/login", json={"username": username, "password": password})
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["code"] == 0
+    return body["data"]
+
+
+def _auth(token: str) -> dict:
+    return {"Authorization": f"Bearer {token}"}
+
+
+def test_health():
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json()["status"] == "ok"
+
+
+def test_login_and_me():
+    data = _login("nurse", "nurse12345")
+    assert data["user"]["role"] == "staff"
+    response = client.get("/api/v1/auth/me", headers=_auth(data["token"]))
+    assert response.status_code == 200
+    assert response.json()["data"]["username"] == "nurse"
+
+
+def test_login_rejects_bad_password():
+    response = client.post("/api/v1/auth/login", json={"username": "nurse", "password": "wrong"})
+    assert response.status_code == 401
+
+
+def test_require_auth():
+    assert client.get("/api/v1/scales").status_code == 401
+
+
+def _scale_with_items(token: str) -> dict:
+    response = client.get("/api/v1/scales", headers=_auth(token))
+    assert response.status_code == 200
+    items = response.json()["data"]
+    ready = [item for item in items if item.get("item_count", 0) > 0]
+    assert ready, "题库中应至少有一张量表含条目"
+    return ready[0]
+
+
+def test_scales_list_and_detail():
+    token = _login("nurse", "nurse12345")["token"]
+    scale = _scale_with_items(token)
+    response = client.get(f"/api/v1/scales/{scale['code']}", headers=_auth(token))
+    assert response.status_code == 200
+    detail = response.json()["data"]
+    assert detail["code"] == scale["code"]
+    assert detail["sections"]
+    assert detail["scoring"]["levels"]
+
+
+def test_end_to_end_patient_assessment_matching_report():
+    token = _login("nurse", "nurse12345")["token"]
+    headers = _auth(token)
+
+    scale = _scale_with_items(token)
+    detail = client.get(f"/api/v1/scales/{scale['code']}", headers=headers).json()["data"]
+    questions = [q for section in detail["sections"] for q in section["questions"]]
+
+    created = client.post(
+        "/api/v1/patients",
+        headers=headers,
+        json={"name": "测试老人", "gender": "女", "birth_date": "1946-03-01", "phone": "13700000000"},
+    )
+    assert created.status_code == 200, created.text
+    patient_id = created.json()["data"]["id"]
+
+    preconsult = client.put(
+        f"/api/v1/patients/{patient_id}/preconsult",
+        headers=headers,
+        json={
+            "history": {"conditions": ["高血压", "2 型糖尿病"]},
+            "chief_complaint": {"text": "反复头晕，伴走路不稳"},
+            "lifestyle": {"falls": [{"time": "2026-10-20"}]},
+        },
+    )
+    assert preconsult.status_code == 200
+    assert preconsult.json()["data"]["history"]["conditions"] == ["高血压", "2 型糖尿病"]
+
+    consent = client.post(f"/api/v1/patients/{patient_id}/consent", headers=headers, json={"agreed": True})
+    assert consent.status_code == 200
+
+    session = client.post(
+        "/api/v1/assessments",
+        headers=headers,
+        json={"patient_id": patient_id, "scale_code": scale["code"], "mode": "staff"},
+    )
+    assert session.status_code == 200, session.text
+    session_id = session.json()["data"]["id"]
+
+    # 断点续填：重复创建应返回同一会话
+    again = client.post(
+        "/api/v1/assessments",
+        headers=headers,
+        json={"patient_id": patient_id, "scale_code": scale["code"], "mode": "staff"},
+    )
+    assert again.json()["data"]["id"] == session_id
+
+    for question in questions:
+        if question.get("input_type") in {"single", "multi"}:
+            value = question["options"][0]["value"]
+        else:
+            value = 1
+        response = client.post(
+            f"/api/v1/assessments/{session_id}/answers",
+            headers=headers,
+            json={"question_code": question["code"], "value": value, "answered_by": "测试护士"},
+        )
+        assert response.status_code == 200, response.text
+
+    finished = client.post(f"/api/v1/assessments/{session_id}/finish", headers=headers)
+    assert finished.status_code == 200
+    payload = finished.json()["data"]
+    assert payload["scores"][0]["level"]
+    assert payload["scores"][0]["rule_refs"], "结论必须可回溯到题目与规则条目"
+
+    review = client.post(
+        f"/api/v1/assessments/{session_id}/review",
+        headers=headers,
+        json={"action": "approve", "comment": "复核通过"},
+    )
+    assert review.status_code == 200
+    assert review.json()["data"]["status"] == "reviewed"
+
+    match = client.post("/api/v1/matching/run", headers=headers, json={"patient_id": patient_id})
+    assert match.status_code == 200, match.text
+    match_data = match.json()["data"]
+    assert len(match_data["candidates"]) >= 3, "至少返回 Top-3 候选"
+    top = match_data["candidates"][0]
+    assert "match_score" in top and "ref_probability" in top
+    assert "不构成诊断" in match_data["disclaimer"]
+
+    report = client.post("/api/v1/reports", headers=headers, json={"patient_id": patient_id})
+    assert report.status_code == 200
+    report_data = report.json()["data"]
+    assert report_data["sections"]["basic"]["name"] == "测试老人"
+    assert report_data["sections"]["scale_results"]
+
+    docx = client.get(f"/api/v1/reports/{report_data['id']}/export?format=docx", headers=headers)
+    assert docx.status_code == 200
+    assert docx.content[:2] == b"PK"
+    pdf = client.get(f"/api/v1/reports/{report_data['id']}/export?format=pdf", headers=headers)
+    assert pdf.status_code == 200
+    assert pdf.content[:4] == b"%PDF"
+
+    lock = client.post(f"/api/v1/reports/{report_data['id']}/lock", headers=headers)
+    assert lock.status_code == 200
+    assert lock.json()["data"]["locked"] is True
+
+
+def test_elder_cannot_access_other_patient():
+    elder = _login("elder", "elder12345")
+    nurse = _login("nurse", "nurse12345")
+    created = client.post(
+        "/api/v1/patients",
+        headers=_auth(nurse["token"]),
+        json={"name": "他人患者", "gender": "男", "birth_date": "1950-01-01"},
+    )
+    patient_id = created.json()["data"]["id"]
+    response = client.get(f"/api/v1/patients/{patient_id}", headers=_auth(elder["token"]))
+    assert response.status_code == 403
+
+
+def test_elder_can_access_own_patient():
+    elder = _login("elder", "elder12345")
+    patient_id = elder["user"]["patient_id"]
+    assert patient_id
+    response = client.get(f"/api/v1/patients/{patient_id}", headers=_auth(elder["token"]))
+    assert response.status_code == 200
+
+
+def test_admin_metrics_and_audit():
+    token = _login("admin", "admin12345")["token"]
+    metrics = client.get("/api/v1/admin/quality-metrics", headers=_auth(token))
+    assert metrics.status_code == 200
+    assert "stats" in metrics.json()["data"]
+    logs = client.get("/api/v1/admin/audit-logs", headers=_auth(token))
+    assert logs.status_code == 200
+    assert isinstance(logs.json()["data"], list)
+
+
+def test_disease_library_and_thresholds():
+    token = _login("doctor", "doctor12345")["token"]
+    diseases = client.get("/api/v1/diseases", headers=_auth(token))
+    assert diseases.status_code == 200
+    data = diseases.json()["data"]
+    assert data["diseases"], "疾病库应有条目"
+    assert data["thresholds"], "阈值应入库且可配置"
+    assert "不构成诊断" in data["disclaimer"]
+
+
+def test_dialogue_turn_records_profile():
+    token = _login("elder", "elder12345")["token"]
+    patient_id = _login("elder", "elder12345")["user"]["patient_id"]
+    session = client.post("/api/v1/dialogue/sessions", headers=_auth(token), json={"patient_id": patient_id})
+    assert session.status_code == 200
+    session_id = session.json()["data"]["id"]
+    message = client.post(
+        f"/api/v1/dialogue/sessions/{session_id}/messages",
+        headers=_auth(token),
+        json={"content": "我这几天头晕，走路也晃，还总想吐"},
+    )
+    assert message.status_code == 200
+    payload = message.json()["data"]
+    assert payload["reply"]
+    assert "不构成诊断" in payload["disclaimer"]
+    profile = client.get(f"/api/v1/dialogue/sessions/{session_id}/profile", headers=_auth(token))
+    assert profile.status_code == 200
+    assert isinstance(profile.json()["data"]["symptoms"], list)
