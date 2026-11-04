@@ -25,6 +25,9 @@ LEVEL_LABELS = {
     "observe": "居家观察",
 }
 
+# 提醒等级顺序（用于红旗征托底与降级比较）
+LEVEL_ORDER = {"observe": 0, "elective": 1, "urgent": 2, "immediate": 3}
+
 # 误报控制：核心症状命中数低于该值时，提醒等级下调一级
 MIN_CORE_HITS_FOR_ALERT = 2
 
@@ -34,6 +37,7 @@ class MatchingWeights:
     core: float = 3.0
     secondary: float = 1.0
     history_bonus: float = 15.0
+    protective_penalty: float = 2.0
     temperature: float = 10.0
     global_threshold: float = 60.0
     top_n: int = 5
@@ -43,6 +47,7 @@ class MatchingWeights:
             "core": self.core,
             "secondary": self.secondary,
             "history_bonus": self.history_bonus,
+            "protective_penalty": self.protective_penalty,
             "temperature": self.temperature,
             "global_threshold": self.global_threshold,
         }
@@ -62,10 +67,13 @@ def _normalize_text(text: str) -> str:
 
 def build_evidence(
     scale_flags: list[dict],
-    dialogue_symptoms: list[dict],
+    extracted_symptoms: list[dict],
     conditions: list[str],
 ) -> dict[str, Any]:
-    """把量表阳性标记、对话抽取症状、既往病史汇总成证据集合。"""
+    """把量表阳性标记、抽取症状、既往病史汇总成证据集合。
+
+    extracted_symptoms 元素需带 `source`（dialogue / preconsult），用于前端区分证据来源。
+    """
     symptoms: dict[str, dict] = {}
     for flag in scale_flags:
         for code in flag.get("symptom_codes", []):
@@ -73,15 +81,16 @@ def build_evidence(
                 code, {"code": code, "term": symptom_term(code), "sources": [], "weight": "secondary"}
             )
             entry["sources"].append("scale")
-    for item in dialogue_symptoms:
+    for item in extracted_symptoms:
         code = item.get("code")
         if not code:
             continue
+        source = item.get("source", "dialogue")
         entry = symptoms.setdefault(
             code, {"code": code, "term": symptom_term(code), "sources": [], "weight": "secondary"}
         )
-        if "dialogue" not in entry["sources"]:
-            entry["sources"].append("dialogue")
+        if source not in entry["sources"]:
+            entry["sources"].append(source)
     return {
         "symptoms": list(symptoms.values()),
         "symptom_codes": set(symptoms.keys()),
@@ -156,7 +165,7 @@ def run_matching(
                 }
             )
 
-        # 同症多病鉴别：缺少鉴别特征时扣分（扣分不超过命中得分的 50%，避免把证据完全抹掉）
+        # 同症多病鉴别：缺少鉴别特征时扣分
         excluded: list[dict] = []
         penalty_total = 0.0
         for differential in payload.get("differentials", []) or []:
@@ -172,16 +181,47 @@ def run_matching(
                         "points": points,
                     }
                 )
+
+        # 保护性征象：命中则直接削弱本病可能（比鉴别扣分更直接）
+        protective_hits = [
+            item
+            for item in payload.get("protective_signs", []) or []
+            if item.get("code") in symptom_codes
+        ]
+        for item in protective_hits:
+            points = -weights.protective_penalty
+            penalty_total += points
+            excluded.append(
+                {
+                    "vs_code": "",
+                    "reason": f"出现保护性征象「{item.get('term', '')}」：{item.get('note', '')}",
+                    "points": points,
+                }
+            )
+
+        # 扣分封顶：不超过命中得分的 50%，避免把已有证据完全抹掉
         capped_penalty = max(penalty_total, -raw * 0.5) if raw > 0 else 0.0
         if capped_penalty != penalty_total:
             excluded.append(
                 {
                     "vs_code": "",
-                    "reason": "鉴别扣分已按命中得分的 50% 封顶，保留证据可见性",
+                    "reason": "鉴别与保护征象扣分已按命中得分的 50% 封顶，保留证据可见性",
                     "points": round(capped_penalty - penalty_total, 2),
                 }
             )
         raw = raw + capped_penalty
+
+        # 红旗征：命中即高度提示急症，提醒等级不得被降级
+        red_flag_hits = [
+            item for item in payload.get("red_flags", []) or [] if item.get("code") in symptom_codes
+        ]
+
+        # 高危因素：条目带 code 且命中时，标记为该老人已具备的高危因素
+        risk_factor_hits = [
+            item
+            for item in payload.get("risk_factors", []) or []
+            if item.get("code") and item.get("code") in symptom_codes
+        ]
 
         match_score = 0.0 if max_possible <= 0 else max(0.0, min(100.0, raw / max_possible * 100.0))
         scored.append(
@@ -195,6 +235,10 @@ def run_matching(
                 "hit_symptoms": hit,
                 "missing_symptoms": missing,
                 "excluded_reasons": excluded,
+                "red_flags": red_flag_hits,
+                "protective_signs": protective_hits,
+                "risk_factor_hits": risk_factor_hits,
+                "risk_factors": payload.get("risk_factors", []),
                 "core_hits": core_hits,
                 "history_hit": history_hit,
                 "advice": payload.get("advice", {}),
@@ -269,12 +313,23 @@ def _decide_alert(candidates: list[dict], thresholds: dict[str, float], weights:
     if level == "observe" and top["match_score"] >= threshold * 0.8:
         level = "elective"
 
-    # 误报控制：核心症状证据不足 → 降级一级
+    # 红旗征托底：命中即高度提示急症，提醒等级不得低于 urgent（病种本身为急症则直接 immediate）
+    red_flags = top.get("red_flags") or []
+    upgrade_reason = ""
+    if red_flags:
+        floor = "immediate" if top.get("risk_level") == "immediate" else "urgent"
+        if LEVEL_ORDER.get(level, 0) < LEVEL_ORDER.get(floor, 0):
+            upgrade_reason = f"命中急症红旗征，提醒等级提升为「{LEVEL_LABELS[floor]}」"
+            level = floor
+
+    # 误报控制：核心症状证据不足 → 降级一级；但命中红旗征时不得降级
     if level in {"immediate", "urgent", "elective"}:
         insufficient = top.get("evidence_insufficient") or top.get("core_hits", 0) < MIN_CORE_HITS_FOR_ALERT
-        if insufficient:
+        if insufficient and not red_flags:
             level = {"immediate": "urgent", "urgent": "elective", "elective": "observe"}.get(level, level)
             downgrade_reason = "核心症状证据不足，提醒等级已下调一级"
+        elif insufficient and red_flags:
+            downgrade_reason = "核心症状证据不足，但命中红旗征，提醒等级不予下调"
         else:
             downgrade_reason = ""
     else:
@@ -283,6 +338,11 @@ def _decide_alert(candidates: list[dict], thresholds: dict[str, float], weights:
     advice = top.get("advice") or {}
     department = advice.get("department", "")
     message = advice.get("text") or f"本次评估提示需要关注「{top['disease_name']}」，建议尽快到{department or '相关科室'}就诊。"
+    if red_flags:
+        flag_text = "、".join(item.get("term", "") for item in red_flags if item.get("term"))
+        message = f"命中急症红旗征（{flag_text}）。{message}"
+    if upgrade_reason:
+        message = f"{message}（{upgrade_reason}）"
     if downgrade_reason:
         message = f"{message}（{downgrade_reason}）"
 
@@ -297,4 +357,5 @@ def _decide_alert(candidates: list[dict], thresholds: dict[str, float], weights:
         "top_disease": top["disease_name"],
         "match_score": top["match_score"],
         "ref_probability": top["ref_probability"],
+        "red_flags": red_flags,
     }

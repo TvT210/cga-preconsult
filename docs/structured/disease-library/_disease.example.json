@@ -1,7 +1,7 @@
 {
-  "version": "0.1.0-draft",
+  "version": "0.2.0-draft",
   "review_status": "draft_pending_medical_review",
-  "note": "老年易发疾病信息库草稿。symptom 的 code 必须来自 symptoms.json；differentials.features 同样引用 symptoms.json 的 code。",
+  "note": "老年易发疾病信息库 schema v2。所有 symptom code 必须来自 symptoms.json；differentials.features、red_flags[].code、protective_signs[].code 同样引用 symptoms.json 的 code。本库为草稿，未经医学专家评审不得用于正式临床提醒。",
   "schema": {
     "disease": {
       "code": "疾病编码（ICD 风格）",
@@ -9,93 +9,170 @@
       "aliases": ["别名1", "别名2"],
       "system": "所属系统",
       "risk_level": "immediate | urgent | elective | observe",
-      "symptoms": [{ "code": "symptoms.json 中的 code", "weight": "core | secondary" }],
-      "atypical_presentations": ["老年人的非典型表现"],
+      "symptoms": [
+        { "code": "symptoms.json 中的 code", "weight": "core | secondary", "note": "可选：该症状在本病中的特点或易混淆点" }
+      ],
+      "atypical_presentations": ["老年人的非典型表现，写成「症状 → 表现」的可核对句式"],
+      "risk_factors": [
+        { "factor": "共病/用药/年龄/生活方式等高危因素", "detail": "具体说明与本病的关系" }
+      ],
+      "red_flags": [
+        { "code": "symptoms.json 中的 code", "term": "红旗征名称", "note": "出现即高度提示急症，说明处置建议" }
+      ],
+      "protective_signs": [
+        { "code": "symptoms.json 中的 code", "term": "保护性征象名称", "note": "出现则明显降低本病可能性" }
+      ],
       "differentials": [
         {
           "vs_code": "被鉴别的疾病 code",
           "features": ["symptoms.json 中的 code"],
           "points": -10,
-          "reason": "缺少上述特征时，降低本病匹配度的理由说明"
+          "reason": "鉴别逻辑说明（缺少哪些特征时更倾向另一病）"
         }
       ],
-      "scale_links": [{ "scale": "量表 code", "item": "题目 code（可空）", "note": "关联说明" }],
-      "advice": { "department": "建议就诊科室", "urgency": "立即就医 | 尽快就医 | 择期就诊 | 居家观察", "text": "给老人看的通俗提醒文案" },
-      "source": "来源与版本说明（草稿阶段写“待医学专家评审”）",
+      "scale_links": [
+        { "scale": "量表 code", "item": "题目 code（该量表已有条目时填，否则留空字符串）", "note": "关联说明" }
+      ],
+      "advice": {
+        "department": "建议就诊科室",
+        "urgency": "立即就医 | 尽快就医 | 择期就诊 | 居家观察",
+        "text": "给老人看的通俗提醒文案（口语、具体、可执行）"
+      },
+      "source": "来源与版本说明（草稿阶段写「待医学专家评审（拟引用：…）」，不要编造具体版本年份）",
       "review_note": "评审与发布状态说明"
-    }
+    },
+    "rules": [
+      "symptoms 中 core 为核心症状，2~4 条；secondary 3~5 条。",
+      "differentials 至少 2 条，points 为负数。",
+      "differentials.features 写「本病自身的鉴别性特征」（不是对方疾病的症状）：引擎仅在 features 一个都没命中时对本病扣分，因此 features 全不命中 = 本病证据不足。",
+      "red_flags 命中时不得降级提醒等级；protective_signs 命中时降低匹配度。",
+      "aliases 不得与其他病种的 name/aliases 重复；不要把近邻病种的名字收进来。",
+      "scale_links 只能引用已存在的量表 code；该量表尚无条目时 item 必须为空字符串。"
+    ]
   },
   "diseases": [
     {
       "code": "I21",
       "name": "急性心肌梗死",
-      "aliases": ["心梗", "AMI", "急性心梗"],
+      "aliases": ["心梗", "AMI", "急性心梗", "心肌梗死"],
       "system": "心血管系统",
       "risk_level": "immediate",
       "symptoms": [
-        { "code": "chest_pain", "weight": "core" },
-        { "code": "dyspnea", "weight": "core" },
-        { "code": "palpitations", "weight": "core" },
-        { "code": "diaphoresis", "weight": "secondary" },
-        { "code": "syncope", "weight": "secondary" },
-        { "code": "fatigue", "weight": "secondary" },
-        { "code": "nausea_vomiting", "weight": "secondary" }
+        { "code": "chest_pain", "weight": "core", "note": "老年人可为闷痛、压榨感或说不清的难受，部位不典型" },
+        { "code": "dyspnea", "weight": "core", "note": "老年人常以突发气促为唯一主诉" },
+        { "code": "palpitations", "weight": "core", "note": "糖尿病老人可仅表现为心慌" },
+        { "code": "nausea_vomiting", "weight": "secondary", "note": "下壁心肌梗死多见" },
+        { "code": "syncope", "weight": "secondary", "note": "老年人晕厥需警惕心源性" },
+        { "code": "fatigue", "weight": "secondary", "note": "可为极度乏力、极度疲乏" }
       ],
       "atypical_presentations": [
-        "老年人可无典型胸痛，表现为突发气促、晕厥、上腹痛、乏力或意识改变",
-        "糖尿病老人可仅表现为心慌、极度疲乏"
+        "老年人可无典型胸痛，表现为突发气促、晕厥、极度乏力或意识改变",
+        "糖尿病老人可仅表现为心慌、恶心、纳差，无胸痛主诉",
+        "常以「跌倒后不适」「上腹痛」起病，容易被当作胃肠或骨科问题"
+      ],
+      "risk_factors": [
+        { "factor": "高龄与多重共病", "detail": "75 岁以上冠心病合并糖尿病、高血压者风险显著升高" },
+        { "factor": "2 型糖尿病", "detail": "糖尿病神经病变使胸痛感受迟钝，是老年人无痛性心梗的主要背景" },
+        { "factor": "高血压、高脂血症", "detail": "动脉粥样硬化基础病变" },
+        { "factor": "急性应激与失血", "detail": "感染、跌倒、脱水、手术等可诱发急性事件" },
+        { "factor": "不当用药", "detail": "拟交感药物、含麻黄制剂、过量补液可诱发心肌耗氧增加" }
+      ],
+      "red_flags": [
+        { "code": "chest_pain", "term": "持续胸痛或胸部压榨感", "note": "超过 20 分钟不缓解，或伴出汗、濒死感，需立即呼叫 120" },
+        { "code": "syncope", "term": "突发晕厥伴胸闷", "note": "警惕心源性晕厥，立即就医" }
+      ],
+      "protective_signs": [
+        { "code": "fever", "term": "发热", "note": "单纯发热不支持急性心肌梗死，更需考虑感染" },
+        { "code": "hemoptysis", "term": "咯血", "note": "咯血伴胸痛更倾向肺栓塞或肺部疾病" }
       ],
       "differentials": [
         {
           "vs_code": "I10",
           "features": ["chest_pain", "palpitations"],
           "points": -8,
-          "reason": "无急性胸痛或心悸线索时，更倾向慢性高血压相关改变而非急性心肌梗死"
+          "reason": "缺少急性胸痛或心悸线索时，更倾向慢性高血压相关改变而非急性心肌梗死"
+        },
+        {
+          "vs_code": "A41",
+          "features": ["chest_pain", "dyspnea"],
+          "points": -6,
+          "reason": "未出现胸痛或气促等本病特征、反而以发热与意识改变为主时，更倾向感染性脓毒症"
+        },
+        {
+          "vs_code": "J69",
+          "features": ["chest_pain", "dyspnea"],
+          "points": -6,
+          "reason": "无胸痛与气促线索而以咳嗽咳痰为主时，更倾向吸入性肺炎"
         }
       ],
       "scale_links": [
-        { "scale": "B.1", "item": "B1-09", "note": "关注行走能力下降与活动耐量" }
+        { "scale": "B.1", "item": "B1-09", "note": "关注活动耐量下降与行走能力" },
+        { "scale": "B.3", "item": "", "note": "关注心衰失代偿后的体能下降" }
       ],
       "advice": {
-        "department": "心血管内科 / 急诊",
+        "department": "心血管内科／急诊",
         "urgency": "立即就医",
-        "text": "您描述的胸口不适和喘气需要马上重视，请立即前往医院急诊或拨打 120，不要自行服药。"
+        "text": "您说的胸口不舒服、喘不上气要马上重视，请立即去医院急诊或拨打 120，不要自己吃药。"
       },
       "source": "待医学专家评审（拟引用：老年人急性心肌梗死诊疗要点）",
       "review_note": "草稿，未经评审不得用于正式临床提醒"
     },
     {
-      "code": "M17",
-      "name": "膝骨关节炎",
-      "aliases": ["膝关节骨关节炎", "膝退行性关节炎"],
-      "system": "肌肉骨骼系统",
-      "risk_level": "elective",
+      "code": "E16.2",
+      "name": "严重低血糖",
+      "aliases": ["低血糖昏迷", "低血糖发作"],
+      "system": "内分泌代谢",
+      "risk_level": "immediate",
       "symptoms": [
-        { "code": "joint_pain", "weight": "core" },
-        { "code": "weight_bearing_pain", "weight": "core" },
-        { "code": "gait_slow", "weight": "secondary" },
-        { "code": "low_activity", "weight": "secondary" },
-        { "code": "pain_chronic", "weight": "secondary" }
+        { "code": "hypoglycemia_symptom", "weight": "core", "note": "心慌、手抖、出冷汗、饥饿感" },
+        { "code": "orientation_deficit", "weight": "core", "note": "意识模糊、言语含糊，酷似谵妄" },
+        { "code": "syncope", "weight": "core", "note": "严重时可昏迷" },
+        { "code": "tremor", "weight": "secondary", "note": "" },
+        { "code": "fatigue", "weight": "secondary", "note": "发作后极度乏力" },
+        { "code": "delirium_fluctuation", "weight": "secondary", "note": "易被误认为谵妄" }
       ],
-      "atypical_presentations": ["疼痛多在负重后出现，休息可缓解，常被描述为“走远了疼”"],
+      "atypical_presentations": [
+        "老年人低血糖可仅表现为乏力、说话含糊、行为异常，家属常误认为「老糊涂了」",
+        "糖尿病老人或使用胰岛素、磺脲类药物者，症状与进食关系密切",
+        "肾功能不全、营养不良者禁食后更易发生，且症状不典型"
+      ],
+      "risk_factors": [
+        { "factor": "降糖药物", "detail": "胰岛素、磺脲类药物剂量过量或未随进食调整" },
+        { "factor": "进食减少", "detail": "食欲差、恶心、吞咽困难导致摄入不足而未减药" },
+        { "factor": "肝肾功能不全", "detail": "药物清除减慢，低血糖持续时间延长" },
+        { "factor": "饮酒", "detail": "抑制糖异生，低血糖与昏迷风险叠加" }
+      ],
+      "red_flags": [
+        { "code": "syncope", "term": "意识丧失或抽搐", "note": "立即喂糖并呼叫 120" },
+        { "code": "orientation_deficit", "term": "意识模糊伴大汗", "note": "高度提示低血糖，需立即处理" }
+      ],
+      "protective_signs": [
+        { "code": "hyperglycemia_symptom", "term": "多饮多尿伴口渴", "note": "更倾向高血糖而非低血糖" }
+      ],
       "differentials": [
         {
-          "vs_code": "M05",
-          "features": ["joint_pain"],
+          "vs_code": "F05",
+          "features": ["hypoglycemia_symptom", "orientation_deficit"],
+          "points": -8,
+          "reason": "未出现心慌出汗或意识改变等低血糖线索时，更倾向谵妄"
+        },
+        {
+          "vs_code": "I63",
+          "features": ["syncope", "orientation_deficit"],
           "points": -6,
-          "reason": "存在明显晨僵与多关节对称受累时，更倾向炎性关节病"
+          "reason": "无低血糖用药史、伴偏瘫等局灶体征时更倾向急性脑卒中"
         }
       ],
       "scale_links": [
-        { "scale": "B.3", "item": "", "note": "关注步速与起坐能力下降" },
-        { "scale": "B.14", "item": "", "note": "关注疼痛评分与用药" }
+        { "scale": "B.21", "item": "", "note": "关注意识改变与谵妄鉴别" },
+        { "scale": "B.18", "item": "", "note": "关注营养不良导致的低血糖易感性" }
       ],
       "advice": {
-        "department": "骨科 / 老年医学科",
-        "urgency": "择期就诊",
-        "text": "您的情况更像膝关节退变，建议门诊评估疼痛与活动度，并在家做适度力量训练与减重。"
+        "department": "内分泌科／急诊",
+        "urgency": "立即就医",
+        "text": "如果出现心慌手抖、冒冷汗、说不清话甚至昏过去，可能是血糖太低，请立刻吃含糖食物并马上叫 120 或去医院。"
       },
-      "source": "待医学专家评审（拟引用：骨关节炎诊疗指南 2021）",
+      "source": "待医学专家评审（拟引用：老年人低血糖诊疗与防跌倒要点）",
       "review_note": "草稿，未经评审不得用于正式临床提醒"
     }
   ]
