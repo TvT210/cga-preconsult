@@ -180,7 +180,8 @@ def list_periodic(
 ):
     query = db.query(PeriodicAssessment)
     if user.role == ROLE_ELDER:
-        query = query.filter(PeriodicAssessment.patient_id == user.patient_id or -1)
+        # 老人只能看到本人数据；未绑定患者时返回空集
+        query = query.filter(PeriodicAssessment.patient_id == (user.patient_id if user.patient_id is not None else -1))
     if patient_id:
         ensure_patient_access(user, patient_id)
         query = query.filter(PeriodicAssessment.patient_id == patient_id)
@@ -207,7 +208,8 @@ def list_followups(
 ):
     query = db.query(Followup)
     if user.role == ROLE_ELDER:
-        query = query.filter(Followup.patient_id == user.patient_id or -1)
+        # 老人只能看到本人数据；未绑定患者时返回空集
+        query = query.filter(Followup.patient_id == (user.patient_id if user.patient_id is not None else -1))
     if patient_id:
         ensure_patient_access(user, patient_id)
         query = query.filter(Followup.patient_id == patient_id)
@@ -279,7 +281,8 @@ def list_alerts(
 ):
     query = db.query(Alert)
     if user.role == ROLE_ELDER:
-        query = query.filter(Alert.patient_id == user.patient_id or -1)
+        # 老人只能看到本人数据；未绑定患者时返回空集
+        query = query.filter(Alert.patient_id == (user.patient_id if user.patient_id is not None else -1))
     if patient_id:
         ensure_patient_access(user, patient_id)
         query = query.filter(Alert.patient_id == patient_id)

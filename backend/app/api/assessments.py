@@ -161,7 +161,8 @@ def list_assessments(
 ):
     query = db.query(AssessmentSession)
     if user.role == ROLE_ELDER:
-        query = query.filter(AssessmentSession.patient_id == user.patient_id or -1)
+        # 老人只能看到本人数据；未绑定患者时返回空集
+        query = query.filter(AssessmentSession.patient_id == (user.patient_id if user.patient_id is not None else -1))
     if patient_id:
         ensure_patient_access(user, patient_id)
         query = query.filter(AssessmentSession.patient_id == patient_id)
