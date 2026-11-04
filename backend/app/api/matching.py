@@ -9,12 +9,13 @@ from app.api import new_router
 
 router = new_router()
 from app.core.config import settings
-from app.core.deps import ROLE_ADMIN, ROLE_DOCTOR, get_current_user, require_roles
+from app.core.deps import ROLE_ADMIN, ROLE_DOCTOR, get_current_user, require_roles, require_staff
 from app.db.base import get_db
 from app.db.models import (
     Alert,
     AlertThreshold,
     AssessmentScore,
+    MatchAiReview,
     MatchCandidate,
     MatchRun,
     MatchingRule,
@@ -24,6 +25,7 @@ from app.db.models import (
     User,
 )
 from app.services import audit
+from app.services.ai_review import review_match
 from app.services.dialogue import extract_preconsult_symptoms
 from app.services.matching import DISCLAIMER, MatchingWeights, build_evidence, run_matching
 from app.services.scales_store import list_diseases
@@ -117,12 +119,15 @@ def get_disease(code: str, user: User = Depends(get_current_user), db: Session =
 
 @router.post("/matching/run")
 def create_match_run(
-    payload: dict,
+    request_body: dict,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """执行一次症状—疾病匹配，输出多候选与分级提醒。"""
-    patient_id = int(payload.get("patient_id") or 0)
+    """执行一次症状—疾病匹配，输出多候选与分级提醒。
+
+    request_body.with_ai_review = true 时，额外执行一次 AI 语义复核（只给建议，不改结论）。
+    """
+    patient_id = int(request_body.get("patient_id") or 0)
     if not patient_id:
         raise HTTPException(status_code=400, detail="缺少 patient_id")
     patient = db.get(Patient, patient_id)
@@ -161,11 +166,11 @@ def create_match_run(
     preconsult_symptoms: list[dict] = []
     preconsult = db.query(Preconsult).filter(Preconsult.patient_id == patient_id).first()
     if preconsult:
-        payload = preconsult.payload or {}
-        history = payload.get("history") or {}
+        preconsult_payload = preconsult.payload or {}
+        history = preconsult_payload.get("history") or {}
         conditions = list(history.get("conditions") or [])
         # 预问诊自述必须参与匹配（采集侧信息的主入口）
-        preconsult_symptoms = extract_preconsult_symptoms(payload)
+        preconsult_symptoms = extract_preconsult_symptoms(preconsult_payload)
     if profile and profile.conditions:
         conditions.extend(profile.conditions)
 
@@ -232,7 +237,59 @@ def create_match_run(
     db.refresh(run)
     audit.record(db, user, "run", "matching", run.id, {"patient_id": patient_id, "candidates": len(outcome.candidates)})
     db.commit()
-    return _run_payload(db, run)
+
+    response = _run_payload(db, run)
+    if bool(request_body.get("with_ai_review")):
+        response["ai_review"] = _run_ai_review(db, run, user, patient)
+    return response
+
+
+def _run_ai_review(db: Session, run: MatchRun, user: User, patient: Patient) -> dict:
+    """对一次匹配批次执行 AI 复核（不改分值、不改等级，只给建议）。"""
+    rows = (
+        db.query(MatchCandidate)
+        .filter(MatchCandidate.run_id == run.id)
+        .order_by(MatchCandidate.rank)
+        .all()
+    )
+    candidates = [
+        {
+            "disease_code": row.disease_code,
+            "disease_name": row.disease_name,
+            "match_score": row.match_score,
+            "ref_probability": row.ref_probability,
+            "hit_symptoms": row.hit_symptoms,
+            "missing_symptoms": row.missing_symptoms,
+            "red_flags": row.red_flags,
+            "core_hits": sum(1 for item in (row.hit_symptoms or []) if item.get("weight") == "core"),
+        }
+        for row in rows
+    ]
+    profiles = {item["code"]: (item.get("payload") or {}) for item in list_diseases(db)}
+
+    snapshot = run.input_snapshot or {}
+    preconsult = db.query(Preconsult).filter(Preconsult.patient_id == run.patient_id).first()
+    chief_complaint = ""
+    history: list[str] = []
+    if preconsult:
+        payload_pc = preconsult.payload or {}
+        chief_complaint = (payload_pc.get("chief_complaint") or {}).get("text", "")
+        history = list((payload_pc.get("history") or {}).get("conditions") or [])
+    evidence = {
+        "symptoms": snapshot.get("evidence", {}).get("symptoms", []),
+        "conditions": snapshot.get("conditions", []),
+    }
+    patient_info = {
+        "name": patient.name,
+        "age": patient.age,
+        "gender": patient.gender,
+        "chief_complaint": chief_complaint,
+        "history": history,
+    }
+    review = review_match(db, run, patient_info, evidence, candidates, profiles)
+    audit.record(db, user, "ai_review", "matching", run.id, {"model": review.model})
+    db.commit()
+    return review.to_dict()
 
 
 def _run_payload(db: Session, run: MatchRun) -> dict:
@@ -310,6 +367,53 @@ def get_match_run(run_id: int, user: User = Depends(get_current_user), db: Sessi
     if run is None:
         raise HTTPException(status_code=404, detail="匹配批次不存在")
     return _run_payload(db, run)
+
+
+@router.post("/matching/runs/{run_id}/ai-review")
+def post_ai_review(
+    run_id: int,
+    user: User = Depends(require_staff),
+    db: Session = Depends(get_db),
+):
+    """对一次匹配批次执行 AI 语义复核。
+
+    AI 只给**建议**：排序建议、补充问诊清单、通俗解释、与规则的分歧说明；
+    不修改匹配度、参考概率、阈值与提醒等级（红线）。
+    """
+    run = db.get(MatchRun, run_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="匹配批次不存在")
+    patient = db.get(Patient, run.patient_id)
+    if patient is None:
+        raise HTTPException(status_code=404, detail="患者不存在")
+    return _run_ai_review(db, run, user, patient)
+
+
+@router.get("/matching/runs/{run_id}/ai-review")
+def get_ai_review(
+    run_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """读取该批次最近一次 AI 复核结果。"""
+    record = (
+        db.query(MatchAiReview)
+        .filter(MatchAiReview.run_id == run_id)
+        .order_by(MatchAiReview.id.desc())
+        .first()
+    )
+    if record is None:
+        raise HTTPException(status_code=404, detail="该批次尚未进行 AI 复核")
+    return {
+        "id": record.id,
+        "run_id": record.run_id,
+        "patient_id": record.patient_id,
+        "model": record.model,
+        "prompt_version": record.prompt_version,
+        "latency_ms": record.latency_ms,
+        "created_at": record.created_at.isoformat(),
+        **record.output,
+    }
 
 
 @router.get("/matching/thresholds")

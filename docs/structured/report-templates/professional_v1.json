@@ -1,0 +1,138 @@
+{
+  "code": "professional",
+  "name": "专业版（临床医护）",
+  "version": "0.2.0-draft",
+  "scene": "professional",
+  "review_status": "draft_pending_medical_review",
+  "template": {
+    "cover": {
+      "title": "老年综合评估报告",
+      "subtitle": "Comprehensive Geriatric Assessment Report",
+      "fields": [
+        { "key": "name", "label": "姓名" },
+        { "key": "gender", "label": "性别" },
+        { "key": "age", "label": "年龄" },
+        { "key": "assessment_time", "label": "评估时间" },
+        { "key": "assessor", "label": "评估者" },
+        { "key": "organization", "label": "机构" }
+      ],
+      "footer": "本报告由老年人就医预问诊与老年综合评估系统生成"
+    },
+    "toc": [
+      { "ref": "basic", "label": "基本信息" },
+      { "ref": "scales", "label": "量表评估结果" },
+      { "ref": "dimensions", "label": "维度小结" },
+      { "ref": "positive", "label": "阳性问题清单" },
+      { "ref": "ai", "label": "AI 补充评估" },
+      { "ref": "match", "label": "疾病匹配与就医提醒" },
+      { "ref": "intervention", "label": "干预建议" },
+      { "ref": "mdt", "label": "多学科意见" },
+      { "ref": "followup", "label": "随访计划" }
+    ],
+    "blocks": [
+      {
+        "ref": "basic",
+        "type": "kv",
+        "title": "一、基本信息",
+        "source": "basic",
+        "fields": [
+          { "key": "name", "label": "姓名" },
+          { "key": "gender", "label": "性别" },
+          { "key": "age", "label": "年龄" },
+          { "key": "birth_date", "label": "出生日期" },
+          { "key": "phone", "label": "联系电话" },
+          { "key": "assessment_time", "label": "评估时间" },
+          { "key": "assessor", "label": "评估者" },
+          { "key": "organization", "label": "机构" },
+          { "key": "scale_count", "label": "本次评估量表数" },
+          { "key": "scale_versions", "label": "题库版本" },
+          { "key": "rule_versions", "label": "规则版本" }
+        ]
+      },
+      {
+        "ref": "scales",
+        "type": "table",
+        "title": "二、量表评估结果",
+        "source": "scale_results",
+        "columns": [
+          { "key": "scale_code", "label": "编号" },
+          { "key": "scale_name", "label": "量表名称" },
+          { "key": "dimension", "label": "维度" },
+          { "key": "total", "label": "总分" },
+          { "key": "level", "label": "判读" },
+          { "key": "abnormal", "label": "是否异常" },
+          { "key": "needs_manual_review", "label": "待人工确认" }
+        ]
+      },
+      {
+        "ref": "scales_detail",
+        "type": "detail",
+        "title": "2.1 量表逐项作答与判读依据",
+        "source": "scale_results",
+        "fields": ["scale_code", "scale_name", "interpretation", "explanation"],
+        "flags": true
+      },
+      {
+        "ref": "dimensions",
+        "type": "dimension",
+        "title": "三、维度小结",
+        "source": "dimension_summary"
+      },
+      {
+        "ref": "positive",
+        "type": "table",
+        "title": "四、阳性问题清单",
+        "source": "positive_list",
+        "columns": [
+          { "key": "scale_code", "label": "编号" },
+          { "key": "scale_name", "label": "量表" },
+          { "key": "level", "label": "判读" },
+          { "key": "severity", "label": "严重度" },
+          { "key": "flags", "label": "阳性项" },
+          { "key": "need_special_assessment", "label": "需专项评估" }
+        ]
+      },
+      {
+        "ref": "ai",
+        "type": "notice",
+        "title": "五、AI 补充评估",
+        "source": "ai_supplement",
+        "notice_key": "notice",
+        "items_key": "dimension_conclusions",
+        "item_fields": ["dimension", "conclusion"]
+      },
+      {
+        "ref": "match",
+        "type": "match",
+        "title": "六、疾病匹配与就医提醒",
+        "source": "disease_match"
+      },
+      {
+        "ref": "intervention",
+        "type": "categories",
+        "title": "七、干预建议",
+        "source": "interventions"
+      },
+      {
+        "ref": "mdt",
+        "type": "mdt",
+        "title": "八、多学科意见",
+        "source": "mdt_opinions"
+      },
+      {
+        "ref": "followup",
+        "type": "followup",
+        "title": "九、随访计划",
+        "source": "followup_plan"
+      }
+    ],
+    "signatures": [
+      { "role": "评估者", "name_key": "assessor" },
+      { "role": "复核医师", "name_key": "reviewer" },
+      { "role": "报告日期", "name_key": "assessment_time" }
+    ],
+    "header": { "left": "老年综合评估报告", "right": "评估时间" },
+    "footer": { "left": "本报告不构成诊断", "right": "第 X 页 / 共 Y 页" },
+    "disclaimer": "本报告由老年人就医预问诊与老年综合评估系统生成，结果仅供参考，不构成诊断，请结合临床检查由医师判断。"
+  }
+}

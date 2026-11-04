@@ -198,6 +198,8 @@ class AssessmentScore(Base):
     missing_items: Mapped[list] = mapped_column(JSON, default=list)
     needs_manual_review: Mapped[bool] = mapped_column(Boolean, default=False)
     reviewed: Mapped[bool] = mapped_column(Boolean, default=False)
+    pre_review_total: Mapped[float | None] = mapped_column(Float, nullable=True)
+    pre_review_level: Mapped[str] = mapped_column(String(64), default="")
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)
 
 
@@ -313,6 +315,25 @@ class MatchCandidate(Base):
     evidence_insufficient: Mapped[bool] = mapped_column(Boolean, default=False)
 
 
+class MatchAiReview(Base):
+    """AI 复核记录：语义消歧、排序建议、追问建议与通俗解释。
+
+    AI 不改分值、不改阈值、不改提醒等级——这里保存的是**建议**，最终由医护裁决。
+    """
+
+    __tablename__ = "match_ai_reviews"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    run_id: Mapped[int] = mapped_column(ForeignKey("match_runs.id"), index=True)
+    patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id"), index=True)
+    model: Mapped[str] = mapped_column(String(64), default="")
+    prompt_version: Mapped[str] = mapped_column(String(32), default="")
+    input_snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
+    output: Mapped[dict] = mapped_column(JSON, default=dict)
+    latency_ms: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)
+
+
 class Alert(Base):
     """就医提醒。"""
 
@@ -326,6 +347,7 @@ class Alert(Base):
     department: Mapped[str] = mapped_column(String(64), default="")
     disclaimer: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(16), default="pending", index=True)
+    is_false_positive: Mapped[bool] = mapped_column(Boolean, default=False)
     handled_by: Mapped[str] = mapped_column(String(64), default="")
     handled_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
     handle_comment: Mapped[str] = mapped_column(Text, default="")
@@ -341,10 +363,27 @@ class CgaReport(Base):
     patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id"), index=True)
     version: Mapped[int] = mapped_column(Integer, default=1)
     title: Mapped[str] = mapped_column(String(128), default="老年综合评估报告")
+    template_code: Mapped[str] = mapped_column(String(32), default="professional")
     sections: Mapped[dict] = mapped_column(JSON, default=dict)
     disclaimer: Mapped[str] = mapped_column(Text, default="")
     locked: Mapped[bool] = mapped_column(Boolean, default=False)
     created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)
+
+
+class ReportTemplate(Base):
+    """综合评估报告模板（专业版 / 通俗版 / 存档版）。"""
+
+    __tablename__ = "report_templates"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    code: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(64), default="")
+    version: Mapped[str] = mapped_column(String(32), default="0.1.0-draft")
+    scene: Mapped[str] = mapped_column(String(32), default="professional")
+    review_status: Mapped[str] = mapped_column(String(48), default="draft_pending_medical_review")
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)
 
 

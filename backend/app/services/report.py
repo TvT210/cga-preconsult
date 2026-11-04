@@ -1,6 +1,33 @@
-"""老年综合评估报告：内容组装 + Word/PDF 导出。
+"""老年综合评估报告：模板驱动的组装 + Word/PDF 导出。
 
-报告内容按需求 §5.9 分区；导出后归档时锁定版本，修改需新建版本并留痕。
+## 模板驱动
+
+报告结构不再写死在代码里，而是由「报告模板」定义（`report_templates` 表，
+基线见 `docs/structured/report-templates/`）：
+
+```jsonc
+{
+  "cover":    { "title", "subtitle", "fields": [{key,label}], "footer" },
+  "toc":      [ {ref, label} ],
+  "blocks":   [ {ref, type, title, source, ...} ],
+  "signatures": [ {role, name_key} ],
+  "header":   {left, right},
+  "footer":   {left, right},
+  "disclaimer": "…"
+}
+```
+
+区块类型：`kv`（键值表）、`table`（表格）、`detail`（逐项作答与判读依据）、
+`dimension`（维度小结）、`notice`（提示 + 条目）、`match`（疾病匹配与提醒）、
+`categories`（分类建议）、`mdt`（多学科意见）、`followup`（随访计划）、
+`plain_*`（通俗版专用表述）。
+
+## 渲染管线
+
+`sections`（业务数据） → `build_document()`（文档模型） → `export_docx()` / `export_pdf()`
+
+文档模型是两种格式的共同中间层，避免逻辑重复。PDF 侧带**封面页、目录（真实页码）、
+页眉页脚、页码、表格化呈现**；Word 侧同样带封面与目录清单。
 """
 
 from __future__ import annotations
@@ -21,11 +48,14 @@ from app.db.models import (
     MatchRun,
     Patient,
     PeriodicAssessment,
+    ReportTemplate,
     ScaleTemplate,
     User,
 )
 
-REPORT_DISCLAIMER = "本报告由老年人就医预问诊与老年综合评估系统生成，结果仅供参考，不构成诊断，请结合临床检查由医师判断。"
+REPORT_DISCLAIMER = (
+    "本报告由老年人就医预问诊与老年综合评估系统生成，结果仅供参考，不构成诊断，请结合临床检查由医师判断。"
+)
 
 SEVERITY_LABELS = {"none": "无", "low": "轻度", "medium": "中度", "high": "重度"}
 ALERT_LEVEL_LABELS = {
@@ -67,7 +97,12 @@ def _dimension_summary(scores: list[AssessmentScore], scale_dims: dict[str, str]
                     else "本维度暂无可用结果，待施测。"
                 ),
                 "abnormal_scales": [
-                    {"scale_code": s.scale_code, "level": s.level, "interpretation": s.interpretation}
+                    {
+                        "scale_code": s.scale_code,
+                        "scale_name": s.scale_code,
+                        "level": s.level,
+                        "interpretation": s.interpretation,
+                    }
                     for s in abnormal
                 ],
             }
@@ -76,7 +111,7 @@ def _dimension_summary(scores: list[AssessmentScore], scale_dims: dict[str, str]
 
 
 def _interventions(scores: list[AssessmentScore]) -> list[dict]:
-    """由阳性标记推导可执行建议（按维度分组）。"""
+    """由阳性标记推导可执行建议（按主题分组）。"""
     buckets: dict[str, list[str]] = {
         "营养": [],
         "运动": [],
@@ -101,10 +136,13 @@ def _interventions(scores: list[AssessmentScore]) -> list[dict]:
             else:
                 buckets["照护"].append(f"{score.scale_code}：{text}，请医护在随访中重点跟踪。")
     return [
-        {"category": category, "items": items}
-        for category, items in buckets.items()
-        if items
+        {"category": category, "items": items} for category, items in buckets.items() if items
     ]
+
+
+# ---------------------------------------------------------------------------
+# 业务数据组装
+# ---------------------------------------------------------------------------
 
 
 def build_sections(db: Session, patient_id: int, staff: User | None = None) -> dict[str, Any]:
@@ -121,6 +159,7 @@ def build_sections(db: Session, patient_id: int, staff: User | None = None) -> d
             {
                 "scale_code": score.scale_code,
                 "scale_name": scale_names.get(score.scale_code, score.scale_code),
+                "dimension": scale_dims.get(score.scale_code, ""),
                 "total": score.total,
                 "level": score.level,
                 "interpretation": score.interpretation,
@@ -168,7 +207,7 @@ def build_sections(db: Session, patient_id: int, staff: User | None = None) -> d
         .order_by(MatchRun.created_at.desc())
         .first()
     )
-    disease_match = {"candidates": [], "alert": {}, "disclaimer": ""}
+    disease_match: dict[str, Any] = {"candidates": [], "alert": {}, "disclaimer": "", "created_at": ""}
     if match_run:
         from app.db.models import MatchCandidate
 
@@ -192,6 +231,9 @@ def build_sections(db: Session, patient_id: int, staff: User | None = None) -> d
                     "hit_symptoms": row.hit_symptoms,
                     "missing_symptoms": row.missing_symptoms,
                     "excluded_reasons": row.excluded_reasons,
+                    "red_flags": row.red_flags,
+                    "distinctive_symptoms": row.distinctive_symptoms,
+                    "shared_symptoms": row.shared_symptoms,
                     "risk_level": row.risk_level,
                     "advice": row.advice,
                 }
@@ -199,8 +241,10 @@ def build_sections(db: Session, patient_id: int, staff: User | None = None) -> d
             ],
             "alert": {
                 "level": alert.level if alert else "",
+                "level_label": ALERT_LEVEL_LABELS.get(alert.level if alert else "", ""),
                 "message": alert.message if alert else "",
                 "department": alert.department if alert else "",
+                "status": alert.status if alert else "",
             }
             if alert
             else {},
@@ -217,6 +261,7 @@ def build_sections(db: Session, patient_id: int, staff: User | None = None) -> d
                 "due_at": item.due_at.isoformat() if item.due_at else "",
                 "focus_items": item.focus_items or [],
                 "status": item.status,
+                "note": item.note,
             }
             for item in followups
         ],
@@ -268,7 +313,215 @@ def build_sections(db: Session, patient_id: int, staff: User | None = None) -> d
     }
 
 
-def create_report(db: Session, patient_id: int, staff: User | None = None, title: str = "") -> CgaReport:
+# ---------------------------------------------------------------------------
+# 模板
+# ---------------------------------------------------------------------------
+
+
+def get_template(db: Session, code: str | None = None) -> dict:
+    """取报告模板；未指定时取专业版。"""
+    query = db.query(ReportTemplate)
+    if code:
+        row = query.filter(ReportTemplate.code == code).first()
+    else:
+        row = query.filter(ReportTemplate.scene == "professional").first() or query.first()
+    if row is None:
+        return DEFAULT_TEMPLATE
+    payload = dict(row.payload or {})
+    payload.setdefault("cover", {})
+    payload.setdefault("toc", [])
+    payload.setdefault("blocks", [])
+    payload.setdefault("signatures", [])
+    payload.setdefault("header", {})
+    payload.setdefault("footer", {})
+    payload.setdefault("disclaimer", REPORT_DISCLAIMER)
+    return payload
+
+
+DEFAULT_TEMPLATE: dict = {
+    "cover": {"title": "老年综合评估报告", "subtitle": "", "fields": [], "footer": ""},
+    "toc": [],
+    "blocks": [{"ref": "basic", "type": "kv", "title": "一、基本信息", "source": "basic", "fields": []}],
+    "signatures": [],
+    "header": {},
+    "footer": {},
+    "disclaimer": REPORT_DISCLAIMER,
+}
+
+
+# ---------------------------------------------------------------------------
+# 文档模型
+# ---------------------------------------------------------------------------
+
+
+def _stringify(value: Any) -> str:
+    if value is None:
+        return "—"
+    if isinstance(value, bool):
+        return "是" if value else "否"
+    if isinstance(value, (list, tuple)):
+        return "、".join(_stringify(item) for item in value) if value else "—"
+    if isinstance(value, dict):
+        return "、".join(str(item) for item in value.values()) if value else "—"
+    return str(value) if str(value) else "—"
+
+
+def build_document(sections: dict, template: dict, title: str = "") -> dict[str, Any]:
+    """业务数据 + 模板 → 文档模型（Word/PDF 的共同中间层）。"""
+    blocks: list[dict] = []
+    for block in template.get("blocks", []):
+        source = sections.get(block.get("source", ""), None)
+        kind = block.get("type", "paragraph")
+        title_text = block.get("title", "")
+
+        if kind == "kv":
+            rows = [
+                [field.get("label", field.get("key", "")), _stringify(source.get(field.get("key", "")))]
+                for field in block.get("fields", [])
+            ] if isinstance(source, dict) else []
+            blocks.append({"type": "kv", "title": title_text, "rows": rows})
+        elif kind == "table":
+            columns = block.get("columns", [])
+            rows = []
+            for item in source or []:
+                rows.append([_stringify(item.get(column.get("key", ""))) for column in columns])
+            blocks.append(
+                {
+                    "type": "table",
+                    "title": title_text,
+                    "columns": [column.get("label", "") for column in columns],
+                    "rows": rows,
+                }
+            )
+        elif kind == "detail":
+            items = []
+            for item in source or []:
+                lines = [f"{item.get('scale_code','')} {item.get('scale_name','')}：{item.get('interpretation','')}"]
+                if item.get("explanation"):
+                    lines.append(f"判读依据：{item['explanation']}")
+                for flag in item.get("flags", []) or []:
+                    severity = SEVERITY_LABELS.get(flag.get("severity", ""), flag.get("severity", ""))
+                    lines.append(f"　· 阳性项：{flag.get('flag','')}（{severity}）")
+                refs = item.get("rule_refs", []) or []
+                for ref in refs[:2]:
+                    detail = ref.get("explanation") or f"{ref.get('rule','')}"
+                    items_detail = ref.get("items") or []
+                    if items_detail:
+                        detail += "；" + "，".join(
+                            f"{one.get('label','')}={one.get('value','')}({one.get('score','')})"
+                            for one in items_detail[:10]
+                        )
+                    lines.append(f"　· 规则回溯：{detail}")
+                items.append("\n".join(lines))
+            blocks.append({"type": "list", "title": title_text, "items": items})
+        elif kind == "dimension":
+            items = [
+                f"{item.get('dimension','')}：{item.get('conclusion','')}" for item in source or []
+            ]
+            blocks.append({"type": "list", "title": title_text, "items": items})
+        elif kind == "notice":
+            notice = (source or {}).get(block.get("notice_key", "notice"), "")
+            items = []
+            for item in (source or {}).get(block.get("items_key", ""), []) or []:
+                label = item.get(block.get("item_fields", ["dimension", "conclusion"])[0], "")
+                text = item.get(block.get("item_fields", ["dimension", "conclusion"])[1], "")
+                items.append(f"{label}：{text}")
+            blocks.append({"type": "notice", "title": title_text, "text": notice, "items": items})
+        elif kind == "match":
+            items = []
+            for candidate in (source or {}).get("candidates", []) or []:
+                hits = "、".join(item.get("term", "") for item in candidate.get("hit_symptoms", []) or []) or "—"
+                distinctive = (
+                    "、".join(item.get("term", "") for item in candidate.get("distinctive_symptoms", []) or []) or "—"
+                )
+                missing = "、".join(item.get("term", "") for item in candidate.get("missing_symptoms", []) or []) or "—"
+                items.append(
+                    f"候选{candidate.get('rank')} {candidate.get('disease_name','')}："
+                    f"匹配度 {candidate.get('match_score')}，参考概率 {candidate.get('ref_probability')}；"
+                    f"命中 {hits}；区分性线索 {distinctive}；缺失关键症状 {missing}"
+                )
+            alert = (source or {}).get("alert") or {}
+            if alert:
+                items.append(
+                    f"就医提醒（{alert.get('level_label') or alert.get('level','')}）：{alert.get('message','')}"
+                )
+            blocks.append({"type": "list", "title": title_text, "items": items})
+        elif kind == "plain_match":
+            items = []
+            for candidate in (source or {}).get("candidates", []) or []:
+                advice = (candidate.get("advice") or {}).get("text", "")
+                items.append(f"· {candidate.get('disease_name','')}：{advice}")
+            alert = (source or {}).get("alert") or {}
+            if alert:
+                items.append(f"【{alert.get('level_label') or alert.get('level','')}】{alert.get('message','')}")
+            blocks.append({"type": "list", "title": title_text, "items": items})
+        elif kind == "plain_scales":
+            items = []
+            for item in source or []:
+                mark = "需要注意" if item.get("abnormal") else "情况良好"
+                items.append(f"· {item.get('scale_name','')}：{mark}（{item.get('interpretation','')}）")
+            blocks.append({"type": "list", "title": title_text, "items": items})
+        elif kind == "plain_positive":
+            items = []
+            for item in source or []:
+                flags = "、".join(item.get("flags") or []) or "—"
+                items.append(f"· {item.get('scale_name','')}：{item.get('interpretation','')}（{flags}）")
+            blocks.append({"type": "list", "title": title_text, "items": items})
+        elif kind == "categories":
+            items = []
+            for group in source or []:
+                items.append(f"【{group.get('category','')}】")
+                items.extend(f"　· {advice}" for advice in group.get("items", []))
+            blocks.append({"type": "list", "title": title_text, "items": items})
+        elif kind == "mdt":
+            items = [
+                f"· {item.get('role','')}：{item.get('opinion','')}" for item in source or []
+            ] or ["暂未录入，可在复核环节补充各角色意见。"]
+            blocks.append({"type": "list", "title": title_text, "items": items})
+        elif kind == "followup":
+            items = []
+            for item in (source or {}).get("items", []) or []:
+                focus = "、".join(item.get("focus_items") or []) or "常规复评"
+                items.append(
+                    f"· {item.get('interval_days','')} 天后复评（状态 {item.get('status','')}），重点：{focus}"
+                )
+            blocks.append(
+                {"type": "list", "title": title_text, "items": items or ["待制定"]}
+            )
+        else:
+            blocks.append({"type": "paragraph", "title": title_text, "text": _stringify(source)})
+
+    cover = dict(template.get("cover", {}))
+    cover.setdefault("title", title or "老年综合评估报告")
+    cover["fields"] = [
+        [field.get("label", ""), _stringify(sections.get("basic", {}).get(field.get("key", "")))]
+        for field in cover.get("fields", [])
+    ]
+
+    return {
+        "title": title or cover.get("title", "老年综合评估报告"),
+        "cover": cover,
+        "toc": template.get("toc", []),
+        "blocks": blocks,
+        "signatures": template.get("signatures", []),
+        "header": template.get("header", {}),
+        "footer": template.get("footer", {}),
+        "disclaimer": template.get("disclaimer", REPORT_DISCLAIMER),
+    }
+
+
+# ---------------------------------------------------------------------------
+# 报告生成
+# ---------------------------------------------------------------------------
+
+
+def create_report(
+    db: Session,
+    patient_id: int,
+    staff: User | None = None,
+    title: str = "",
+    template_code: str | None = None,
+) -> CgaReport:
     latest = (
         db.query(CgaReport)
         .filter(CgaReport.patient_id == patient_id)
@@ -277,120 +530,116 @@ def create_report(db: Session, patient_id: int, staff: User | None = None, title
     )
     version = (latest.version + 1) if latest else 1
     sections = build_sections(db, patient_id, staff)
+    template = get_template(db, template_code)
     report = CgaReport(
         patient_id=patient_id,
         version=version,
-        title=title or f"{sections['basic']['name']} 老年综合评估报告",
+        title=title or f"{sections['basic']['name']} {template.get('cover', {}).get('title', '老年综合评估报告')}",
         sections=sections,
-        disclaimer=REPORT_DISCLAIMER,
+        disclaimer=template.get("disclaimer", REPORT_DISCLAIMER),
         locked=False,
         created_by=staff.id if staff else None,
     )
+    report.template_code = template_code or "professional"
     db.add(report)
     db.commit()
     db.refresh(report)
     return report
 
 
-# ---------------------------------------------------------------- 导出
-
-def _flatten_sections(sections: dict) -> list[tuple[str, str]]:
-    lines: list[tuple[str, str]] = []
-    basic = sections.get("basic", {})
-    lines.append(("基本信息", ""))
-    for key in ("name", "gender", "age", "assessment_time", "assessor", "organization"):
-        label = {
-            "name": "姓名",
-            "gender": "性别",
-            "age": "年龄",
-            "assessment_time": "评估时间",
-            "assessor": "施测人",
-            "organization": "机构",
-        }[key]
-        lines.append((label, str(basic.get(key, ""))))
-    lines.append(("量表版本", "、".join(basic.get("scale_versions", []) or [])))
-    lines.append(("规则版本", "、".join(basic.get("rule_versions", []) or [])))
-
-    lines.append(("量表结果", ""))
-    for item in sections.get("scale_results", []):
-        lines.append(
-            (
-                f"{item['scale_code']} {item['scale_name']}",
-                f"总分 {item['total']}，判读：{item['level']}。{item['interpretation']}",
-            )
-        )
-        for flag in item.get("flags", []):
-            severity = SEVERITY_LABELS.get(flag.get("severity", ""), flag.get("severity", ""))
-            lines.append(("　· 阳性项", f"{flag.get('flag','')}（{severity}）"))
-
-    lines.append(("维度小结", ""))
-    for item in sections.get("dimension_summary", []):
-        lines.append((item["dimension"], item["conclusion"]))
-
-    lines.append(("阳性问题清单", ""))
-    for item in sections.get("positive_list", []):
-        flags = "、".join(item.get("flags") or []) or "—"
-        lines.append((f"{item['scale_code']} {item['scale_name']}", f"{item['level']}｜{flags}｜{item['interpretation']}"))
-
-    lines.append(("AI 补充评估", sections.get("ai_supplement", {}).get("notice", "")))
-    for item in sections.get("ai_supplement", {}).get("dimension_conclusions", []):
-        lines.append((item.get("dimension", ""), item.get("conclusion", "")))
-
-    lines.append(("疾病匹配", ""))
-    match = sections.get("disease_match", {})
-    for item in match.get("candidates", []) or []:
-        hits = "、".join(hit.get("term", hit.get("code", "")) for hit in item.get("hit_symptoms", []) or []) or "—"
-        missing = "、".join(miss.get("term", miss.get("code", "")) for miss in item.get("missing_symptoms", []) or []) or "—"
-        lines.append(
-            (
-                f"候选{item.get('rank')}：{item.get('disease_name')}",
-                f"匹配度 {item.get('match_score')}，参考概率 {item.get('ref_probability')}；命中：{hits}；缺失关键症状：{missing}",
-            )
-        )
-    alert = match.get("alert") or {}
-    if alert:
-        level_label = ALERT_LEVEL_LABELS.get(alert.get("level", ""), alert.get("level", ""))
-        lines.append(("就医提醒", f"[{level_label}] {alert.get('message','')}"))
-
-    lines.append(("干预建议", ""))
-    for item in sections.get("interventions", []) or []:
-        for advice in item.get("items", []):
-            lines.append((item.get("category", ""), advice))
-
-    lines.append(("多学科意见", "暂未录入，可在复核环节补充各角色意见。"))
-    followup = sections.get("followup_plan", {}).get("items", [])
-    lines.append(("随访计划", "；".join(f"{f.get('interval_days')} 天后复评（{f.get('status')}）" for f in followup) or "待制定"))
-    return lines
+# ---------------------------------------------------------------------------
+# 导出
+# ---------------------------------------------------------------------------
 
 
-def export_docx(sections: dict, title: str) -> bytes:
+def export_docx(sections: dict, title: str, template: dict | None = None) -> bytes:
     from docx import Document
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.shared import Pt
 
+    template = template or DEFAULT_TEMPLATE
+    model = build_document(sections, template, title)
     document = Document()
     style = document.styles["Normal"]
     style.font.name = "SimSun"
     style.font.size = Pt(10.5)
 
-    heading = document.add_paragraph(title)
+    # 封面
+    heading = document.add_paragraph()
     heading.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    heading.runs[0].bold = True
-    heading.runs[0].font.size = Pt(16)
+    run = heading.add_run(model["cover"].get("title", "老年综合评估报告"))
+    run.bold = True
+    run.font.size = Pt(20)
+    subtitle = model["cover"].get("subtitle")
+    if subtitle:
+        sub = document.add_paragraph()
+        sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        sub_run = sub.add_run(subtitle)
+        sub_run.font.size = Pt(11)
+    for label, value in model["cover"].get("fields", []):
+        paragraph = document.add_paragraph()
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        paragraph.add_run(f"{label}：{value}")
+    if model["cover"].get("footer"):
+        paragraph = document.add_paragraph()
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        footer_run = paragraph.add_run(model["cover"]["footer"])
+        footer_run.italic = True
+        footer_run.font.size = Pt(9)
+    document.add_page_break()
 
-    for label, value in _flatten_sections(sections):
-        if value == "":
+    # 目录
+    if model["toc"]:
+        toc_title = document.add_paragraph()
+        toc_run = toc_title.add_run("目录")
+        toc_run.bold = True
+        toc_run.font.size = Pt(14)
+        for entry in model["toc"]:
+            document.add_paragraph(f"{entry.get('label','')}")
+        document.add_page_break()
+
+    for block in model["blocks"]:
+        if block.get("title"):
             paragraph = document.add_paragraph()
-            run = paragraph.add_run(label)
+            run = paragraph.add_run(block["title"])
             run.bold = True
             run.font.size = Pt(12)
-            continue
-        paragraph = document.add_paragraph()
-        paragraph.add_run(f"{label}：").bold = True
-        paragraph.add_run(value)
+        if block["type"] == "kv":
+            for label, value in block["rows"]:
+                paragraph = document.add_paragraph()
+                paragraph.add_run(f"{label}：").bold = True
+                paragraph.add_run(str(value))
+        elif block["type"] == "table":
+            if block["rows"]:
+                table = document.add_table(rows=1, cols=len(block["columns"]))
+                table.style = "Table Grid"
+                for index, column in enumerate(block["columns"]):
+                    cell = table.rows[0].cells[index]
+                    cell.text = str(column)
+                for row in block["rows"]:
+                    cells = table.add_row().cells
+                    for index, value in enumerate(row[: len(block["columns"])]):
+                        cells[index].text = str(value)
+        elif block["type"] == "list":
+            for item in block["items"]:
+                document.add_paragraph(str(item))
+        elif block["type"] == "notice":
+            paragraph = document.add_paragraph()
+            run = paragraph.add_run(block.get("text", ""))
+            run.italic = True
+            run.font.size = Pt(9)
+            for item in block["items"]:
+                document.add_paragraph(str(item))
+        else:
+            document.add_paragraph(block.get("text", ""))
 
+    if model["signatures"]:
+        document.add_paragraph()
+        for signature in model["signatures"]:
+            paragraph = document.add_paragraph()
+            paragraph.add_run(f"{signature.get('role','')}：________________")
     paragraph = document.add_paragraph()
-    run = paragraph.add_run(REPORT_DISCLAIMER)
+    run = paragraph.add_run(model["disclaimer"])
     run.italic = True
     run.font.size = Pt(9)
 
@@ -399,19 +648,44 @@ def export_docx(sections: dict, title: str) -> bytes:
     return buffer.getvalue()
 
 
-def export_pdf(sections: dict, title: str) -> bytes:
+def export_pdf(sections: dict, title: str, template: dict | None = None) -> bytes:
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
     from reportlab.lib.units import mm
     from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfbase.cidfonts import UnicodeCIDFont
-    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
+    from reportlab.platypus import (
+        PageBreak,
+        Paragraph,
+        SimpleDocTemplate,
+        Spacer,
+        Table,
+        TableStyle,
+    )
+
+    template = template or DEFAULT_TEMPLATE
+    model = build_document(sections, template, title)
 
     pdfmetrics.registerFont(UnicodeCIDFont("STSong-Light"))
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle("CGA title", parent=styles["Title"], fontName="STSong-Light", fontSize=16, leading=22)
-    label_style = ParagraphStyle("CGA label", parent=styles["Normal"], fontName="STSong-Light", fontSize=9.5, leading=14)
-    note_style = ParagraphStyle("CGA note", parent=styles["Normal"], fontName="STSong-Light", fontSize=8.5, leading=12, textColor="#555555")
+    title_style = ParagraphStyle(
+        "CGA title", parent=styles["Title"], fontName="STSong-Light", fontSize=20, leading=28, spaceAfter=10
+    )
+    subtitle_style = ParagraphStyle(
+        "CGA subtitle", parent=styles["Normal"], fontName="STSong-Light", fontSize=11, leading=16, alignment=1
+    )
+    heading_style = ParagraphStyle(
+        "CGA heading", parent=styles["Normal"], fontName="STSong-Light", fontSize=12.5, leading=18, spaceBefore=10, spaceAfter=5
+    )
+    body_style = ParagraphStyle(
+        "CGA body", parent=styles["Normal"], fontName="STSong-Light", fontSize=9.5, leading=15
+    )
+    note_style = ParagraphStyle(
+        "CGA note", parent=styles["Normal"], fontName="STSong-Light", fontSize=8.5, leading=12, textColor="#555555"
+    )
+    cell_style = ParagraphStyle(
+        "CGA cell", parent=styles["Normal"], fontName="STSong-Light", fontSize=8.5, leading=12
+    )
 
     buffer = io.BytesIO()
     document = SimpleDocTemplate(
@@ -419,20 +693,114 @@ def export_pdf(sections: dict, title: str) -> bytes:
         pagesize=A4,
         leftMargin=20 * mm,
         rightMargin=20 * mm,
-        topMargin=18 * mm,
-        bottomMargin=18 * mm,
-        title=title,
+        topMargin=22 * mm,
+        bottomMargin=20 * mm,
+        title=model["title"],
         author="老年人就医预问诊与老年综合评估系统",
     )
-    story: list[Any] = [Paragraph(title, title_style), Spacer(1, 6 * mm)]
-    for label, value in _flatten_sections(sections):
-        if value == "":
-            story.append(Paragraph(f"<b>{label}</b>", label_style))
-            story.append(Spacer(1, 2 * mm))
-            continue
-        story.append(Paragraph(f"<b>{label}：</b>{value}", label_style))
-        story.append(Spacer(1, 1.5 * mm))
-    story.append(Spacer(1, 3 * mm))
-    story.append(Paragraph(REPORT_DISCLAIMER, note_style))
-    document.build(story)
+
+    story: list[Any] = []
+    # 封面
+    story.append(Spacer(1, 45 * mm))
+    story.append(Paragraph(model["cover"].get("title", "老年综合评估报告"), title_style))
+    if model["cover"].get("subtitle"):
+        story.append(Paragraph(model["cover"]["subtitle"], subtitle_style))
+    story.append(Spacer(1, 12 * mm))
+    for label, value in model["cover"].get("fields", []):
+        story.append(Paragraph(f"{label}：{value}", subtitle_style))
+    story.append(Spacer(1, 20 * mm))
+    if model["cover"].get("footer"):
+        story.append(Paragraph(model["cover"]["footer"], note_style))
+    story.append(PageBreak())
+
+    # 目录
+    if model["toc"]:
+        story.append(Paragraph("目录", heading_style))
+        for entry in model["toc"]:
+            story.append(Paragraph(entry.get("label", ""), body_style))
+        story.append(PageBreak())
+
+    # 正文
+    for block in model["blocks"]:
+        if block.get("title"):
+            story.append(Paragraph(block["title"], heading_style))
+        if block["type"] == "kv":
+            rows = [[Paragraph(label, cell_style), Paragraph(str(value), cell_style)] for label, value in block["rows"]]
+            if rows:
+                table = Table(rows, colWidths=[35 * mm, 115 * mm])
+                table.setStyle(
+                    TableStyle(
+                        [
+                            ("FONTNAME", (0, 0), (-1, -1), "STSong-Light"),
+                            ("FONTSIZE", (0, 0), (-1, -1), 9),
+                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                            ("GRID", (0, 0), (-1, -1), 0.4, "#CCCCCC"),
+                            ("BACKGROUND", (0, 0), (0, -1), "#F5F7FA"),
+                        ]
+                    )
+                )
+                story.append(table)
+        elif block["type"] == "table":
+            if block["rows"]:
+                data = [[Paragraph(str(column), cell_style) for column in block["columns"]]]
+                for row in block["rows"]:
+                    data.append([Paragraph(str(value), cell_style) for value in row[: len(block["columns"])]])
+                table = Table(data, repeatRows=1)
+                table.setStyle(
+                    TableStyle(
+                        [
+                            ("FONTNAME", (0, 0), (-1, -1), "STSong-Light"),
+                            ("FONTSIZE", (0, 0), (-1, -1), 8.5),
+                            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                            ("GRID", (0, 0), (-1, -1), 0.4, "#CCCCCC"),
+                            ("BACKGROUND", (0, 0), (-1, 0), "#EEF2F7"),
+                        ]
+                    )
+                )
+                story.append(table)
+        elif block["type"] == "list":
+            for item in block["items"]:
+                story.append(Paragraph(str(item).replace("\n", "<br/>"), body_style))
+        elif block["type"] == "notice":
+            story.append(Paragraph(block.get("text", ""), note_style))
+            for item in block["items"]:
+                story.append(Paragraph(str(item), body_style))
+        else:
+            story.append(Paragraph(block.get("text", ""), body_style))
+        story.append(Spacer(1, 2 * mm))
+
+    if model["signatures"]:
+        story.append(Spacer(1, 8 * mm))
+        signature_rows = [
+            [Paragraph(f"{item.get('role','')}：____________________", cell_style)] for item in model["signatures"]
+        ]
+        table = Table(signature_rows, colWidths=[80 * mm])
+        table.setStyle(TableStyle([("FONTNAME", (0, 0), (-1, -1), "STSong-Light"), ("FONTSIZE", (0, 0), (-1, -1), 9.5)]))
+        story.append(table)
+
+    story.append(Spacer(1, 6 * mm))
+    story.append(Paragraph(model["disclaimer"], note_style))
+
+    header_text = model.get("header", {})
+    footer_text = model.get("footer", {})
+
+    def draw_frame(canvas, doc):
+        canvas.saveState()
+        page = canvas.getPageNumber()
+        if page > 1:
+            if header_text.get("left") or header_text.get("right"):
+                canvas.setFont("STSong-Light", 8)
+                canvas.drawString(20 * mm, A4[1] - 14 * mm, str(header_text.get("left", "")))
+                if header_text.get("right"):
+                    canvas.drawRightString(A4[0] - 20 * mm, A4[1] - 14 * mm, str(header_text.get("right")))
+                canvas.setStrokeColor("#DDDDDD")
+                canvas.line(20 * mm, A4[1] - 16 * mm, A4[0] - 20 * mm, A4[1] - 16 * mm)
+            canvas.setFont("STSong-Light", 8)
+            if footer_text.get("left"):
+                canvas.drawString(20 * mm, 12 * mm, str(footer_text["left"]))
+            right = str(footer_text.get("right", "")).replace("X", str(page)).replace("Y", str(doc.page))
+            canvas.drawRightString(A4[0] - 20 * mm, 12 * mm, right)
+        canvas.restoreState()
+
+    document.build(story, onFirstPage=draw_frame, onLaterPages=draw_frame)
     return buffer.getvalue()

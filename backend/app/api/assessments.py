@@ -499,6 +499,14 @@ def review_assessment(
         raise HTTPException(status_code=404, detail="评估任务不存在")
     action = payload.get("action", "approve")
     corrections = payload.get("corrections") or []
+    # 记录复核前的判读结果，用于计算计分一致率（复核改分 = 计分不一致的样本）
+    existing = (
+        db.query(AssessmentScore)
+        .filter(AssessmentScore.session_id == session.id)
+        .first()
+    )
+    pre_review_total = existing.total if existing else None
+    pre_review_level = existing.level if existing else ""
     for correction in corrections:
         code = correction.get("question_code")
         if not code:
@@ -514,6 +522,9 @@ def review_assessment(
         )
     score, branches = _score_and_store(db, session)
     score.reviewed = True
+    if pre_review_total is not None:
+        score.pre_review_total = pre_review_total
+        score.pre_review_level = pre_review_level
     session.status = "reviewed"
     session.reviewer_id = user.id
     session.review_comment = payload.get("comment", "")

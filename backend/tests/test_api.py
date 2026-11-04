@@ -206,6 +206,121 @@ def test_elder_only_sees_own_data():
     assert other_id != own_id
 
 
+def test_ai_review_endpoints():
+    """AI 复核：只给建议，不改结论；可读可取。"""
+    token = _login("nurse", "nurse12345")["token"]
+    headers = _auth(token)
+    patient = client.post(
+        "/api/v1/patients",
+        headers=headers,
+        json={"name": "AI 复核测试", "gender": "男", "birth_date": "1943-03-03"},
+    ).json()["data"]
+    client.put(
+        f"/api/v1/patients/{patient['id']}/preconsult",
+        headers=headers,
+        json={"chief_complaint": {"text": "胸口压得慌、喘不上气、晕倒了一次"}},
+    )
+    run = client.post("/api/v1/matching/run", headers=headers, json={"patient_id": patient["id"]}).json()["data"]
+
+    review = client.post(f"/api/v1/matching/runs/{run['id']}/ai-review", headers=headers)
+    assert review.status_code == 200, review.text
+    data = review.json()["data"]
+    assert "rerank" in data and "follow_ups" in data and "explanations" in data
+    assert "不构成诊断" in data["notice"]
+    # AI 不得改写结论字段
+    assert "level" not in data
+    for item in data["rerank"]:
+        assert "match_score" not in item and "risk_level" not in item
+
+    fetched = client.get(f"/api/v1/matching/runs/{run['id']}/ai-review", headers=headers)
+    assert fetched.status_code == 200
+    assert fetched.json()["data"]["model"]
+
+
+def test_ai_review_with_run_flag():
+    token = _login("nurse", "nurse12345")["token"]
+    headers = _auth(token)
+    patient = client.post(
+        "/api/v1/patients",
+        headers=headers,
+        json={"name": "AI 随行复核", "gender": "女", "birth_date": "1950-01-01"},
+    ).json()["data"]
+    run = client.post(
+        "/api/v1/matching/run",
+        headers=headers,
+        json={"patient_id": patient["id"], "with_ai_review": True},
+    ).json()["data"]
+    assert "ai_review" in run, "with_ai_review=true 时应返回 AI 复核结果"
+
+
+def test_report_templates_and_export():
+    """报告模板：清单可查，指定模板可生成，Word/PDF 可导出。"""
+    token = _login("doctor", "doctor12345")["token"]
+    headers = _auth(token)
+    templates = client.get("/api/v1/report-templates", headers=headers)
+    assert templates.status_code == 200
+    codes = {item["code"] for item in templates.json()["data"]}
+    assert "professional" in codes and "plain" in codes
+
+    patients = client.get("/api/v1/patients", headers=headers).json()["data"]["items"]
+    patient_id = patients[0]["id"]
+    report = client.post(
+        "/api/v1/reports",
+        headers=headers,
+        json={"patient_id": patient_id, "template_code": "plain"},
+    ).json()["data"]
+    assert report["template_code"] == "plain"
+
+    docx = client.get(f"/api/v1/reports/{report['id']}/export?format=docx", headers=headers)
+    assert docx.status_code == 200 and docx.content[:2] == b"PK"
+    pdf = client.get(f"/api/v1/reports/{report['id']}/export?format=pdf", headers=headers)
+    assert pdf.status_code == 200 and pdf.content[:4] == b"%PDF"
+    assert len(pdf.content) > 2000, "PDF 应包含封面与目录"
+
+
+def test_quality_metrics_endpoint():
+    token = _login("admin", "admin12345")["token"]
+    metrics = client.get("/api/v1/admin/quality-metrics", headers=_auth(token)).json()["data"]
+    for key in (
+        "assessment_completion_rate",
+        "review_rate",
+        "alert_response_rate",
+        "false_alert_rate",
+        "scoring_consistency",
+        "ai_review_coverage",
+        "disease_library_coverage",
+        "scale_stats",
+        "stats",
+    ):
+        assert key in metrics, f"缺少质控指标 {key}"
+    assert metrics["match_accuracy"] is None
+
+
+def test_alert_can_be_marked_as_false_positive():
+    token = _login("nurse", "nurse12345")["token"]
+    headers = _auth(token)
+    patient = client.post(
+        "/api/v1/patients",
+        headers=headers,
+        json={"name": "误报标记测试", "gender": "女", "birth_date": "1950-01-01"},
+    ).json()["data"]
+    client.put(
+        f"/api/v1/patients/{patient['id']}/preconsult",
+        headers=headers,
+        json={"chief_complaint": {"text": "头晕、没力气"}},
+    )
+    run = client.post("/api/v1/matching/run", headers=headers, json={"patient_id": patient["id"]}).json()["data"]
+    alerts = client.get(f"/api/v1/alerts?patient_id={patient['id']}", headers=headers).json()["data"]
+    if alerts:
+        handled = client.post(
+            f"/api/v1/alerts/{alerts[0]['id']}/handle",
+            headers=headers,
+            json={"action": "mark_false", "comment": "临床判断为误报"},
+        )
+        assert handled.status_code == 200
+        assert handled.json()["data"]["is_false_positive"] is True
+
+
 def test_elder_can_access_own_patient():
     elder = _login("elder", "elder12345")
     patient_id = elder["user"]["patient_id"]
