@@ -192,10 +192,12 @@ def _mock_review(payload: dict, candidates: list[dict]) -> AiReview:
     follow_ups: list[dict] = []
     top = rerank[0] if rerank else None
     if top:
-        for candidate in candidates:
-            if candidate.get("disease_code") != top["disease_code"]:
-                continue
-            for missing in candidate.get("missing_symptoms", [])[:3]:
+        top_candidate = next(
+            (c for c in candidates if c.get("disease_code") == top["disease_code"]), None
+        )
+        if top_candidate:
+            # ① 优先追问「缺失的核心症状」——这是最直接的证据缺口
+            for missing in top_candidate.get("missing_symptoms", [])[:3]:
                 if missing.get("weight") != "core":
                     continue
                 follow_ups.append(
@@ -203,8 +205,34 @@ def _mock_review(payload: dict, candidates: list[dict]) -> AiReview:
                         "question": f"老人有没有出现「{missing.get('term', '')}」这样的表现？",
                         "reason": f"「{missing.get('term', '')}」是本病的关键线索，缺失会影响判断的把握",
                         "priority": "high" if len(follow_ups) < 2 else "medium",
+                        "kind": "missing_core",
                     }
                 )
+            # ② 若核心症状已齐但命中多为共享症状 → 追问特征细节做鉴别
+            if not follow_ups:
+                for shared in top_candidate.get("shared_symptoms", [])[:2]:
+                    probe = shared.get("probe") or ""
+                    if not probe:
+                        continue
+                    follow_ups.append(
+                        {
+                            "question": probe,
+                            "reason": f"「{shared.get('term', '')}」在多个疾病中都会出现，需要问清特征才能区分",
+                            "priority": "high" if len(follow_ups) < 1 else "medium",
+                            "kind": "differential_probe",
+                        }
+                    )
+            # ③ 兜底：追问红旗征相关的确认细节
+            if not follow_ups:
+                for flag in top_candidate.get("red_flags", [])[:1]:
+                    follow_ups.append(
+                        {
+                            "question": f"请确认一下：{flag.get('term', '')} 是什么时候开始的？现在还有吗？",
+                            "reason": f"红旗征「{flag.get('term', '')}」需要确认起始时间与当前状态",
+                            "priority": "high",
+                            "kind": "red_flag_confirm",
+                        }
+                    )
 
     explanations: dict[str, str] = {}
     payload_profiles = {

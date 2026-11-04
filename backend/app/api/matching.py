@@ -260,7 +260,12 @@ def _run_ai_review(db: Session, run: MatchRun, user: User, patient: Patient) -> 
             "ref_probability": row.ref_probability,
             "hit_symptoms": row.hit_symptoms,
             "missing_symptoms": row.missing_symptoms,
+            "distinctive_symptoms": row.distinctive_symptoms,
+            "shared_symptoms": row.shared_symptoms,
+            "pattern_hits": row.pattern_hits,
             "red_flags": row.red_flags,
+            "protective_signs": row.protective_signs,
+            "risk_factor_hits": row.risk_factor_hits,
             "core_hits": sum(1 for item in (row.hit_symptoms or []) if item.get("weight") == "core"),
         }
         for row in rows

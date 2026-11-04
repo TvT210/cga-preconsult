@@ -14,7 +14,7 @@ import math
 from dataclasses import dataclass, field
 from typing import Any
 
-from app.services.scales_store import symptom_term
+from app.services.scales_store import symptom_probe, symptom_term
 
 DISCLAIMER = "结果仅供参考，不构成诊断，请及时咨询医生。"
 
@@ -177,6 +177,7 @@ def _annotate_distinctiveness(candidates: list[dict]) -> None:
                         "code": code,
                         "term": item.get("term", code),
                         "shared_with": others,
+                        "probe": symptom_probe(code),
                         "note": f"该症状在 {len(others) + 1} 个候选中同时出现，区分度低",
                     }
                 )
@@ -187,6 +188,7 @@ def _annotate_distinctiveness(candidates: list[dict]) -> None:
                         "term": item.get("term", code),
                         "weight": item.get("weight"),
                         "distinctive": item.get("distinctive"),
+                        "probe": symptom_probe(code),
                         "note": "仅本候选命中，是支持本病的关键线索",
                     }
                 )
