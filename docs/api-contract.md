@@ -619,7 +619,53 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
 
 ---
 
-## 10. 管理与质控 `/admin`（admin）
+## 10. 医护知识库可视化 `/knowledge`（staff+）
+
+### GET `/knowledge/graph?node_type=&keyword=` ✅
+返回疾病库 + 症状词表 + 量表的关系图谱（`node_type` 取 `disease` / `symptom` / `scale`，留空为全部；`keyword` 按名称/ID 过滤）。
+
+```json
+{
+  "nodes": [
+    { "id": "disease:I21", "type": "disease", "label": "急性心肌梗死", "group": "心血管系统", "risk": "immediate",
+      "meta": { "aliases": ["心梗"], "atypical": ["老年人可无典型胸痛…"], "advice": "…" } },
+    { "id": "symptom:chest_pain", "type": "symptom", "label": "胸痛胸闷", "group": "躯体功能",
+      "meta": { "synonyms": ["胸口疼", "心口疼"], "probe": "这个胸口的不舒服，是像被重东西压住一样的闷痛，还是像针扎一样的疼？" } },
+    { "id": "scale:B.1", "type": "scale", "label": "基本日常生活活动能力评估量表", "group": "躯体功能",
+      "meta": { "method": "询问／他评", "item_count": 10 } }
+  ],
+  "edges": [
+    { "source": "disease:I21", "target": "symptom:chest_pain", "kind": "core", "label": "核心症状" },
+    { "source": "disease:I21", "target": "scale:B.1", "kind": "focus", "label": "关注活动耐量", "item": "B1-09", "item_text": "平地行走" },
+    { "source": "symptom:chest_pain", "target": "symptom:chest_discomfort", "kind": "synonym", "label": "同义：胸口压得慌" }
+  ],
+  "stats": { "nodes": 162, "edges": 302,
+             "by_type": { "disease": 28, "symptom": 113, "scale": 21 },
+             "edge_kinds": { "core": 96, "secondary": 116, "focus": 86, "synonym": 4 } },
+  "notice": "图谱内容来自待医学评审的疾病库与词表草稿，仅供医护参考，不构成诊断。"
+}
+```
+
+边类型：`core`（核心症状）/ `secondary`（次要症状）/ `focus`（关注量表项，带题号）/ `synonym`（症状同义）。
+
+### GET `/knowledge/symptoms/{code}` ✅
+```json
+{ "code": "chest_pain", "term": "胸痛胸闷", "category": "躯体功能",
+  "synonyms": ["胸口疼", "心口疼"],
+  "probe": "这个胸口的不舒服，是像被重东西压住一样的闷痛，还是像针扎一样的疼？",
+  "related_diseases": [ { "code": "I21", "name": "急性心肌梗死", "weight": "core", "risk_level": "immediate",
+                          "system": "心血管系统", "advice": "…", "atypical": ["…"] } ],
+  "related_scales": [ { "scale": "B.1", "note": "关注活动耐量", "item": "B1-09" } ],
+  "disease_count": 2,
+  "notice": "词条与关联病种来自待医学评审的草稿，仅供医护参考。" }
+```
+
+### GET `/knowledge/overview` ✅
+`{ "diseases": 28, "symptoms": 113, "scales": 21, "scales_with_items": 21, "core_symptom_links": 96, "symptoms_with_probe": 94, "review_status": "draft_pending_medical_review" }`
+
+---
+
+## 11. 管理与质控 `/admin`（admin）
 
 ### GET `/admin/users` ✅ → 裸数组
 ### POST `/admin/users` ✅
@@ -676,7 +722,7 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
 
 ---
 
-## 11. 枚举字典总表
+## 12. 枚举字典总表
 
 | 枚举 | 取值 | 出现位置 |
 | --- | --- | --- |
@@ -701,7 +747,7 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
 
 ---
 
-## 12. 待实现清单（🟡/🔴，前端先用 mock）
+## 13. 待实现清单（🟡/🔴，前端先用 mock）
 
 | 接口 | 状态 | 说明 |
 | --- | --- | --- |
@@ -716,7 +762,7 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
 
 ---
 
-## 13. 联调约定
+## 14. 联调约定
 
 1. **端口**：后端 `127.0.0.1:8000`，前端 `127.0.0.1:3000`。CORS 白名单只放行 3000 端口，**前端换端口会被浏览器拦**，这是已知坑。
 2. **启动顺序**：后端起好（`/health` 返回 ok）→ 前端起。

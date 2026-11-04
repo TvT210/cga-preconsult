@@ -20,6 +20,7 @@ from app.api import (
     auth,
     dialogue,
     followups,
+    knowledge,
     matching,
     patients,
     reports,
@@ -100,6 +101,7 @@ for module in (
     alerts,
     reports,
     matching,
+    knowledge,
     admin,
 ):
     app.include_router(module.router, prefix=settings.api_prefix)
