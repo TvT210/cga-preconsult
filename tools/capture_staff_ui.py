@@ -1,4 +1,9 @@
-"""医护端新界面截图（开发期自检）。"""
+"""医护端与老人端界面截图（开发期自检）。
+
+注意：医护端与老人端是**两套角色**，`RoleGuard` 会把越权访问重定向到本端首页。
+因此每个页面必须用对应角色的令牌登录，否则截到的会是重定向后的页面
+（例如用护士令牌访问 /elder 会被弹回 /staff，截图看起来"正常"实则拍错了页面）。
+"""
 
 from __future__ import annotations
 
@@ -7,18 +12,37 @@ import sys
 
 BASE = "http://127.0.0.1:3000"
 API_BASE = "http://127.0.0.1:8000/api/v1"
-OUT = pathlib.Path(r"D:\ALLCODE\work\word2\output\staff-ui")
+REPO = pathlib.Path(r"D:\ALLCODE\work\word2")
+OUT = REPO / "output" / "staff-ui"
 OUT.mkdir(parents=True, exist_ok=True)
 
+# 预置账号（见 backend/app/... 初始化逻辑）
+ACCOUNTS = {
+    "staff": ("nurse", "nurse12345"),
+    "elder": ("elder", "elder12345"),
+}
+
+# (输出名, 路由, 角色)
 PAGES = [
-    ("staff-tasks", "/staff"),
-    ("staff-quality", "/staff/quality"),
-    ("staff-patient", "/staff/patients/11"),
-    ("staff-review", "/staff/review/1"),
+    ("staff-tasks", "/staff", "staff"),
+    ("staff-quality", "/staff/quality", "staff"),
+    ("staff-knowledge", "/staff/knowledge", "staff"),
+    ("staff-patient", "/staff/patients/11", "staff"),
+    ("staff-review", "/staff/review/1", "staff"),
+    ("elder-home", "/elder", "elder"),
+    ("elder-report", "/elder/report", "elder"),
 ]
 
 
 def main() -> int:
+    # 可选参数：输出目录（相对仓库根或绝对路径）、页面名过滤子串
+    out_dir = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else OUT
+    if not out_dir.is_absolute():
+        out_dir = REPO / out_dir
+    out_dir.mkdir(parents=True, exist_ok=True)
+    name_filter = sys.argv[2] if len(sys.argv) > 2 else ""
+    pages = [p for p in PAGES if name_filter in p[0]]
+
     script = r"""
 import { spawn } from "node:child_process";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
@@ -28,6 +52,7 @@ const BASE = process.argv[2];
 const API_BASE = process.argv[3];
 const OUT = process.argv[4];
 const PAGES = JSON.parse(process.argv[5]);
+const ACCOUNTS = JSON.parse(process.argv[6]);
 const CHROME = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 const PORT = 9336;
 const PROFILE = join(OUT, "chrome-profile");
@@ -71,25 +96,33 @@ try {
   await send("Page.enable"); await send("Runtime.enable");
   await send("Emulation.setDeviceMetricsOverride", { width: 1600, height: 1100, deviceScaleFactor: 1, mobile: false });
 
-  const login = await (await fetch(`${API_BASE}/auth/login`, {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: "nurse", password: "nurse12345" }),
-  })).json();
-  const token = login?.data?.token;
-  const user = login?.data?.user;
+  // 逐角色登录，缓存令牌
+  const sessions = {};
+  for (const [role, creds] of Object.entries(ACCOUNTS)) {
+    const r = await fetch(`${API_BASE}/auth/login`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: creds[0], password: creds[1] }),
+    });
+    const j = await r.json();
+    sessions[role] = { token: j?.data?.token, user: j?.data?.user };
+    if (!sessions[role].token) throw new Error(`${role} 登录失败`);
+  }
 
   await send("Page.navigate", { url: `${BASE}/login` });
   await sleep(2500);
-  await evaluate(`localStorage.setItem('wfdn_token', ${JSON.stringify(token)}); localStorage.setItem('wfdn_user', ${JSON.stringify(JSON.stringify(user))}); true;`);
 
-  for (const [name, route] of PAGES) {
+  for (const [name, route, role] of PAGES) {
+    const s = sessions[role];
+    // 切角色：先清空再写入对应令牌与用户信息
+    await evaluate(`localStorage.removeItem('wfdn_token'); localStorage.removeItem('wfdn_user'); true;`);
+    await evaluate(`localStorage.setItem('wfdn_token', ${JSON.stringify(s.token)}); localStorage.setItem('wfdn_user', ${JSON.stringify(JSON.stringify(s.user))}); true;`);
     await send("Page.navigate", { url: `${BASE}${route}` });
-    await sleep(4000);
+    await sleep(4500);
     const shot = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
     writeFileSync(join(OUT, `${name}.png`), Buffer.from(shot.data, "base64"));
-    const text = (await evaluate("document.body.innerText")) || "";
-    writeFileSync(join(OUT, `${name}.txt`), text, "utf8");
-    console.log(`[${name}] ${route} -> ${text.length} 字符`);
+    const info = await evaluate(`JSON.stringify({ href: location.href, text: (document.body.innerText || '').slice(0, 200) })`);
+    writeFileSync(join(OUT, `${name}.txt`), info || "", "utf8");
+    console.log(`[${name}] ${route} (${role}) -> ${info}`);
   }
 } catch (e) {
   console.error("截图失败：", e);
@@ -111,18 +144,21 @@ try {
             str(script_path),
             BASE,
             API_BASE,
-            str(OUT),
-            json.dumps(PAGES, ensure_ascii=False),
+            str(out_dir),
+            json.dumps(pages, ensure_ascii=False),
+            json.dumps(ACCOUNTS, ensure_ascii=False),
         ],
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=300,
     )
     print(result.stdout)
     if result.stderr.strip():
         print(result.stderr[-800:])
-    for name, _ in PAGES:
-        path = OUT / f"{name}.png"
+    for name, _, _ in pages:
+        path = out_dir / f"{name}.png"
         print(f"{'OK ' if path.exists() else '缺失'} {path}")
     return 0
 
