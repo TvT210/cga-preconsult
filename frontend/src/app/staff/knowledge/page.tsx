@@ -20,7 +20,7 @@ import {
   ClinPageHeader,
   ClinSection,
 } from "@/app/staff/_components/clinical";
-import { KnowledgeGraphCanvas } from "@/components/knowledge/KnowledgeGraphCanvas";
+import { KnowledgeGraphCytoscape } from "@/components/knowledge/KnowledgeGraphCytoscape";
 import { KnowledgeMatrix } from "@/components/knowledge/KnowledgeMatrix";
 import { KnowledgeDetail } from "@/components/knowledge/KnowledgeDetail";
 import {
@@ -67,8 +67,6 @@ export default function StaffKnowledgePage() {
   const [view, setView] = useState<"graph" | "matrix">("graph");
   /** 选中节点 */
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  /** 重置信号：变化时强制图谱重挂载（不使用 ref，见 graphTokens 注释） */
-  const [resetSignal, setResetSignal] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -353,12 +351,11 @@ export default function StaffKnowledgePage() {
           ) : finalNodes.length === 0 ? (
             <ClinEmpty message="当前筛选条件下没有可展示的节点。" />
           ) : view === "graph" ? (
-            <KnowledgeGraphCanvas
+            <KnowledgeGraphCytoscape
               nodes={finalNodes}
               edges={finalEdges}
               selectedId={selectedId}
-              onSelect={(node) => setSelectedId(node.id)}
-              onResetSignal={resetSignal}
+              onSelect={(node) => setSelectedId(node ? node.id : null)}
             />
           ) : (
             <KnowledgeMatrix
@@ -380,15 +377,12 @@ export default function StaffKnowledgePage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => {
-                setResetSignal((prev) => prev + 1);
-                setSelectedId(null);
-              }}
+              onClick={() => setSelectedId(null)}
             >
-              重置视图
+              取消选中
             </Button>
             <p className="text-clin-xs text-clin-fg-subtle">
-              节点大小按关联度数；点击节点查看详情。
+              节点大小按关联度数；点击节点查看详情，拖动节点可调整位置。
               {view === "matrix"
                 ? "矩阵视图为图谱不可用时的降级路径。"
                 : "若画布不可用，可切换到「矩阵视图」。"}

@@ -134,12 +134,14 @@ def main() -> int:
     else:
         notes.append("知识库可视化页面已存在")
 
-    # 7. 图谱库依赖
+    # 7. 图谱库依赖（2026-11-05 由 react-force-graph 换型为 cytoscape.js）
     pkg = read(FRONTEND / "package.json")
-    if "react-force-graph" not in pkg:
-        failures.append("package.json 未包含 react-force-graph（GitHub 开源图谱方案）")
+    if "cytoscape" not in pkg:
+        failures.append("package.json 未包含 cytoscape（GitHub 开源图谱方案）")
+    elif "react-force-graph" in pkg:
+        failures.append("package.json 仍残留 react-force-graph（应已换型为 cytoscape）")
     else:
-        notes.append("已采用 GitHub 开源图谱库 react-force-graph")
+        notes.append("已采用 GitHub 开源图谱库 cytoscape.js")
 
     # 8. 开源署名
     notice = FRONTEND / "NOTICE.md"

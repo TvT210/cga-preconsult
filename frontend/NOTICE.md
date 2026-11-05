@@ -36,21 +36,26 @@
 
 ---
 
-## 2. react-force-graph-2d（知识库图谱）
+## 2. cytoscape.js（知识库图谱）
 
-- **来源**：https://github.com/vasturiano/react-force-graph
-- **版本**：v1.29.2
+- **来源**：https://github.com/cytoscape/cytoscape.js
+- **版本**：v3.34.4
 - **许可证**：MIT License
-- **版权**：Copyright (c) 2019 Vasco Asturiano
-- **使用方式**：npm 依赖，用于 `/staff/knowledge` 的力导向关系图渲染
-  （canvas 2D 渲染，非 WebGL）。
-- **注意**：按 `vasturiano/react-force-graph` 已知问题 #551（`react-kapsule` #14）
-  的规避方式，本项目**不向该组件传 `ref`**，重置视图通过变更 `key` 强制重挂载实现。
+- **版权**：Copyright (c) 2016-2023 The Cytoscape Consortium
+- **使用方式**：npm 依赖，用于 `/staff/knowledge` 的关系图渲染
+  （canvas 渲染，非 WebGL）。布局为库内建能力，另加装官方力导向扩展。
+- **为什么用它**：布局「一次执行、跑完即静止」，节点位置由用户掌控
+  （可拖拽、可切换布局、可随时重新布局），不存在「引擎冷却结束后自动重排、
+  视图突然变形」的问题；平移、缩放、框选、点选均为库内建交互。
 
 ### 随附依赖
 
-- `force-graph` — MIT License — https://github.com/vasturiano/force-graph
-- `react-kapsule` — MIT License — https://github.com/vasturiano/react-kapsule
+- `cytoscape-fcose` — MIT License — https://github.com/cytoscape/cytoscape-fcose
+  （v2.2.0，官方力导向布局扩展；`cytoscape.js` 本体零运行时依赖）
+
+> 本项目曾在评估阶段采用 `react-force-graph-2d`（MIT），后因「引擎结束后视图
+> 自动变形 + 节点不可拖动 + 无法切换布局」而更换为 cytoscape.js。
+> 换型复盘见 `docs/research/2026-11-04-知识库可视化开源方案选型.md`。
 
 ---
 
@@ -71,10 +76,12 @@
 - **Dify / FastGPT**：许可证为 NOASSERTION，含禁止未授权多租户与禁止移除 LOGO 条款，
   不适合本项目。
 - **MaxKB / Gephi**：GPL-3.0，与本项目闭源分发方式不兼容。
-- **@xyflow/react**（备选方案，MIT）：本次未采用，主方案
-  `react-force-graph-2d` 已满足力导向图谱需求。
+- **@xyflow/react**（备选方案，MIT）：本次未采用，本项目展示的是
+  **多对多关系**而非可编排的层级/流程，节点编辑器模型不对口。
 - **@nivo/heatmap**（矩阵备选，MIT）：本次未采用，矩阵降级视图用已有的
   recharts 自绘，不额外引入依赖。
+- **react-force-graph-2d**（MIT）：曾采用，因「自动变形 / 不可拖拽 / 无法切布局」
+  已更换为 cytoscape.js，依赖已移除。
 
 ---
 
