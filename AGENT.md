@@ -21,6 +21,7 @@
 4. **文档语言**：所有文档使用简体中文。
 5. **任务收尾**：结束前确认已停止前后端进程与后台任务，避免端口占用影响 IDE 手动调试。
 6. **Docker**：环境已装 Docker Desktop；若 Docker 不可用需及时告知，不要自行下载或陷入重试循环。
+7. **推送 GitHub**：本机访问 GitHub 依赖加速器（`127.0.0.1:7897`）。加速器未开时直连 `github.com:443` 不通，`git push` 会报 `Failed to connect to github.com port 443`；走代理时还需加 `http.sslBackend=schannel`，否则 TLS 握手报 `unexpected eof`。**统一用 `python tools/push_github.py [分支]`**，它会自动探测通道（直连优先、回退代理）并重试，不要手工反复试参数。
 
 ## 技术栈
 
