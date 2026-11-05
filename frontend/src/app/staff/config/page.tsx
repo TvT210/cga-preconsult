@@ -11,12 +11,26 @@ import type {
   ScaleListItem,
   ScaleVersion,
 } from "@/lib/types";
-import { BigButton } from "@/components/BigButton";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ErrorState";
-import { PageHeader, SectionTitle } from "@/components/PageHeader";
-import { StatusBadge } from "@/components/StatusBadge";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/components/Toast";
 import { roleLabel } from "@/lib/session";
+import {
+  ClinEmpty,
+  ClinError,
+  ClinLoading,
+  ClinPageHeader,
+  ClinSection,
+} from "@/app/staff/_components/clinical";
 
 function toItems<T>(payload: T[] | Paged<T> | null | undefined): T[] {
   if (!payload) return [];
@@ -106,19 +120,22 @@ export default function StaffConfigPage() {
   }, []);
 
   /** 载入量表版本历史 */
-  const loadVersions = useCallback(async (code: string) => {
-    setBusy(true);
-    try {
-      const payload = await api.get<ScaleVersion[] | Paged<ScaleVersion>>(
-        `/scales/${encodeURIComponent(code)}/versions`,
-      );
-      setVersions((prev) => ({ ...prev, [code]: toItems(payload) }));
-    } catch {
-      toast("版本历史载入失败。", "warning");
-    } finally {
-      setBusy(false);
-    }
-  }, [toast]);
+  const loadVersions = useCallback(
+    async (code: string) => {
+      setBusy(true);
+      try {
+        const payload = await api.get<ScaleVersion[] | Paged<ScaleVersion>>(
+          `/scales/${encodeURIComponent(code)}/versions`,
+        );
+        setVersions((prev) => ({ ...prev, [code]: toItems(payload) }));
+      } catch {
+        toast("版本历史载入失败。", "warning");
+      } finally {
+        setBusy(false);
+      }
+    },
+    [toast],
+  );
 
   const saveThreshold = useCallback(
     async (item: MatchThreshold) => {
@@ -160,53 +177,67 @@ export default function StaffConfigPage() {
   );
 
   if (loading) {
-    return <LoadingState label="正在加载配置…" />;
+    return <ClinLoading label="正在加载配置…" />;
   }
 
   if (error) {
-    return <ErrorState message={error} onRetry={() => void load()} />;
+    return <ClinError message={error} onRetry={() => void load()} />;
   }
 
   return (
-    <div className="space-y-8">
-      <PageHeader
+    <div>
+      <ClinPageHeader
         title="配置与质控"
         description="维护就医提醒阈值、量表版本与评审状态，并查看系统用户。阈值与评审变更均由后端写入审计日志。"
       />
 
       {/* ------------------------------ 阈值配置 ------------------------------ */}
-      <section className="card card-pad">
-        <SectionTitle title="就医提醒阈值" />
+      <ClinSection title="就医提醒阈值">
         {thresholds.length === 0 ? (
-          <EmptyState message="暂无阈值配置。" />
+          <ClinEmpty message="暂无阈值配置。" />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left">
-              <thead className="border-b border-slate-200 bg-slate-50">
+            <table className="w-full min-w-[680px] text-left">
+              <thead className="border-b border-clin-border bg-clin-muted">
                 <tr>
-                  <th className="px-4 py-3 text-elder font-semibold text-ink">适用范围</th>
-                  <th className="px-4 py-3 text-elder font-semibold text-ink">病种</th>
-                  <th className="px-4 py-3 text-elder font-semibold text-ink">阈值</th>
-                  <th className="px-4 py-3 text-elder font-semibold text-ink">提醒等级</th>
-                  <th className="px-4 py-3 text-elder font-semibold text-ink">评审状态</th>
-                  <th className="px-4 py-3 text-elder font-semibold text-ink">操作</th>
+                  <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                    适用范围
+                  </th>
+                  <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                    病种
+                  </th>
+                  <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                    阈值
+                  </th>
+                  <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                    提醒等级
+                  </th>
+                  <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                    评审状态
+                  </th>
+                  <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                    操作
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {thresholds.map((item) => {
                   const key = item.id ?? "";
                   return (
-                    <tr key={key || `${item.scope}-${item.disease_code}`} className="border-b border-slate-100 last:border-0">
-                      <td className="px-4 py-3 text-elder text-ink">
+                    <tr
+                      key={key || `${item.scope}-${item.disease_code}`}
+                      className="border-b border-clin-border transition-colors duration-150 last:border-0 hover:bg-clin-muted"
+                    >
+                      <td className="px-3 py-2 text-clin-sm text-clin-fg">
                         {item.scope === "global" ? "全局阈值" : item.scope ?? "—"}
                       </td>
-                      <td className="px-4 py-3 text-elder text-ink">
+                      <td className="px-3 py-2 text-clin-sm text-clin-fg">
                         {item.disease_name || item.disease_code || "全部病种"}
                       </td>
-                      <td className="px-4 py-3">
-                        <input
+                      <td className="px-3 py-2">
+                        <Input
                           type="number"
-                          className="field-input max-w-[140px]"
+                          className="max-w-[120px]"
                           value={thresholdDraft[key] ?? item.threshold}
                           aria-label="阈值"
                           onChange={(event) =>
@@ -217,21 +248,23 @@ export default function StaffConfigPage() {
                           }
                         />
                       </td>
-                      <td className="px-4 py-3 text-elder text-ink">{item.level ?? "—"}</td>
-                      <td className="px-4 py-3">
-                        <StatusBadge
-                          label={reviewStatusLabel(item.review_status)}
-                          tone={item.review_status === "approved" ? "green" : "amber"}
-                        />
+                      <td className="px-3 py-2 text-clin-sm text-clin-fg">{item.level ?? "—"}</td>
+                      <td className="px-3 py-2">
+                        <Badge
+                          variant={item.review_status === "approved" ? "success" : "warning"}
+                        >
+                          {reviewStatusLabel(item.review_status)}
+                        </Badge>
                       </td>
-                      <td className="px-4 py-3">
-                        <BigButton
-                          variant="secondary"
+                      <td className="px-3 py-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
                           disabled={busy || !key}
                           onClick={() => void saveThreshold(item)}
                         >
                           保存
-                        </BigButton>
+                        </Button>
                       </td>
                     </tr>
                   );
@@ -240,31 +273,26 @@ export default function StaffConfigPage() {
             </table>
           </div>
         )}
-      </section>
+      </ClinSection>
 
       {/* ------------------------------ 量表版本与评审 ------------------------------ */}
-      <section className="card card-pad">
-        <SectionTitle title="量表版本与评审状态" />
-        <div className="mb-4 grid gap-4 md:grid-cols-2">
+      <ClinSection title="量表版本与评审状态">
+        <div className="mb-4 grid gap-3 md:grid-cols-2">
           <div>
-            <label className="field-label" htmlFor="reviewer">
-              评审人
-            </label>
-            <input
+            <Label htmlFor="reviewer">评审人</Label>
+            <Input
               id="reviewer"
-              className="field-input"
+              className="mt-1"
               value={reviewer}
               onChange={(event) => setReviewer(event.target.value)}
               placeholder="请填写评审人姓名"
             />
           </div>
           <div>
-            <label className="field-label" htmlFor="review-comment">
-              评审意见
-            </label>
-            <input
+            <Label htmlFor="review-comment">评审意见</Label>
+            <Input
               id="review-comment"
-              className="field-input"
+              className="mt-1"
               value={comment}
               onChange={(event) => setComment(event.target.value)}
               placeholder="例如：已按 WS/T 888—2026 附录 B 逐项核对"
@@ -273,62 +301,91 @@ export default function StaffConfigPage() {
         </div>
 
         {scales.length === 0 ? (
-          <EmptyState message="暂无量表。" />
+          <ClinEmpty message="暂无量表。" />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] text-left">
-              <thead className="border-b border-slate-200 bg-slate-50">
+            <table className="w-full min-w-[840px] text-left">
+              <thead className="border-b border-clin-border bg-clin-muted">
                 <tr>
-                  <th className="px-4 py-3 text-elder font-semibold text-ink">编号</th>
-                  <th className="px-4 py-3 text-elder font-semibold text-ink">名称</th>
-                  <th className="px-4 py-3 text-elder font-semibold text-ink">维度</th>
-                  <th className="px-4 py-3 text-elder font-semibold text-ink">当前版本</th>
-                  <th className="px-4 py-3 text-elder font-semibold text-ink">评审状态</th>
-                  <th className="px-4 py-3 text-elder font-semibold text-ink">操作</th>
+                  <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                    编号
+                  </th>
+                  <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                    名称
+                  </th>
+                  <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                    维度
+                  </th>
+                  <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                    当前版本
+                  </th>
+                  <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                    评审状态
+                  </th>
+                  <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                    操作
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {scales.map((scale) => (
-                  <tr key={scale.code} className="border-b border-slate-100 last:border-0">
-                    <td className="px-4 py-3 text-elder text-ink">{scale.code}</td>
-                    <td className="px-4 py-3 text-elder text-ink">{scale.name}</td>
-                    <td className="px-4 py-3 text-elder text-ink-soft">{scale.dimension}</td>
-                    <td className="px-4 py-3 text-elder text-ink-soft">{scale.version}</td>
-                    <td className="px-4 py-3">
-                      <select
-                        className="field-select max-w-[220px]"
+                  <tr
+                    key={scale.code}
+                    className="border-b border-clin-border transition-colors duration-150 last:border-0 hover:bg-clin-muted"
+                  >
+                    <td className="px-3 py-2 text-clin-sm tabular-nums text-clin-fg">
+                      {scale.code}
+                    </td>
+                    <td className="px-3 py-2 text-clin-sm text-clin-fg">{scale.name}</td>
+                    <td className="px-3 py-2 text-clin-sm text-clin-fg-muted">
+                      {scale.dimension}
+                    </td>
+                    <td className="px-3 py-2 text-clin-sm tabular-nums text-clin-fg-muted">
+                      {scale.version}
+                    </td>
+                    <td className="px-3 py-2">
+                      <Select
                         value={reviewDraft[scale.code] ?? scale.review_status}
-                        aria-label={`${scale.code} 评审状态`}
-                        onChange={(event) =>
+                        onValueChange={(value) =>
                           setReviewDraft((prev) => ({
                             ...prev,
-                            [scale.code]: event.target.value,
+                            [scale.code]: value,
                           }))
                         }
                       >
-                        {REVIEW_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
+                        <SelectTrigger
+                          className="max-w-[200px]"
+                          aria-label={`${scale.code} 评审状态`}
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {REVIEW_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2">
                       <div className="flex flex-wrap gap-2">
-                        <BigButton
-                          variant="secondary"
+                        <Button
+                          variant="outline"
+                          size="sm"
                           disabled={busy}
                           onClick={() => void saveReview(scale.code)}
                         >
                           保存评审
-                        </BigButton>
-                        <BigButton
+                        </Button>
+                        <Button
                           variant="ghost"
+                          size="sm"
                           disabled={busy}
                           onClick={() => void loadVersions(scale.code)}
                         >
                           版本历史
-                        </BigButton>
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -341,14 +398,19 @@ export default function StaffConfigPage() {
         {Object.keys(versions).length ? (
           <div className="mt-5 space-y-4">
             {Object.entries(versions).map(([code, list]) => (
-              <div key={code} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <h3 className="text-elder font-semibold text-ink">{code} 版本历史</h3>
+              <div key={code} className="border-l-2 border-clin-accent pl-3">
+                <h3 className="text-clin-sm font-medium text-clin-fg">
+                  {code} 版本历史
+                </h3>
                 {list.length === 0 ? (
-                  <p className="mt-2 text-elder text-ink-mute">暂无版本记录。</p>
+                  <p className="mt-1 text-clin-xs text-clin-fg-subtle">暂无版本记录。</p>
                 ) : (
-                  <ul className="mt-2 space-y-2">
+                  <ul className="mt-1 space-y-1">
                     {list.map((version, index) => (
-                      <li key={`${code}-${version.version}-${index}`} className="text-elder text-ink-soft">
+                      <li
+                        key={`${code}-${version.version}-${index}`}
+                        className="text-clin-xs text-clin-fg-muted"
+                      >
                         版本 {version.version} · {formatDateTime(version.created_at)}
                         {version.reviewer ? ` · 评审人 ${version.reviewer}` : ""}
                         {version.comment ? ` · ${version.comment}` : ""}
@@ -360,41 +422,55 @@ export default function StaffConfigPage() {
             ))}
           </div>
         ) : null}
-      </section>
+      </ClinSection>
 
       {/* ------------------------------ 用户管理入口 ------------------------------ */}
-      <section className="card card-pad">
-        <SectionTitle title="用户管理" />
+      <ClinSection title="用户管理">
         {usersError ? (
-          <p className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-elder text-amber-900">
+          <p className="rounded-clin border border-clin-warning px-4 py-3 text-clin-sm text-clin-fg">
             {usersError}
           </p>
         ) : users.length === 0 ? (
-          <EmptyState message="暂无用户数据。" />
+          <ClinEmpty message="暂无用户数据。" />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left">
-              <thead className="border-b border-slate-200 bg-slate-50">
+            <table className="w-full min-w-[680px] text-left">
+              <thead className="border-b border-clin-border bg-clin-muted">
                 <tr>
-                  <th className="px-4 py-3 text-elder font-semibold text-ink">账号</th>
-                  <th className="px-4 py-3 text-elder font-semibold text-ink">姓名</th>
-                  <th className="px-4 py-3 text-elder font-semibold text-ink">角色</th>
-                  <th className="px-4 py-3 text-elder font-semibold text-ink">绑定患者</th>
-                  <th className="px-4 py-3 text-elder font-semibold text-ink">创建时间</th>
+                  <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                    账号
+                  </th>
+                  <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                    姓名
+                  </th>
+                  <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                    角色
+                  </th>
+                  <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                    绑定患者
+                  </th>
+                  <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                    创建时间
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {users.map((user) => (
-                  <tr key={user.id} className="border-b border-slate-100 last:border-0">
-                    <td className="px-4 py-3 text-elder text-ink">{user.username}</td>
-                    <td className="px-4 py-3 text-elder text-ink">{user.full_name || "—"}</td>
-                    <td className="px-4 py-3 text-elder text-ink">
+                  <tr
+                    key={user.id}
+                    className="border-b border-clin-border transition-colors duration-150 last:border-0 hover:bg-clin-muted"
+                  >
+                    <td className="px-3 py-2 text-clin-sm text-clin-fg">{user.username}</td>
+                    <td className="px-3 py-2 text-clin-sm text-clin-fg">
+                      {user.full_name || "—"}
+                    </td>
+                    <td className="px-3 py-2 text-clin-sm text-clin-fg">
                       {roleLabel(user.role)}
                     </td>
-                    <td className="px-4 py-3 text-elder text-ink-soft">
+                    <td className="px-3 py-2 text-clin-sm tabular-nums text-clin-fg-muted">
                       {user.patient_id || "—"}
                     </td>
-                    <td className="px-4 py-3 text-elder text-ink-soft">
+                    <td className="px-3 py-2 text-clin-sm tabular-nums text-clin-fg-muted">
                       {formatDateTime(user.created_at)}
                     </td>
                   </tr>
@@ -403,7 +479,7 @@ export default function StaffConfigPage() {
             </table>
           </div>
         )}
-      </section>
+      </ClinSection>
     </div>
   );
 }

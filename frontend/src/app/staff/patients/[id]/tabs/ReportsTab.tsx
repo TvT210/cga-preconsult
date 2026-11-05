@@ -4,10 +4,17 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, downloadReportFile } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 import type { Paged, ReportDetail, ReportListItem, ReportTemplate } from "@/lib/types";
-import { BigButton } from "@/components/BigButton";
-import { EmptyState } from "@/components/ErrorState";
-import { SectionTitle } from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { ReportSectionsView } from "@/components/ReportSectionsView";
+import { ClinEmpty, ClinSection } from "@/app/staff/_components/clinical";
 
 /** 报告 tab：选择模板生成报告、查看详情并导出 Word / PDF */
 export function ReportsTab({
@@ -117,64 +124,61 @@ export function ReportsTab({
   );
 
   return (
-    <div className="space-y-5">
-      <section className="card card-pad">
-        <SectionTitle
-          title="生成报告"
-          extra={
-            <BigButton
-              disabled={busy}
-              onClick={() => onCreateReport(templateCode)}
-            >
-              按所选模板生成
-            </BigButton>
-          }
-        />
-        <div className="grid gap-4 md:grid-cols-2">
+    <div>
+      <ClinSection
+        title="生成报告"
+        extra={
+          <Button
+            size="sm"
+            disabled={busy}
+            onClick={() => onCreateReport(templateCode)}
+          >
+            按所选模板生成
+          </Button>
+        }
+      >
+        <div className="grid gap-3 md:grid-cols-2">
           <div>
-            <label className="field-label" htmlFor="report-template">
-              报告模板
-            </label>
-            <select
-              id="report-template"
-              className="field-select"
-              value={templateCode}
-              onChange={(event) => setTemplateCode(event.target.value)}
-            >
-              {templates.length === 0 ? (
-                <option value="professional">专业版（临床医护）</option>
-              ) : null}
-              {templates.map((template) => (
-                <option key={template.code} value={template.code}>
-                  {template.name}
-                  {template.version ? `（${template.version}）` : ""}
-                </option>
-              ))}
-            </select>
+            <Label htmlFor="report-template">报告模板</Label>
+            <Select value={templateCode} onValueChange={setTemplateCode}>
+              <SelectTrigger id="report-template" className="mt-1">
+                <SelectValue placeholder="选择模板" />
+              </SelectTrigger>
+              <SelectContent>
+                {templates.length === 0 ? (
+                  <SelectItem value="professional">专业版（临床医护）</SelectItem>
+                ) : null}
+                {templates.map((template) => (
+                  <SelectItem key={template.code} value={template.code}>
+                    {template.name}
+                    {template.version ? `（${template.version}）` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <p className="self-end text-elder text-ink-soft">
+          <p className="self-end text-clin-xs text-clin-fg-muted">
             每次生成都会新建一个版本，历史版本保留；导出文件名会带上所选模板名，便于归档区分。
           </p>
         </div>
-      </section>
+      </ClinSection>
 
-      <section className="card card-pad">
-        <SectionTitle title="报告列表" />
+      <ClinSection title="报告列表">
         {reports.length === 0 ? (
-          <EmptyState message="该患者暂无报告，可在上方选择模板后生成。" />
+          <ClinEmpty message="该患者暂无报告，可在上方选择模板后生成。" />
         ) : (
-          <ul className="space-y-3">
+          <ul className="divide-y divide-clin-border border-y border-clin-border">
             {reports.map((report) => (
               <li
                 key={report.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+                className="flex flex-wrap items-center justify-between gap-3 py-2.5"
               >
-                <div>
-                  <p className="text-elder font-semibold text-ink">
+                <div className="min-w-0">
+                  <p className="text-clin-sm font-medium text-clin-fg">
                     {report.title || "老年综合评估报告"}
                     {report.version ? `（第 ${report.version} 版）` : ""}
                   </p>
-                  <p className="text-elder text-ink-soft">
+                  <p className="mt-0.5 text-clin-xs text-clin-fg-muted">
                     模板：
                     {templateNameOf(
                       templateCodes[String(report.id)] ?? report.template_code,
@@ -183,39 +187,42 @@ export function ReportsTab({
                     {report.locked ? " · 已归档锁定" : ""}
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-3">
-                  <BigButton
-                    variant="secondary"
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => onOpenReport(report.id)}
                   >
                     查看报告
-                  </BigButton>
-                  <BigButton
+                  </Button>
+                  <Button
                     variant="ghost"
+                    size="sm"
                     loading={exporting === `${report.id}-docx`}
                     disabled={Boolean(exporting)}
                     onClick={() => void exportReport(report, "docx")}
                   >
                     导出 Word
-                  </BigButton>
-                  <BigButton
+                  </Button>
+                  <Button
                     variant="ghost"
+                    size="sm"
                     loading={exporting === `${report.id}-pdf`}
                     disabled={Boolean(exporting)}
                     onClick={() => void exportReport(report, "pdf")}
                   >
                     导出 PDF
-                  </BigButton>
+                  </Button>
                 </div>
               </li>
             ))}
           </ul>
         )}
-      </section>
+      </ClinSection>
 
       {activeReport ? (
-        <section className="space-y-3">
-          <p className="text-elder text-ink-soft">
+        <ClinSection title="报告内容">
+          <p className="mb-4 text-clin-xs text-clin-fg-muted">
             当前查看：{activeReport.title ?? "老年综合评估报告"}
             {activeReport.version ? `（第 ${activeReport.version} 版）` : ""} · 模板：
             {templateNameOf(activeReport.template_code)}
@@ -223,8 +230,9 @@ export function ReportsTab({
           <ReportSectionsView
             sections={activeReport.sections}
             disclaimer={activeReport.disclaimer}
+            clinical
           />
-        </section>
+        </ClinSection>
       ) : null}
     </div>
   );

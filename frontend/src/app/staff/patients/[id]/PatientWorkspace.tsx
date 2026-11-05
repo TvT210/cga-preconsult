@@ -3,9 +3,14 @@
 import { useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ageFromBirthDate } from "@/lib/format";
-import { BigButton } from "@/components/BigButton";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ErrorState";
-import { PageHeader } from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  ClinEmpty,
+  ClinError,
+  ClinLoading,
+  ClinPageHeader,
+} from "@/app/staff/_components/clinical";
 import { PatientListPanel } from "./PatientListPanel";
 import { usePatientWorkspace } from "./usePatientWorkspace";
 import { AssessmentsTab } from "./tabs/AssessmentsTab";
@@ -25,7 +30,7 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 /**
- * 患者档案工作区：左侧患者列表 + 右侧详情（tab 化）。
+ * 患者档案工作区：左侧患者列表 + 右侧详情（shadcn tabs，下划线式）。
  *
  * 选中患者与当前 tab 都写回 URL query（`?patient=3&tab=matching`），
  * 因此刷新页面不会丢失选中状态，链接也可直接分享。
@@ -56,7 +61,7 @@ export function PatientWorkspace({ pathPatientId }: { pathPatientId?: string }) 
 
   /** 切换 tab：写回 query，刷新后仍停留在同一个 tab */
   const handleTabChange = useCallback(
-    (next: TabKey) => {
+    (next: string) => {
       const target = selectedId || pathPatientId || "";
       router.replace(
         target
@@ -78,114 +83,106 @@ export function PatientWorkspace({ pathPatientId }: { pathPatientId?: string }) 
   }, [patient]);
 
   return (
-    <div className="space-y-5">
-      <PageHeader
+    <div>
+      <ClinPageHeader
         title={patient ? `${patient.name} 的档案` : "患者档案"}
         description={description}
         actions={
           <>
-            <BigButton
-              variant="secondary"
-              size="lg"
+            <Button
+              variant="outline"
+              size="sm"
               disabled={workspace.busy || !selectedId}
               onClick={() => void workspace.runMatching()}
             >
               发起疾病匹配
-            </BigButton>
-            <BigButton
-              size="lg"
+            </Button>
+            <Button
+              size="sm"
               disabled={workspace.busy || !selectedId}
               onClick={() => {
                 handleTabChange("reports");
               }}
             >
               生成报告
-            </BigButton>
+            </Button>
           </>
         }
       />
 
-      <div className="grid gap-5 lg:grid-cols-[300px_1fr]">
+      <div className="grid gap-5 lg:grid-cols-[260px_1fr]">
         {/* 左：可筛选的患者列表 */}
         <PatientListPanel selectedId={selectedId} onSelect={handleSelect} />
 
         {/* 右：选中患者的详情 */}
         <div className="min-w-0">
           {!selectedId ? (
-            <EmptyState message="请在左侧选择一位患者查看档案。" />
+            <ClinEmpty message="请在左侧选择一位患者查看档案。" />
           ) : workspace.loading && !patient ? (
-            <LoadingState label="正在加载患者档案…" />
+            <ClinLoading label="正在加载患者档案…" />
           ) : workspace.error ? (
-            <ErrorState
+            <ClinError
               message={workspace.error}
               onRetry={() => void workspace.load()}
             />
           ) : (
             <>
-              <nav className="mb-4 flex flex-wrap gap-2">
-                {TABS.map((item) => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => handleTabChange(item.key)}
-                    aria-pressed={tab === item.key}
-                    className={[
-                      "min-h-btn rounded-xl border-2 px-4 py-2 text-elder font-semibold transition-colors",
-                      tab === item.key
-                        ? "border-medical-700 bg-medical-700 text-white"
-                        : "border-slate-300 bg-white text-ink hover:border-medical-400",
-                    ].join(" ")}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </nav>
+              <Tabs value={tab} onValueChange={handleTabChange}>
+                <TabsList>
+                  {TABS.map((item) => (
+                    <TabsTrigger key={item.key} value={item.key}>
+                      {item.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
 
-              {tab === "preconsult" ? (
-                <PreconsultTab
-                  preconsult={workspace.preconsult}
-                  consents={workspace.consents}
-                  onRecordConsent={() => void workspace.recordConsent()}
-                />
-              ) : null}
+                {/* 预问诊为只读（归属线 A），不提供二次编辑表单 */}
+                <TabsContent value="preconsult">
+                  <PreconsultTab
+                    preconsult={workspace.preconsult}
+                    consents={workspace.consents}
+                    onRecordConsent={() => void workspace.recordConsent()}
+                  />
+                </TabsContent>
 
-              {tab === "assessments" ? (
-                <AssessmentsTab assessments={workspace.assessments} />
-              ) : null}
+                <TabsContent value="assessments">
+                  <AssessmentsTab assessments={workspace.assessments} />
+                </TabsContent>
 
-              {tab === "reports" ? (
-                <ReportsTab
-                  reports={workspace.reports}
-                  activeReport={workspace.activeReport}
-                  onOpenReport={(id) => void workspace.openReport(id)}
-                  onCreateReport={(code) => void workspace.createReport(code)}
-                  busy={workspace.busy}
-                />
-              ) : null}
+                <TabsContent value="reports">
+                  <ReportsTab
+                    reports={workspace.reports}
+                    activeReport={workspace.activeReport}
+                    onOpenReport={(id) => void workspace.openReport(id)}
+                    onCreateReport={(code) => void workspace.createReport(code)}
+                    busy={workspace.busy}
+                  />
+                </TabsContent>
 
-              {tab === "matching" ? (
-                <MatchingTab
-                  runs={workspace.runs}
-                  activeRun={workspace.activeRun}
-                  aiReview={workspace.aiReview}
-                  alerts={workspace.alerts}
-                  dialogueTurns={workspace.dialogueTurns}
-                  busy={workspace.busy}
-                  onRunMatching={() => void workspace.runMatching()}
-                  onOpenRun={(id) => void workspace.openRun(id)}
-                  onAiReview={(id) => void workspace.requestAiReview(id)}
-                  onHandleAlert={(id, action, comment) =>
-                    void workspace.handleAlert(id, action, comment)
-                  }
-                  onOpenDialogue={() => void workspace.openDialogue()}
-                />
-              ) : null}
+                <TabsContent value="matching">
+                  <MatchingTab
+                    runs={workspace.runs}
+                    activeRun={workspace.activeRun}
+                    aiReview={workspace.aiReview}
+                    alerts={workspace.alerts}
+                    dialogueTurns={workspace.dialogueTurns}
+                    busy={workspace.busy}
+                    onRunMatching={() => void workspace.runMatching()}
+                    onOpenRun={(id) => void workspace.openRun(id)}
+                    onAiReview={(id) => void workspace.requestAiReview(id)}
+                    onHandleAlert={(id, action, comment) =>
+                      void workspace.handleAlert(id, action, comment)
+                    }
+                    onOpenDialogue={() => void workspace.openDialogue()}
+                  />
+                </TabsContent>
 
-              {tab === "timeline" ? (
-                <TimelineTab timeline={workspace.timeline} />
-              ) : null}
+                <TabsContent value="timeline">
+                  <TimelineTab timeline={workspace.timeline} />
+                </TabsContent>
+              </Tabs>
 
-              <p className="mt-4 text-elder text-ink-mute">
+              <p className="mt-4 text-clin-xs text-clin-fg-subtle">
                 知情同意记录条数：{workspace.consents.length}。全部数据修改均由后端写入审计日志。
               </p>
             </>

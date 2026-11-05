@@ -24,16 +24,37 @@ import {
   type QualityMetricsResult,
 } from "@/lib/api";
 import type { AlertItem, Paged } from "@/lib/types";
-import { BigButton } from "@/components/BigButton";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ErrorState";
+import { Button } from "@/components/ui/button";
 import { QualityMetricCard, type MetricTone } from "@/components/QualityMetricCard";
+import { ClinEmpty, ClinError, ClinLoading, ClinSection } from "@/app/staff/_components/clinical";
 
-/** 提醒等级配色（与 AlertCard 保持一致） */
+/**
+ * 质控看板（**医护端**）。
+ *
+ * 规范 §6 图表：继续用 recharts，但去掉渐变、去掉 3D、去掉多余网格线，
+ * 只保留一条浅灰横线；数字统一 `tabular-nums`，坐标轴 12px；
+ * 图表与表格之间不做卡片包裹，直接放在区块内。
+ *
+ * 所有颜色走 `clin.*` token（CSS 变量），本文件不写死 hex。
+ */
+
+/** 图表用的语义色（取自 `clin` token 的 CSS 变量） */
+const CHART_COLOR = {
+  accent: "var(--c-accent)",
+  danger: "var(--c-danger)",
+  warning: "var(--c-warning)",
+  success: "var(--c-success)",
+  border: "var(--c-border)",
+  fgMuted: "var(--c-fg-muted)",
+  fgSubtle: "var(--c-fg-subtle)",
+};
+
+/** 提醒等级配色 */
 const ALERT_LEVEL_COLOR: Record<string, string> = {
-  immediate: "#dc2626",
-  urgent: "#d97706",
-  elective: "#2563eb",
-  observe: "#059669",
+  immediate: CHART_COLOR.danger,
+  urgent: CHART_COLOR.warning,
+  elective: CHART_COLOR.accent,
+  observe: CHART_COLOR.success,
 };
 
 const ALERT_LEVEL_TEXT: Record<string, string> = {
@@ -216,209 +237,261 @@ export function QualityDashboard() {
   }, [alerts]);
 
   if (loading && !result) {
-    return <LoadingState label="正在加载质控指标…" />;
+    return <ClinLoading label="正在加载质控指标…" />;
   }
 
   if (error) {
-    return <ErrorState message={error} onRetry={() => void load()} />;
+    return <ClinError message={error} onRetry={() => void load()} />;
   }
 
   if (!result) {
-    return <EmptyState message="暂无质控数据。" />;
+    return <ClinEmpty message="暂无质控数据。" />;
   }
 
   const metrics = result.metrics;
 
   return (
-    <div className="space-y-6">
+    <div>
       {result.degraded ? (
-        <div className="rounded-xl2 border-2 border-amber-300 bg-amber-50 px-4 py-3">
-          <p className="text-elder font-semibold text-amber-900">
-            部分指标需管理员权限
-          </p>
-          <p className="mt-1 text-elder text-amber-900">
+        <div className="mb-6 rounded-clin border border-clin-warning px-4 py-3">
+          <p className="text-clin-sm font-medium text-clin-fg">部分指标需管理员权限</p>
+          <p className="mt-1 text-clin-xs text-clin-fg-muted">
             {result.degradedNote ??
               "当前账号无质控接口权限，以下指标由公开接口自行聚合。"}
           </p>
         </div>
       ) : null}
 
-      {/* ---------------------------- 指标卡片区 ---------------------------- */}
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {METRICS.map((def) => {
-          const raw = (metrics as unknown as Record<string, number | null | undefined>)[
-            def.key
-          ];
-          const value = typeof raw === "number" ? raw : null;
-          const blocked = isUnavailable(result, def.key);
-          return (
-            <QualityMetricCard
-              key={def.key}
-              label={def.label}
-              value={blocked ? null : value}
-              format={def.format}
-              meaning={def.meaning}
-              tone={def.tone}
-              unavailableText={blocked ? def.unavailableText : def.emptyText}
-            />
-          );
-        })}
-      </section>
-
-      {metrics.note ? (
-        <p className="text-elder text-ink-mute">{metrics.note}</p>
-      ) : null}
+      {/* ---------------------------- 指标区 ---------------------------- */}
+      {/* 两列密排的指标行，不用大卡片 */}
+      <ClinSection title="核心指标">
+        <div className="grid gap-x-8 md:grid-cols-2">
+          {METRICS.map((def) => {
+            const raw = (metrics as unknown as Record<string, number | null | undefined>)[
+              def.key
+            ];
+            const value = typeof raw === "number" ? raw : null;
+            const blocked = isUnavailable(result, def.key);
+            return (
+              <QualityMetricCard
+                key={def.key}
+                label={def.label}
+                value={blocked ? null : value}
+                format={def.format}
+                meaning={def.meaning}
+                tone={def.tone}
+                unavailableText={blocked ? def.unavailableText : def.emptyText}
+              />
+            );
+          })}
+        </div>
+        {metrics.note ? (
+          <p className="mt-3 text-clin-xs text-clin-fg-subtle">{metrics.note}</p>
+        ) : null}
+      </ClinSection>
 
       {/* ---------------------------- 图表区 ---------------------------- */}
-      <section className="grid gap-5 lg:grid-cols-2">
-        <div className="card card-pad">
-          <h2 className="section-title">各量表评估数与异常数</h2>
-          <p className="mt-1 text-elder text-ink-soft">
-            数据来源：各量表判读结果；异常数持续偏高需复核该量表阈值。
-          </p>
-          <div className="mt-4 h-[300px] w-full">
-            {scaleChartData.length === 0 ? (
-              <EmptyState message="暂无量表评估数据。" />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={scaleChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="scaleCode" stroke="#475569" fontSize={14} />
-                  <YAxis stroke="#475569" fontSize={14} allowDecimals={false} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar
-                    dataKey="total"
-                    name="评估数"
-                    fill="#2563eb"
-                    radius={[4, 4, 0, 0]}
-                  />
-                  <Bar
-                    dataKey="abnormal"
-                    name="异常数"
-                    fill="#dc2626"
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
-
-        <div className="card card-pad">
-          <h2 className="section-title">Top1 匹配度与 Top1-Top2 差值</h2>
-          <p className="mt-1 text-elder text-ink-soft">
-            差值越小表示 Top1 与 Top2 越难区分，属于需要人工复核的难例。
-          </p>
-          <div className="mt-4 h-[300px] w-full">
-            {trendChartData.length === 0 ? (
-              <EmptyState message="暂无匹配批次数据。" />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={trendChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="name" stroke="#475569" fontSize={12} />
-                  <YAxis yAxisId="left" stroke="#475569" fontSize={14} />
-                  <YAxis
-                    yAxisId="right"
-                    orientation="right"
-                    stroke="#d97706"
-                    fontSize={14}
-                  />
-                  <Tooltip />
-                  <Legend />
-                  <Line
-                    yAxisId="left"
-                    type="monotone"
-                    dataKey="top1"
-                    name="Top1 匹配度"
-                    stroke="#2563eb"
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                  />
-                  <Line
-                    yAxisId="right"
-                    type="monotone"
-                    dataKey="gap"
-                    name="Top1-Top2 差值"
-                    stroke="#d97706"
-                    strokeWidth={2}
-                    strokeDasharray="5 3"
-                    dot={{ r: 3 }}
-                    connectNulls
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
-
-        <div className="card card-pad">
-          <h2 className="section-title">提醒分级分布</h2>
-          <p className="mt-1 text-elder text-ink-soft">
-            高等级（立即就医／尽快就医）提醒占比过高时，需回看触发规则与误报情况。
-          </p>
-          <div className="mt-4 h-[300px] w-full">
-            {alertChartData.length === 0 ? (
-              <EmptyState message="暂无就医提醒数据。" />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Tooltip />
-                  <Legend />
-                  <Pie
-                    data={alertChartData}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius="55%"
-                    outerRadius="80%"
-                    paddingAngle={2}
-                  >
-                    {alertChartData.map((entry) => (
-                      <Cell
-                        key={entry.level}
-                        fill={ALERT_LEVEL_COLOR[entry.level] ?? "#64748b"}
-                      />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
-
-        <div className="card card-pad">
-          <h2 className="section-title">工作量概览</h2>
-          <p className="mt-1 text-elder text-ink-soft">
-            来自系统统计接口的总量数据，用于判断质控指标的分母规模。
-          </p>
-          <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {Object.entries(metrics.stats ?? {})
-              .filter(([key]) => key !== "generated_at")
-              .map(([key, value]) => (
-                <div
-                  key={key}
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
-                >
-                  <dt className="text-sm text-ink-soft">{STAT_LABELS[key] ?? key}</dt>
-                  <dd className="text-elder-lg font-bold text-ink">
-                    {typeof value === "number" ? value : "—"}
-                  </dd>
-                </div>
-              ))}
-          </dl>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <BigButton variant="secondary" onClick={() => void load()}>
-              刷新质控数据
-            </BigButton>
-          </div>
-          {metrics.generated_at ? (
-            <p className="mt-3 text-elder text-ink-mute">
-              指标生成时间：{metrics.generated_at}
+      <ClinSection title="量表分布与匹配趋势">
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div>
+            <h3 className="text-clin-sm font-medium text-clin-fg">
+              各量表评估数与异常数
+            </h3>
+            <p className="mt-1 text-clin-xs text-clin-fg-muted">
+              数据来源：各量表判读结果；异常数持续偏高需复核该量表阈值。
             </p>
-          ) : null}
+            <div className="mt-3 h-[260px] w-full">
+              {scaleChartData.length === 0 ? (
+                <ClinEmpty message="暂无量表评估数据。" />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={scaleChartData}>
+                    {/* 只保留一条浅灰横线（规范 §6） */}
+                    <CartesianGrid vertical={false} stroke={CHART_COLOR.border} />
+                    <XAxis
+                      dataKey="scaleCode"
+                      stroke={CHART_COLOR.fgMuted}
+                      fontSize={12}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      stroke={CHART_COLOR.fgMuted}
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      allowDecimals={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        fontSize: 12,
+                        borderRadius: 6,
+                        border: `1px solid ${CHART_COLOR.border}`,
+                        boxShadow: "none",
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Bar
+                      dataKey="total"
+                      name="评估数"
+                      fill={CHART_COLOR.accent}
+                      radius={[2, 2, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="abnormal"
+                      name="异常数"
+                      fill={CHART_COLOR.danger}
+                      radius={[2, 2, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-clin-sm font-medium text-clin-fg">
+              Top1 匹配度与 Top1-Top2 差值
+            </h3>
+            <p className="mt-1 text-clin-xs text-clin-fg-muted">
+              差值越小表示 Top1 与 Top2 越难区分，属于需要人工复核的难例。
+            </p>
+            <div className="mt-3 h-[260px] w-full">
+              {trendChartData.length === 0 ? (
+                <ClinEmpty message="暂无匹配批次数据。" />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={trendChartData}>
+                    <CartesianGrid vertical={false} stroke={CHART_COLOR.border} />
+                    <XAxis
+                      dataKey="name"
+                      stroke={CHART_COLOR.fgMuted}
+                      fontSize={12}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      yAxisId="left"
+                      stroke={CHART_COLOR.fgMuted}
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      yAxisId="right"
+                      orientation="right"
+                      stroke={CHART_COLOR.warning}
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        fontSize: 12,
+                        borderRadius: 6,
+                        border: `1px solid ${CHART_COLOR.border}`,
+                        boxShadow: "none",
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Line
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey="top1"
+                      name="Top1 匹配度"
+                      stroke={CHART_COLOR.accent}
+                      strokeWidth={2}
+                      dot={{ r: 2 }}
+                    />
+                    <Line
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey="gap"
+                      name="Top1-Top2 差值"
+                      stroke={CHART_COLOR.warning}
+                      strokeWidth={2}
+                      strokeDasharray="5 3"
+                      dot={{ r: 2 }}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-clin-sm font-medium text-clin-fg">提醒分级分布</h3>
+            <p className="mt-1 text-clin-xs text-clin-fg-muted">
+              高等级（立即就医／尽快就医）提醒占比过高时，需回看触发规则与误报情况。
+            </p>
+            <div className="mt-3 h-[260px] w-full">
+              {alertChartData.length === 0 ? (
+                <ClinEmpty message="暂无就医提醒数据。" />
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Tooltip
+                      contentStyle={{
+                        fontSize: 12,
+                        borderRadius: 6,
+                        border: `1px solid ${CHART_COLOR.border}`,
+                        boxShadow: "none",
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                    <Pie
+                      data={alertChartData}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius="55%"
+                      outerRadius="80%"
+                      paddingAngle={2}
+                      stroke="none"
+                    >
+                      {alertChartData.map((entry) => (
+                        <Cell
+                          key={entry.level}
+                          fill={ALERT_LEVEL_COLOR[entry.level] ?? CHART_COLOR.fgSubtle}
+                        />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-clin-sm font-medium text-clin-fg">工作量概览</h3>
+            <p className="mt-1 text-clin-xs text-clin-fg-muted">
+              来自系统统计接口的总量数据，用于判断质控指标的分母规模。
+            </p>
+            <dl className="mt-3 divide-y divide-clin-border border-y border-clin-border">
+              {Object.entries(metrics.stats ?? {})
+                .filter(([key]) => key !== "generated_at")
+                .map(([key, value]) => (
+                  <div key={key} className="flex items-baseline justify-between py-1.5">
+                    <dt className="text-clin-xs text-clin-fg-muted">
+                      {STAT_LABELS[key] ?? key}
+                    </dt>
+                    <dd className="text-clin-sm font-medium tabular-nums text-clin-fg">
+                      {typeof value === "number" ? value : "—"}
+                    </dd>
+                  </div>
+                ))}
+            </dl>
+            <div className="mt-3">
+              <Button variant="outline" size="sm" onClick={() => void load()}>
+                刷新质控数据
+              </Button>
+            </div>
+            {metrics.generated_at ? (
+              <p className="mt-2 text-clin-xs text-clin-fg-subtle">
+                指标生成时间：{metrics.generated_at}
+              </p>
+            ) : null}
+          </div>
         </div>
-      </section>
+      </ClinSection>
     </div>
   );
 }

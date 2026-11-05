@@ -13,11 +13,18 @@ import type {
   ScaleDetail,
   ScaleQuestion,
 } from "@/lib/types";
-import { BigButton } from "@/components/BigButton";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ErrorState";
-import { PageHeader } from "@/components/PageHeader";
-import { StatusBadge } from "@/components/StatusBadge";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/Toast";
+import {
+  ClinEmpty,
+  ClinError,
+  ClinLoading,
+  ClinPageHeader,
+  ClinSection,
+} from "@/app/staff/_components/clinical";
 
 /** 复核接口返回的判读结果 */
 interface ReviewScore {
@@ -178,23 +185,16 @@ export default function StaffReviewPage() {
   );
 
   if (loading) {
-    return <LoadingState label="正在加载作答明细…" />;
+    return <ClinLoading label="正在加载作答明细…" />;
   }
 
   if (error) {
-    return <ErrorState message={error} onRetry={() => void load()} />;
+    return <ClinError message={error} onRetry={() => void load()} />;
   }
 
   if (!session) {
-    return <EmptyState message="未找到该评估记录。" />;
+    return <ClinEmpty message="未找到该评估记录。" />;
   }
-
-  const statusTone =
-    session.status === "reviewed"
-      ? "green"
-      : session.status === "in_progress"
-        ? "blue"
-        : "gray";
 
   const currentScore = (session as unknown as { score?: ReviewScore }).score ?? null;
   const before = scoreBefore ?? currentScore;
@@ -206,8 +206,8 @@ export default function StaffReviewPage() {
     questions.find((question) => question.code === activeCode) ?? questions[0] ?? null;
 
   return (
-    <div className="space-y-6">
-      <PageHeader
+    <div>
+      <ClinPageHeader
         title={`复核评估：${session.scale_name || session.scale_code}`}
         description={`患者编号 ${session.patient_id} · 采集方式 ${
           session.mode === "staff" ? "医护代填" : "老人自填"
@@ -215,61 +215,72 @@ export default function StaffReviewPage() {
         actions={
           <>
             <Link href={`/staff/patients/${session.patient_id}`}>
-              <BigButton variant="ghost" size="lg">
+              <Button variant="ghost" size="sm">
                 查看患者档案
-              </BigButton>
+              </Button>
             </Link>
-            <Link href={`/staff/patients/${session.patient_id}?patient=${session.patient_id}&tab=matching`}>
-              <BigButton variant="secondary" size="lg">
+            <Link
+              href={`/staff/patients/${session.patient_id}?patient=${session.patient_id}&tab=matching`}
+            >
+              <Button variant="outline" size="sm">
                 匹配与提醒
-              </BigButton>
+              </Button>
             </Link>
           </>
         }
       />
 
-      <section className="card card-pad flex flex-wrap items-center gap-4">
-        <StatusBadge label={assessmentStatusLabel(session.status)} tone={statusTone} />
+      <div className="mb-6 flex flex-wrap items-center gap-3 border-b border-clin-border pb-4">
+        <Badge
+          variant={
+            session.status === "reviewed"
+              ? "success"
+              : session.status === "in_progress"
+                ? "warning"
+                : "secondary"
+          }
+        >
+          {assessmentStatusLabel(session.status)}
+        </Badge>
         {session.proxy?.is_proxy ? (
-          <StatusBadge
-            label={`家属代答：${session.proxy.proxy_name ?? ""}${
-              session.proxy.proxy_relation ? `（${session.proxy.proxy_relation}）` : ""
-            }`}
-            tone="amber"
-          />
+          <Badge variant="warning">
+            家属代答：{session.proxy.proxy_name ?? ""}
+            {session.proxy.proxy_relation ? `（${session.proxy.proxy_relation}）` : ""}
+          </Badge>
         ) : null}
         {scale?.standard_ref ? (
-          <span className="text-elder text-ink-soft">标准依据：{scale.standard_ref}</span>
+          <span className="text-clin-xs text-clin-fg-muted">
+            标准依据：{scale.standard_ref}
+          </span>
         ) : null}
-      </section>
+      </div>
 
       {/* ------------------------- 改分前后对比 ------------------------- */}
-      <section className="card card-pad">
-        <h2 className="section-title">改分前后对比</h2>
-        <p className="mt-1 text-elder text-ink-soft">
+      <ClinSection title="改分前后对比">
+        <p className="mb-3 text-clin-xs text-clin-fg-muted">
           复核过程中发生改分的样本会计入质控看板的「计分一致率」，复核前后分值不一致即为计分不一致样本。
         </p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          <div className="rounded-xl border-2 border-slate-300 bg-slate-50 p-4">
-            <p className="text-elder text-ink-soft">复核前总分</p>
-            <p className="mt-1 text-elder-2xl font-bold text-ink">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="border-b border-clin-border pb-2">
+            <p className="text-clin-xs text-clin-fg-muted">复核前总分</p>
+            <p className="mt-0.5 text-[24px] font-semibold leading-none tabular-nums text-clin-fg">
               {before?.total !== undefined ? before.total : "—"}
             </p>
-            <p className="mt-1 text-elder text-ink-soft">{before?.level ?? "—"}</p>
+            <p className="mt-1 text-clin-xs text-clin-fg-muted">{before?.level ?? "—"}</p>
           </div>
-          <div className="rounded-xl border-2 border-medical-200 bg-medical-50 p-4">
-            <p className="text-elder text-medical-900">复核后总分</p>
-            <p className="mt-1 text-elder-2xl font-bold text-medical-900">
+          <div className="border-b border-clin-border pb-2">
+            <p className="text-clin-xs text-clin-fg-muted">复核后总分</p>
+            <p className="mt-0.5 text-[24px] font-semibold leading-none tabular-nums text-clin-accent">
               {after?.total !== undefined ? after.total : "—"}
             </p>
-            <p className="mt-1 text-elder text-medical-900">{after?.level ?? "—"}</p>
+            <p className="mt-1 text-clin-xs text-clin-fg-muted">{after?.level ?? "—"}</p>
           </div>
-          <div className="rounded-xl border-2 border-slate-300 bg-white p-4">
-            <p className="text-elder text-ink-soft">本次改动</p>
-            <p className="mt-1 text-elder-2xl font-bold text-ink">
+          <div className="border-b border-clin-border pb-2">
+            <p className="text-clin-xs text-clin-fg-muted">本次改动</p>
+            <p className="mt-0.5 text-[24px] font-semibold leading-none tabular-nums text-clin-fg">
               {corrections.length} 题
             </p>
-            <p className="mt-1 text-elder text-ink-soft">
+            <p className="mt-1 text-clin-xs text-clin-fg-muted">
               {scoreChanged
                 ? "分值已变化，将计为计分不一致样本"
                 : corrections.length > 0
@@ -279,226 +290,273 @@ export default function StaffReviewPage() {
           </div>
         </div>
         {after?.interpretation ? (
-          <p className="mt-3 rounded-xl bg-slate-50 px-4 py-3 text-elder text-ink-soft">
+          <p className="mt-3 border-l-2 border-clin-accent pl-3 text-clin-sm text-clin-fg-muted">
             判读说明：{after.interpretation}
           </p>
         ) : null}
-      </section>
+      </ClinSection>
 
       {/* ------------------------- 左题右答对照 ------------------------- */}
-      <section className="grid gap-4 lg:grid-cols-[320px_1fr]">
-        {/* 左：题目列表 */}
-        <div className="card overflow-hidden">
-          <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
-            <p className="text-elder font-semibold text-ink">题目列表</p>
-            <p className="mt-1 text-sm text-ink-soft">
-              共 {questions.length} 题，已修改 {corrections.length} 题
-            </p>
-          </div>
-          {questions.length === 0 ? (
-            <div className="px-4 py-6 text-center text-elder text-ink-mute">
-              暂无可复核题目
+      <ClinSection title="题目与作答对照">
+        <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
+          {/* 左：题目列表（紧凑） */}
+          <div className="overflow-hidden rounded-clin border border-clin-border bg-clin-surface">
+            <div className="border-b border-clin-border bg-clin-muted px-3 py-2">
+              <p className="text-clin-sm font-medium text-clin-fg">题目列表</p>
+              <p className="mt-0.5 text-clin-xs text-clin-fg-muted">
+                共 {questions.length} 题，已修改 {corrections.length} 题
+              </p>
             </div>
-          ) : (
-            <ol className="max-h-[560px] overflow-y-auto">
-              {questions.map((question, position) => {
-                const changed = !sameValue(
-                  original[question.code] ?? null,
-                  edited[question.code] ?? null,
-                );
-                const active = activeQuestion?.code === question.code;
-                return (
-                  <li key={question.code}>
-                    <button
-                      type="button"
-                      onClick={() => setActiveCode(question.code)}
-                      aria-current={active ? "true" : undefined}
-                      className={[
-                        "flex w-full items-start gap-2 border-b border-slate-100 px-4 py-3 text-left",
-                        active ? "bg-medical-50" : "hover:bg-slate-50",
-                      ].join(" ")}
-                    >
-                      <span className="text-sm text-ink-mute">
-                        {position + 1}.
-                      </span>
-                      <span className="flex-1 text-elder text-ink">
-                        {question.text}
-                        {changed ? (
-                          <span className="ml-2">
-                            <StatusBadge label="已改" tone="amber" />
-                          </span>
-                        ) : null}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ol>
-          )}
-        </div>
+            {questions.length === 0 ? (
+              <p className="px-3 py-6 text-center text-clin-sm text-clin-fg-subtle">
+                暂无可复核题目
+              </p>
+            ) : (
+              <ol className="max-h-[520px] overflow-y-auto">
+                {questions.map((question, position) => {
+                  const changed = !sameValue(
+                    original[question.code] ?? null,
+                    edited[question.code] ?? null,
+                  );
+                  const active = activeQuestion?.code === question.code;
+                  return (
+                    <li key={question.code}>
+                      <button
+                        type="button"
+                        onClick={() => setActiveCode(question.code)}
+                        aria-current={active ? "true" : undefined}
+                        className={[
+                          "flex w-full items-start gap-2 border-b border-clin-border px-3 py-2 text-left transition-colors duration-150",
+                          active
+                            ? "border-l-2 border-l-clin-accent bg-clin-accent-soft"
+                            : "border-l-2 border-l-transparent hover:bg-clin-muted",
+                        ].join(" ")}
+                      >
+                        <span className="text-clin-xs tabular-nums text-clin-fg-subtle">
+                          {position + 1}.
+                        </span>
+                        <span className="flex-1 text-clin-sm text-clin-fg">
+                          {question.text}
+                          {changed ? (
+                            <span className="ml-2">
+                              <Badge variant="warning">已改</Badge>
+                            </span>
+                          ) : null}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+          </div>
 
-        {/* 右：题目与作答对照 */}
-        <div className="card card-pad">
-          {!activeQuestion ? (
-            <EmptyState message="该评估暂无可复核的题目。" />
-          ) : (
-            <>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-elder-lg font-semibold text-ink">
-                  第 {questions.findIndex((item) => item.code === activeQuestion.code) + 1} 题 ·{" "}
-                  {activeQuestion.text}
-                </h2>
-                {activeQuestion.plain_text ? (
-                  <span className="text-elder text-ink-soft">
-                    （{activeQuestion.plain_text}）
-                  </span>
+          {/* 右：题目与作答对照 */}
+          <div className="min-w-0">
+            {!activeQuestion ? (
+              <ClinEmpty message="该评估暂无可复核的题目。" />
+            ) : (
+              <>
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <h3 className="text-clin-sm font-medium text-clin-fg">
+                    第 {questions.findIndex((item) => item.code === activeQuestion.code) + 1} 题 ·{" "}
+                    {activeQuestion.text}
+                  </h3>
+                  {activeQuestion.plain_text ? (
+                    <span className="text-clin-xs text-clin-fg-muted">
+                      （{activeQuestion.plain_text}）
+                    </span>
+                  ) : null}
+                </div>
+
+                {/* 原作答 / 现作答：小号表格对照 */}
+                <div className="overflow-hidden rounded-clin border border-clin-border">
+                  <table className="w-full text-left">
+                    <thead className="border-b border-clin-border bg-clin-muted">
+                      <tr>
+                        <th className="px-3 py-1.5 text-clin-xs font-medium text-clin-fg-muted">
+                          对照
+                        </th>
+                        <th className="px-3 py-1.5 text-clin-xs font-medium text-clin-fg-muted">
+                          作答
+                        </th>
+                        <th className="px-3 py-1.5 text-clin-xs font-medium text-clin-fg-muted">
+                          分值
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-clin-border">
+                        <td className="px-3 py-1.5 text-clin-xs text-clin-fg-muted">
+                          原作答
+                        </td>
+                        <td className="px-3 py-1.5 text-clin-sm text-clin-fg">
+                          {displayValue(activeQuestion, original[activeQuestion.code] ?? null)}
+                        </td>
+                        <td className="px-3 py-1.5 text-clin-sm tabular-nums text-clin-fg-muted">
+                          {originalScores[activeQuestion.code] !== undefined
+                            ? originalScores[activeQuestion.code]
+                            : (optionScore(
+                                activeQuestion,
+                                original[activeQuestion.code] ?? null,
+                              ) ?? "—")}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="px-3 py-1.5 text-clin-xs text-clin-fg-muted">
+                          现作答（可就地修正）
+                        </td>
+                        <td className="px-3 py-1.5 text-clin-sm text-clin-fg">
+                          {displayValue(activeQuestion, edited[activeQuestion.code] ?? null)}
+                        </td>
+                        <td className="px-3 py-1.5 text-clin-sm tabular-nums text-clin-fg-muted">
+                          {optionScore(activeQuestion, edited[activeQuestion.code] ?? null) ?? "—"}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* 选项与分值：小号表格 */}
+                <div className="mt-4">
+                  <Label>选项与分值</Label>
+                  {activeQuestion.input_type === "number" ? (
+                    <div className="mt-1.5 flex items-center gap-3">
+                      <Input
+                        type="number"
+                        step="any"
+                        className="max-w-[180px]"
+                        value={
+                          edited[activeQuestion.code] === null ||
+                          edited[activeQuestion.code] === undefined
+                            ? ""
+                            : String(edited[activeQuestion.code])
+                        }
+                        aria-label="修正本题取值"
+                        onChange={(event) =>
+                          setEdited((prev) => ({
+                            ...prev,
+                            [activeQuestion.code]:
+                              event.target.value === "" ? null : Number(event.target.value),
+                          }))
+                        }
+                      />
+                      {activeQuestion.unit ? (
+                        <span className="text-clin-xs text-clin-fg-muted">
+                          {activeQuestion.unit}
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <div className="mt-1.5 overflow-hidden rounded-clin border border-clin-border">
+                      <table className="w-full text-left">
+                        <thead className="border-b border-clin-border bg-clin-muted">
+                          <tr>
+                            <th className="w-10 px-3 py-1.5" />
+                            <th className="px-3 py-1.5 text-clin-xs font-medium text-clin-fg-muted">
+                              选项
+                            </th>
+                            <th className="w-20 px-3 py-1.5 text-clin-xs font-medium text-clin-fg-muted">
+                              分值
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(activeQuestion.options ?? []).map((option) => {
+                            const current = edited[activeQuestion.code] ?? null;
+                            const selected = Array.isArray(current)
+                              ? current.map(String).includes(option.value)
+                              : String(current ?? "") === option.value;
+                            const inputType =
+                              activeQuestion.input_type === "multi" ? "checkbox" : "radio";
+                            return (
+                              <tr
+                                key={option.value}
+                                className="border-b border-clin-border transition-colors duration-150 last:border-0 hover:bg-clin-muted"
+                              >
+                                <td className="px-3 py-1.5">
+                                  <input
+                                    type={inputType}
+                                    className="h-3.5 w-3.5 accent-clin-accent"
+                                    checked={selected}
+                                    name={`question-${activeQuestion.code}`}
+                                    onChange={(event) => {
+                                      setEdited((prev) => {
+                                        if (activeQuestion.input_type === "multi") {
+                                          const raw = prev[activeQuestion.code];
+                                          const list = Array.isArray(raw)
+                                            ? raw.map(String)
+                                            : [];
+                                          const next = event.target.checked
+                                            ? [...list, option.value]
+                                            : list.filter((item) => item !== option.value);
+                                          return { ...prev, [activeQuestion.code]: next };
+                                        }
+                                        return { ...prev, [activeQuestion.code]: option.value };
+                                      });
+                                    }}
+                                  />
+                                </td>
+                                <td
+                                  className={
+                                    selected
+                                      ? "px-3 py-1.5 text-clin-sm text-clin-fg"
+                                      : "px-3 py-1.5 text-clin-sm text-clin-fg-muted"
+                                  }
+                                >
+                                  {option.label}
+                                </td>
+                                <td className="px-3 py-1.5 text-clin-sm tabular-nums text-clin-fg-muted">
+                                  {option.score !== undefined ? option.score : "—"}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {activeQuestion.required ? (
+                  <p className="mt-2 text-clin-xs text-clin-fg-subtle">本题为必答项。</p>
                 ) : null}
-              </div>
-
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-xl border-2 border-slate-200 bg-slate-50 p-4">
-                  <p className="text-elder text-ink-soft">原作答</p>
-                  <p className="mt-1 text-elder font-semibold text-ink">
-                    {displayValue(activeQuestion, original[activeQuestion.code] ?? null)}
-                  </p>
-                  <p className="mt-1 text-elder text-ink-soft">
-                    分值：
-                    {originalScores[activeQuestion.code] !== undefined
-                      ? originalScores[activeQuestion.code]
-                      : (optionScore(
-                          activeQuestion,
-                          original[activeQuestion.code] ?? null,
-                        ) ?? "—")}
-                  </p>
-                </div>
-                <div className="rounded-xl border-2 border-medical-200 bg-medical-50 p-4">
-                  <p className="text-elder text-medical-900">现作答（可就地修正）</p>
-                  <p className="mt-1 text-elder font-semibold text-medical-900">
-                    {displayValue(activeQuestion, edited[activeQuestion.code] ?? null)}
-                  </p>
-                  <p className="mt-1 text-elder text-medical-900">
-                    分值：
-                    {optionScore(activeQuestion, edited[activeQuestion.code] ?? null) ?? "—"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <p className="field-label">选项与分值</p>
-                {activeQuestion.input_type === "number" ? (
-                  <div className="mt-2 flex items-center gap-3">
-                    <input
-                      type="number"
-                      step="any"
-                      className="field-input max-w-xs"
-                      value={
-                        edited[activeQuestion.code] === null ||
-                        edited[activeQuestion.code] === undefined
-                          ? ""
-                          : String(edited[activeQuestion.code])
-                      }
-                      aria-label="修正本题取值"
-                      onChange={(event) =>
-                        setEdited((prev) => ({
-                          ...prev,
-                          [activeQuestion.code]:
-                            event.target.value === "" ? null : Number(event.target.value),
-                        }))
-                      }
-                    />
-                    {activeQuestion.unit ? (
-                      <span className="text-elder text-ink-soft">{activeQuestion.unit}</span>
-                    ) : null}
-                  </div>
-                ) : (
-                  <div className="mt-2 space-y-2">
-                    {(activeQuestion.options ?? []).map((option) => {
-                      const current = edited[activeQuestion.code] ?? null;
-                      const selected = Array.isArray(current)
-                        ? current.map(String).includes(option.value)
-                        : String(current ?? "") === option.value;
-                      const inputType =
-                        activeQuestion.input_type === "multi" ? "checkbox" : "radio";
-                      return (
-                        <label
-                          key={option.value}
-                          className={[
-                            "flex min-h-btn items-center gap-3 rounded-xl border-2 px-4 py-2 text-elder",
-                            selected
-                              ? "border-medical-700 bg-medical-50 text-medical-900"
-                              : "border-slate-200 bg-white text-ink",
-                          ].join(" ")}
-                        >
-                          <input
-                            type={inputType}
-                            className="h-6 w-6"
-                            checked={selected}
-                            name={`question-${activeQuestion.code}`}
-                            onChange={(event) => {
-                              setEdited((prev) => {
-                                if (activeQuestion.input_type === "multi") {
-                                  const raw = prev[activeQuestion.code];
-                                  const list = Array.isArray(raw)
-                                    ? raw.map(String)
-                                    : [];
-                                  const next = event.target.checked
-                                    ? [...list, option.value]
-                                    : list.filter((item) => item !== option.value);
-                                  return { ...prev, [activeQuestion.code]: next };
-                                }
-                                return { ...prev, [activeQuestion.code]: option.value };
-                              });
-                            }}
-                          />
-                          <span className="flex-1">{option.label}</span>
-                          <span className="text-elder text-ink-soft">
-                            {option.score !== undefined ? `${option.score} 分` : "—"}
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {activeQuestion.required ? (
-                <p className="mt-3 text-elder text-ink-mute">本题为必答项。</p>
-              ) : null}
-            </>
-          )}
+              </>
+            )}
+          </div>
         </div>
-      </section>
+      </ClinSection>
 
-      <section className="card card-pad space-y-4">
-        <h2 className="text-elder-lg font-semibold text-ink">质评意见</h2>
+      <ClinSection title="质评意见">
         <textarea
-          className="field-input min-h-[120px]"
+          className="w-full rounded-clin-sm border border-clin-border-strong bg-clin-bg px-3 py-2 text-clin-sm text-clin-fg placeholder:text-clin-fg-subtle focus-visible:border-clin-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-clin-accent"
           value={comment}
           onChange={(event) => setComment(event.target.value)}
           placeholder="填写复核意见，例如：老人复述不清，已当面确认第 3 题。"
           aria-label="质评意见"
+          rows={3}
         />
-        <div className="flex flex-wrap gap-3">
-          <BigButton
-            size="lg"
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button
+            size="sm"
             loading={submitting}
             onClick={() => void submitReview("approve")}
           >
             复核通过
-          </BigButton>
-          <BigButton
-            variant="secondary"
-            size="lg"
-            disabled={submitting}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            loading={submitting}
             onClick={() => void submitReview("correct")}
           >
             提交修正（{corrections.length} 项）
-          </BigButton>
+          </Button>
         </div>
-        <p className="text-elder text-ink-mute">
+        <p className="mt-2 text-clin-xs text-clin-fg-subtle">
           复核通过会确认本次作答；提交修正会把修改后的取值写回该评估并自动重新计分。
         </p>
-      </section>
+      </ClinSection>
     </div>
   );
 }

@@ -11,10 +11,9 @@ import type {
 } from "@/lib/types";
 import { AiReviewPanel } from "@/components/AiReviewPanel";
 import { AlertCard, type AlertAction } from "@/components/AlertCard";
-import { BigButton } from "@/components/BigButton";
-import { EmptyState } from "@/components/ErrorState";
 import { MatchCandidateCard } from "@/components/MatchCandidateCard";
-import { SectionTitle } from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
+import { ClinEmpty, ClinSection } from "@/app/staff/_components/clinical";
 
 /** 匹配与提醒 tab：候选依据、规则/AI 双排序、提醒处理与对话回放 */
 export function MatchingTab({
@@ -58,72 +57,78 @@ export function MatchingTab({
   }, [aiReview]);
 
   return (
-    <div className="space-y-5">
-      <section className="card card-pad">
-        <SectionTitle
-          title="匹配批次"
-          extra={
-            <div className="flex flex-wrap gap-3">
-              <BigButton
-                variant="secondary"
-                disabled={busy || runs.length === 0}
-                onClick={() => onAiReview(runs[0].id)}
-              >
-                AI 复核
-              </BigButton>
-              <BigButton variant="secondary" disabled={busy} onClick={onRunMatching}>
-                重新匹配
-              </BigButton>
-            </div>
-          }
-        />
+    <div>
+      <ClinSection
+        title="匹配批次"
+        extra={
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={busy || runs.length === 0}
+              onClick={() => onAiReview(runs[0].id)}
+            >
+              AI 复核
+            </Button>
+            <Button variant="outline" size="sm" disabled={busy} onClick={onRunMatching}>
+              重新匹配
+            </Button>
+          </div>
+        }
+      >
         {runs.length === 0 ? (
-          <EmptyState message="暂无匹配记录，可点击「重新匹配」发起一次疾病匹配。" />
+          <ClinEmpty message="暂无匹配记录，可点击「重新匹配」发起一次疾病匹配。" />
         ) : (
-          <ul className="space-y-3">
+          <ul className="divide-y divide-clin-border border-y border-clin-border">
             {runs.map((run) => (
               <li
                 key={run.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+                className="flex flex-wrap items-center justify-between gap-3 py-2.5"
               >
                 <div>
-                  <p className="text-elder font-semibold text-ink">批次 {run.id}</p>
-                  <p className="text-elder text-ink-soft">
+                  <p className="text-clin-sm font-medium text-clin-fg">批次 {run.id}</p>
+                  <p className="mt-0.5 text-clin-xs text-clin-fg-muted">
                     运行时间：{formatDateTime(run.created_at)}
                   </p>
                 </div>
-                <BigButton variant="secondary" onClick={() => onOpenRun(run.id)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onOpenRun(run.id)}
+                >
                   查看候选
-                </BigButton>
+                </Button>
               </li>
             ))}
           </ul>
         )}
-      </section>
+      </ClinSection>
 
       {activeRun ? (
-        <section className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-elder-lg font-semibold text-ink">候选疾病与命中依据</h2>
-            <BigButton
+        <ClinSection
+          title="候选疾病与命中依据"
+          extra={
+            <Button
+              variant="outline"
+              size="sm"
               disabled={busy}
               onClick={() => onAiReview(activeRun.id)}
             >
               AI 复核
-            </BigButton>
-          </div>
-
+            </Button>
+          }
+        >
           {activeRun.alert ? (
-            <div className="rounded-xl2 border-2 border-red-300 bg-red-50 p-4">
-              <p className="text-elder font-semibold text-red-800">
+            <div className="mb-4 rounded-clin border border-clin-danger px-4 py-3">
+              <p className="text-clin-sm font-medium text-clin-danger">
                 就医提醒：{activeRun.alert.message}
               </p>
               {activeRun.alert.department ? (
-                <p className="mt-1 text-elder text-red-800">
+                <p className="mt-1 text-clin-xs text-clin-danger">
                   建议就诊科室：{activeRun.alert.department}
                 </p>
               ) : null}
-              <p className="mt-2 text-elder text-red-800">
+              <p className="mt-1 text-clin-xs text-clin-danger">
                 {activeRun.alert.disclaimer ??
                   "结果仅供参考，不构成诊断，请及时咨询医生。"}
               </p>
@@ -143,7 +148,7 @@ export function MatchingTab({
           </div>
 
           {activeRun.candidates?.length ? null : (
-            <p className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-elder text-amber-900">
+            <p className="rounded-clin border border-clin-warning px-4 py-3 text-clin-sm text-clin-fg">
               {activeRun.disclaimer || "结果仅供参考，不构成诊断，请及时咨询医生。"}
             </p>
           )}
@@ -151,55 +156,52 @@ export function MatchingTab({
           {aiReview ? (
             <AiReviewPanel aiReview={aiReview} candidates={activeRun.candidates ?? []} />
           ) : (
-            <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-elder text-ink-soft">
+            <p className="rounded-clin border border-clin-border bg-clin-muted px-4 py-3 text-clin-sm text-clin-fg-muted">
               点击「AI 复核」可获得排序建议、追问建议与通俗解释；AI 只给建议，最终由医师裁决。
             </p>
           )}
-        </section>
+        </ClinSection>
       ) : null}
 
-      <section className="card card-pad">
-        <SectionTitle title="就医提醒" />
+      <ClinSection title="就医提醒">
         {alerts.length === 0 ? (
-          <EmptyState message="该患者暂无就医提醒。" />
+          <ClinEmpty message="该患者暂无就医提醒。" />
         ) : (
-          <ul className="space-y-4">
+          <div className="space-y-4">
             {alerts.map((alert) => (
-              <li key={alert.id}>
-                <AlertCard
-                  alert={alert}
-                  handling={busy}
-                  onHandle={(action, comment) =>
-                    onHandleAlert(alert.id, action, comment)
-                  }
-                />
-              </li>
+              <AlertCard
+                key={alert.id}
+                alert={alert}
+                handling={busy}
+                onHandle={(action, comment) =>
+                  onHandleAlert(alert.id, action, comment)
+                }
+              />
             ))}
-          </ul>
+          </div>
         )}
-      </section>
+      </ClinSection>
 
-      <section className="card card-pad" id="dialogue">
-        <SectionTitle
-          title="AI 对话回放"
-          extra={
-            <BigButton variant="secondary" disabled={busy} onClick={onOpenDialogue}>
-              载入对话
-            </BigButton>
-          }
-        />
+      <ClinSection
+        title="AI 对话回放"
+        extra={
+          <Button variant="outline" size="sm" disabled={busy} onClick={onOpenDialogue}>
+            载入对话
+          </Button>
+        }
+      >
         {dialogueTurns.length === 0 ? (
-          <EmptyState message="点击「载入对话」查看该患者的对话记录。" />
+          <ClinEmpty message="点击「载入对话」查看该患者的对话记录。" />
         ) : (
           <ol className="space-y-3">
             {dialogueTurns.map((turn, index) => (
               <li
                 key={`${turn.created_at ?? "t"}-${index}`}
                 className={[
-                  "rounded-xl px-4 py-3 text-elder whitespace-pre-wrap",
+                  "whitespace-pre-wrap rounded-clin px-4 py-3 text-clin-sm",
                   turn.role === "user"
-                    ? "ml-6 bg-medical-700 text-white"
-                    : "mr-6 border border-slate-200 bg-slate-50 text-ink",
+                    ? "ml-6 bg-clin-primary text-white"
+                    : "mr-6 border border-clin-border bg-clin-muted text-clin-fg",
                 ].join(" ")}
               >
                 {turn.content}
@@ -207,7 +209,7 @@ export function MatchingTab({
             ))}
           </ol>
         )}
-      </section>
+      </ClinSection>
     </div>
   );
 }

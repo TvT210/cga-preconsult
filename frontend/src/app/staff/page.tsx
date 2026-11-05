@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { Download, RefreshCw } from "lucide-react";
 import { api } from "@/lib/api";
 import {
   assessmentStatusLabel,
@@ -15,16 +16,30 @@ import type {
   ScaleListItem,
   StatsOverview,
 } from "@/lib/types";
-import { BigButton } from "@/components/BigButton";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   CompactTable,
   type TableColumn,
-  type TableDensity,
 } from "@/components/CompactTable";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ErrorState";
-import { PageHeader, SectionTitle } from "@/components/PageHeader";
-import { StatusBadge } from "@/components/StatusBadge";
 import { useToast } from "@/components/Toast";
+import {
+  ClinEmpty,
+  ClinError,
+  ClinLoading,
+  ClinPageHeader,
+  ClinSection,
+  ClinStatRow,
+} from "@/app/staff/_components/clinical";
 
 function toItems<T>(payload: T[] | Paged<T> | null | undefined): T[] {
   if (!payload) return [];
@@ -33,12 +48,19 @@ function toItems<T>(payload: T[] | Paged<T> | null | undefined): T[] {
 }
 
 const STATUS_OPTIONS = [
-  { value: "", label: "全部状态" },
+  { value: "all", label: "全部状态" },
   { value: "in_progress", label: "进行中" },
   { value: "finished", label: "已完成" },
   { value: "reviewed", label: "已复核" },
   { value: "abandoned", label: "已放弃" },
 ];
+
+const STATUS_VARIANT: Record<string, "default" | "secondary" | "success" | "warning"> = {
+  reviewed: "success",
+  finished: "default",
+  in_progress: "warning",
+  abandoned: "secondary",
+};
 
 export default function StaffTaskPage() {
   const toast = useToast();
@@ -48,12 +70,11 @@ export default function StaffTaskPage() {
   const [tasks, setTasks] = useState<AssessmentListItem[]>([]);
   const [stats, setStats] = useState<StatsOverview | null>(null);
 
-  const [patientId, setPatientId] = useState("");
-  const [scaleCode, setScaleCode] = useState("");
-  const [status, setStatus] = useState("");
+  const [patientId, setPatientId] = useState("all");
+  const [scaleCode, setScaleCode] = useState("all");
+  const [status, setStatus] = useState("all");
   const [keyword, setKeyword] = useState("");
 
-  const [density, setDensity] = useState<TableDensity>("compact");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [batchRunning, setBatchRunning] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
@@ -67,9 +88,9 @@ export default function StaffTaskPage() {
     try {
       const [taskPayload, patientPayload, scalePayload] = await Promise.all([
         api.get<AssessmentListItem[] | Paged<AssessmentListItem>>("/assessments", {
-          patient_id: patientId || undefined,
-          scale_code: scaleCode || undefined,
-          status: status || undefined,
+          patient_id: patientId === "all" ? undefined : patientId,
+          scale_code: scaleCode === "all" ? undefined : scaleCode,
+          status: status === "all" ? undefined : status,
         }),
         api.get<Patient[] | Paged<Patient>>("/patients", { size: 200 }),
         api.get<ScaleListItem[] | Paged<ScaleListItem>>("/scales"),
@@ -242,7 +263,7 @@ export default function StaffTaskPage() {
       render: (task) => (
         <Link
           href={`/staff/patients/${task.patient_id}`}
-          className="font-semibold text-medical-700 underline"
+          className="font-medium text-clin-accent hover:underline"
         >
           {patientName.get(String(task.patient_id)) ?? task.patient_id}
         </Link>
@@ -254,9 +275,11 @@ export default function StaffTaskPage() {
       sortValue: (task) => task.scale_name || task.scale_code,
       className: "min-w-[180px]",
       render: (task) => (
-        <span className="text-ink">
+        <span>
           {task.scale_name || task.scale_code}
-          <span className="ml-2 text-xs text-ink-mute">{task.scale_code}</span>
+          <span className="ml-2 text-clin-xs text-clin-fg-subtle">
+            {task.scale_code}
+          </span>
         </span>
       ),
     },
@@ -264,27 +287,19 @@ export default function StaffTaskPage() {
       key: "status",
       header: "状态",
       sortValue: (task) => task.status,
-      className: "w-[110px]",
+      className: "w-[96px]",
       render: (task) => (
-        <StatusBadge
-          label={assessmentStatusLabel(task.status)}
-          tone={
-            task.status === "reviewed"
-              ? "green"
-              : task.status === "finished"
-                ? "green"
-                : task.status === "in_progress"
-                  ? "blue"
-                  : "gray"
-          }
-        />
+        <Badge variant={STATUS_VARIANT[task.status] ?? "secondary"}>
+          {assessmentStatusLabel(task.status)}
+        </Badge>
       ),
     },
     {
       key: "progress",
       header: "进度",
-      sortValue: (task) => normalizeProgress(task.progress, task.total_questions).percent,
-      className: "w-[130px]",
+      sortValue: (task) =>
+        normalizeProgress(task.progress, task.total_questions).percent,
+      className: "w-[140px]",
       render: (task) => {
         const progress = normalizeProgress(task.progress, task.total_questions);
         return progress.total
@@ -296,9 +311,9 @@ export default function StaffTaskPage() {
       key: "mode",
       header: "采集方式",
       sortValue: (task) => task.mode ?? "",
-      className: "w-[100px]",
+      className: "w-[92px]",
       render: (task) => (
-        <span className="text-ink-soft">
+        <span className="text-clin-fg-muted">
           {task.mode === "staff" ? "医护代填" : "老人自填"}
         </span>
       ),
@@ -308,9 +323,9 @@ export default function StaffTaskPage() {
       header: "更新时间",
       sortValue: (task) =>
         task.finished_at ?? task.started_at ?? task.created_at ?? "",
-      className: "w-[150px]",
+      className: "w-[140px]",
       render: (task) => (
-        <span className="text-ink-soft">
+        <span className="text-clin-fg-muted">
           {formatDateTime(task.finished_at ?? task.started_at ?? task.created_at)}
         </span>
       ),
@@ -318,228 +333,178 @@ export default function StaffTaskPage() {
     {
       key: "action",
       header: "操作",
-      className: "w-[120px]",
+      className: "w-[92px]",
       render: (task) => (
-        <Link href={`/staff/review/${task.id}`}>
-          <BigButton variant="secondary">查看／复核</BigButton>
+        <Link
+          href={`/staff/review/${task.id}`}
+          className="text-clin-sm text-clin-accent hover:underline"
+        >
+          查看／复核
         </Link>
       ),
     },
   ];
 
-  const statCards = [
-    { label: "患者数", value: stats?.patients },
-    { label: "评估数", value: stats?.assessments },
-    { label: "异常评估", value: stats?.abnormal_assessments },
-    { label: "报告数", value: stats?.reports },
-    { label: "待复核", value: stats?.pending_review },
-    { label: "提醒数", value: stats?.alerts },
+  const statItems = [
+    { label: "患者数", value: stats?.patients ?? "—" },
+    { label: "评估数", value: stats?.assessments ?? "—" },
+    { label: "待复核", value: stats?.pending_review ?? "—" },
+    { label: "异常评估", value: stats?.abnormal_assessments ?? "—" },
   ];
 
   return (
-    <div className="space-y-6">
-      <PageHeader
+    <div>
+      <ClinPageHeader
         title="评估任务"
         description="按患者、量表与状态筛选评估记录，支持多选后批量复核与脱敏导出。"
         actions={
-          <Link href="/staff/quality">
-            <BigButton variant="secondary" size="lg">
-              打开质控看板
-            </BigButton>
-          </Link>
+          <>
+            <Button variant="outline" size="sm" onClick={() => void load()}>
+              <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+              刷新
+            </Button>
+            <Link href="/staff/quality">
+              <Button variant="outline" size="sm">
+                质控看板
+              </Button>
+            </Link>
+          </>
         }
       />
 
-      {statCards.some((item) => item.value !== undefined) ? (
-        <section className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
-          {statCards.map((item) => (
-            <div key={item.label} className="card card-pad">
-              <p className="text-elder text-ink-soft">{item.label}</p>
-              <p className="mt-1 text-elder-2xl font-bold text-medical-800">
-                {item.value ?? "—"}
-              </p>
-            </div>
-          ))}
-        </section>
-      ) : null}
+      <ClinStatRow items={statItems} />
 
-      <section className="card card-pad">
-        <SectionTitle title="筛选条件" />
-        <div className="grid gap-4 md:grid-cols-4">
+      <ClinSection title="筛选条件" className="mt-6">
+        <div className="grid gap-3 md:grid-cols-4">
           <div>
-            <label className="field-label" htmlFor="filter-patient">
-              患者
-            </label>
-            <select
-              id="filter-patient"
-              className="field-select"
-              value={patientId}
-              onChange={(event) => setPatientId(event.target.value)}
-            >
-              <option value="">全部患者</option>
-              {patients.map((patient) => (
-                <option key={patient.id} value={patient.id}>
-                  {patient.name}（{patient.code ?? patient.id}）
-                </option>
-              ))}
-            </select>
+            <Label htmlFor="filter-patient">患者</Label>
+            <Select value={patientId} onValueChange={setPatientId}>
+              <SelectTrigger id="filter-patient" className="mt-1">
+                <SelectValue placeholder="全部患者" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部患者</SelectItem>
+                {patients.map((patient) => (
+                  <SelectItem key={patient.id} value={String(patient.id)}>
+                    {patient.name}（{patient.code ?? patient.id}）
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
-            <label className="field-label" htmlFor="filter-scale">
-              量表
-            </label>
-            <select
-              id="filter-scale"
-              className="field-select"
-              value={scaleCode}
-              onChange={(event) => setScaleCode(event.target.value)}
-            >
-              <option value="">全部量表</option>
-              {scales.map((scale) => (
-                <option key={scale.code} value={scale.code}>
-                  {scale.code} {scale.name}
-                </option>
-              ))}
-            </select>
+            <Label htmlFor="filter-scale">量表</Label>
+            <Select value={scaleCode} onValueChange={setScaleCode}>
+              <SelectTrigger id="filter-scale" className="mt-1">
+                <SelectValue placeholder="全部量表" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部量表</SelectItem>
+                {scales.map((scale) => (
+                  <SelectItem key={scale.code} value={scale.code}>
+                    {scale.code} {scale.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
-            <label className="field-label" htmlFor="filter-status">
-              状态
-            </label>
-            <select
-              id="filter-status"
-              className="field-select"
-              value={status}
-              onChange={(event) => setStatus(event.target.value)}
-            >
-              {STATUS_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <Label htmlFor="filter-status">状态</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger id="filter-status" className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
-            <label className="field-label" htmlFor="filter-keyword">
-              关键字
-            </label>
-            <input
+            <Label htmlFor="filter-keyword">关键字</Label>
+            <Input
               id="filter-keyword"
-              className="field-input"
+              className="mt-1"
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
               placeholder="姓名 / 量表 / 任务号"
             />
           </div>
         </div>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <BigButton variant="secondary" onClick={() => void load()}>
-            刷新列表
-          </BigButton>
+      </ClinSection>
+
+      <ClinSection title="任务列表">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <span className="text-clin-xs text-clin-fg-muted">
+            共 {filteredTasks.length} 条
+            {selected.size > 0 ? `，已选 ${selected.size} 条` : ""}
+          </span>
+          {selected.size > 0 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button size="sm" loading={batchRunning} onClick={() => void runBatchReview()}>
+                批量复核（{selected.size}）
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={batchRunning}
+                onClick={() => setExportOpen(true)}
+              >
+                <Download className="h-3.5 w-3.5" aria-hidden="true" />
+                批量导出
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
+                清除选择
+              </Button>
+            </div>
+          ) : null}
         </div>
-      </section>
 
-      {loading ? (
-        <LoadingState label="正在加载评估任务…" />
-      ) : error ? (
-        <ErrorState message={error} onRetry={() => void load()} />
-      ) : filteredTasks.length === 0 ? (
-        <EmptyState message="没有符合条件的评估记录。" />
-      ) : (
-        <section className="card overflow-hidden">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-elder text-ink-soft">
-                共 {filteredTasks.length} 条
-                {selected.size > 0 ? `，已选 ${selected.size} 条` : ""}
-              </span>
-              {selected.size > 0 ? (
-                <>
-                  <BigButton
-                    size="md"
-                    loading={batchRunning}
-                    onClick={() => void runBatchReview()}
-                  >
-                    批量复核（{selected.size}）
-                  </BigButton>
-                  <BigButton
-                    variant="secondary"
-                    disabled={batchRunning}
-                    onClick={() => setExportOpen(true)}
-                  >
-                    批量导出
-                  </BigButton>
-                  <BigButton variant="ghost" onClick={() => setSelected(new Set())}>
-                    清除选择
-                  </BigButton>
-                </>
-              ) : null}
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-elder text-ink-soft">密度</span>
-              <button
-                type="button"
-                onClick={() => setDensity("compact")}
-                aria-pressed={density === "compact"}
-                className={[
-                  "rounded-lg border-2 px-3 py-1 text-elder font-semibold",
-                  density === "compact"
-                    ? "border-medical-700 bg-medical-700 text-white"
-                    : "border-slate-300 bg-white text-ink",
-                ].join(" ")}
-              >
-                紧凑
-              </button>
-              <button
-                type="button"
-                onClick={() => setDensity("normal")}
-                aria-pressed={density === "normal"}
-                className={[
-                  "rounded-lg border-2 px-3 py-1 text-elder font-semibold",
-                  density === "normal"
-                    ? "border-medical-700 bg-medical-700 text-white"
-                    : "border-slate-300 bg-white text-ink",
-                ].join(" ")}
-              >
-                标准
-              </button>
-            </div>
-          </div>
+        {loading ? (
+          <ClinLoading label="正在加载评估任务…" />
+        ) : error ? (
+          <ClinError message={error} onRetry={() => void load()} />
+        ) : filteredTasks.length === 0 ? (
+          <ClinEmpty message="没有符合条件的评估记录。" />
+        ) : (
+          <>
+            <CompactTable
+              columns={columns}
+              rows={filteredTasks}
+              rowKey={(task) => String(task.id)}
+              selectable
+              selectedKeys={selected}
+              onToggleRow={toggleRow}
+              onToggleAll={toggleAll}
+              emptyMessage="没有符合条件的评估记录。"
+            />
 
-          <CompactTable
-            columns={columns}
-            rows={filteredTasks}
-            rowKey={(task) => String(task.id)}
-            selectable
-            selectedKeys={selected}
-            onToggleRow={toggleRow}
-            onToggleAll={toggleAll}
-            density={density}
-            emptyMessage="没有符合条件的评估记录。"
-          />
-
-          {exportOpen ? (
-            <div className="border-t border-slate-200 px-5 py-4">
-              <div className="rounded-xl2 border-2 border-amber-300 bg-amber-50 p-4">
-                <p className="text-elder font-semibold text-amber-900">
+            {exportOpen ? (
+              <div className="mt-4 rounded-clin border border-clin-warning px-4 py-3">
+                <p className="text-clin-sm font-medium text-clin-fg">
                   确认导出 {selected.size} 条评估任务记录？
                 </p>
-                <p className="mt-2 text-elder text-amber-900">
+                <p className="mt-1 text-clin-xs text-clin-fg-muted">
                   导出文件仅包含任务号、患者编号、姓名、量表、状态、进度与时间，
                   <strong>不含身份证号与联系电话</strong>，仍含个人健康相关信息，
                   请按院内数据管理要求妥善保管与销毁。
                 </p>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <BigButton onClick={runBatchExport}>确认导出</BigButton>
-                  <BigButton variant="ghost" onClick={() => setExportOpen(false)}>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button size="sm" onClick={runBatchExport}>
+                    确认导出
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setExportOpen(false)}>
                     取消
-                  </BigButton>
+                  </Button>
                 </div>
               </div>
-            </div>
-          ) : null}
-        </section>
-      )}
+            ) : null}
+          </>
+        )}
+      </ClinSection>
     </div>
   );
 }

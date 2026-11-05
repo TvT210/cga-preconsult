@@ -684,6 +684,115 @@ export interface PeriodicResult {
 }
 
 /* ------------------------------------------------------------------ */
+/* 知识库图谱（医护端可视化）                                          */
+/* ------------------------------------------------------------------ */
+
+/** 节点类型：疾病 / 症状 / 量表 */
+export type KnowledgeNodeType = "disease" | "symptom" | "scale";
+
+/** 边类型：core 核心症状 / secondary 次要症状 / focus 关注项 / synonym 同义 */
+export type KnowledgeEdgeKind = "core" | "secondary" | "focus" | "synonym";
+
+/** 图谱节点 */
+export interface KnowledgeNode {
+  /** 形如 `disease:I21` / `symptom:xxx` / `scale:B.1` */
+  id: string;
+  type: KnowledgeNodeType;
+  /** 中文名 */
+  label: string;
+  /** 分组：疾病的系统 / 症状的分类 / 量表的维度 */
+  group: string;
+  /** 风险等级（仅疾病节点） */
+  risk?: string;
+  /** 附加信息：别名、鉴别问法、题目数等 */
+  meta?: {
+    aliases?: string[];
+    review_status?: string;
+    atypical?: string[];
+    advice?: string;
+    synonyms?: string[];
+    probe?: string;
+    method?: string;
+    item_count?: number;
+    [key: string]: unknown;
+  };
+}
+
+/** 图谱边 */
+export interface KnowledgeEdge {
+  source: string;
+  target: string;
+  kind: KnowledgeEdgeKind;
+  /** 边上的说明文案 */
+  label?: string;
+  /** 关注项对应的题号 */
+  item?: string;
+  /** 关注项对应的题目文本 */
+  item_text?: string;
+}
+
+/** 图谱统计 */
+export interface KnowledgeGraphStats {
+  nodes?: number;
+  edges?: number;
+  by_type?: Record<string, number>;
+  edge_kinds?: Record<string, number>;
+}
+
+/** 知识库图谱响应 */
+export interface KnowledgeGraph {
+  nodes: KnowledgeNode[];
+  edges: KnowledgeEdge[];
+  stats?: KnowledgeGraphStats;
+  /** 免责提示：内容来自待医学评审的草稿，仅供医护参考，不构成诊断 */
+  notice?: string;
+}
+
+/** 症状关联的病种条目 */
+export interface SymptomRelatedDisease {
+  code?: string;
+  name?: string;
+  /** core 优先排序 */
+  weight?: string;
+  risk_level?: string;
+  system?: string;
+  advice?: string;
+  atypical?: string[];
+}
+
+/** 症状可加测的量表 */
+export interface SymptomRelatedScale {
+  scale?: string;
+  note?: string;
+  item?: string;
+}
+
+/** 单个症状详情 */
+export interface SymptomDetail {
+  code: string;
+  term: string;
+  category?: string;
+  synonyms?: string[];
+  /** 鉴别问法 */
+  probe?: string;
+  related_diseases?: SymptomRelatedDisease[];
+  related_scales?: SymptomRelatedScale[];
+  disease_count?: number;
+  notice?: string;
+}
+
+/** 知识库概览统计 */
+export interface KnowledgeOverview {
+  diseases?: number;
+  symptoms?: number;
+  scales?: number;
+  scales_with_items?: number;
+  core_symptom_links?: number;
+  symptoms_with_probe?: number;
+  review_status?: string;
+}
+
+/* ------------------------------------------------------------------ */
 /* 管理与质控                                                          */
 /* ------------------------------------------------------------------ */
 

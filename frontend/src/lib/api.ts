@@ -4,6 +4,8 @@ import type {
   AlertItem,
   AssessmentListItem,
   DiseaseListResponse,
+  KnowledgeGraph,
+  KnowledgeOverview,
   MatchRunDetail,
   MatchRunListItem,
   Paged,
@@ -11,6 +13,7 @@ import type {
   QualityMetrics,
   ScaleStatBucket,
   StatsOverview,
+  SymptomDetail,
 } from "./types";
 
 /**
@@ -448,4 +451,50 @@ export async function fetchMatchScoreSeries(
   anchor.click();
   document.body.removeChild(anchor);
   URL.revokeObjectURL(url);
+}
+
+/* ------------------------------------------------------------------ */
+/* 知识库可视化（医护端 · 线 B）                                       */
+/* ------------------------------------------------------------------ */
+
+/** 图谱查询参数 */
+export interface KnowledgeGraphParams {
+  /** 按类型过滤：disease / symptom / scale，留空为全部 */
+  node_type?: string;
+  /** 按名称或编码过滤节点 */
+  keyword?: string;
+}
+
+/**
+ * 拉取知识库关系图谱（节点 + 边）。
+ * 后端返回的数据来自待医学评审的草稿，页面必须展示 `notice` 免责提示。
+ */
+export async function getKnowledgeGraph(
+  params?: KnowledgeGraphParams,
+): Promise<KnowledgeGraph> {
+  const graph = await request<KnowledgeGraph>("/knowledge/graph", {
+    query: {
+      node_type: params?.node_type || undefined,
+      keyword: params?.keyword || undefined,
+    },
+    silent: true,
+  });
+  return graph ?? { nodes: [], edges: [] };
+}
+
+/** 拉取单个症状详情：同义词、鉴别问法、关联病种与可加测量表 */
+export async function getSymptomDetail(code: string): Promise<SymptomDetail> {
+  const detail = await request<SymptomDetail>(
+    `/knowledge/symptoms/${encodeURIComponent(code)}`,
+    { silent: true },
+  );
+  return detail;
+}
+
+/** 拉取知识库概览：规模与覆盖度统计 */
+export async function getKnowledgeOverview(): Promise<KnowledgeOverview> {
+  const overview = await request<KnowledgeOverview>("/knowledge/overview", {
+    silent: true,
+  });
+  return overview ?? {};
 }

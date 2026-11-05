@@ -1,17 +1,21 @@
 "use client";
 
 /**
- * 质控指标卡。
+ * 质控指标行（**医护端**）。
+ *
  * 关键约束：`null` 表示「暂无数据」（需标注集 / 需管理员权限），**不得**渲染成 0。
+ *
+ * 规范 §3：数字 24px + `tabular-nums`，说明 11~12px；
+ * 与《大卡片》不同，这里是**两列密排的指标行**，不占大面积。
  */
 
 export type MetricTone = "default" | "good" | "warn" | "bad";
 
 const TONE_CLASS: Record<MetricTone, string> = {
-  default: "text-medical-900",
-  good: "text-emerald-700",
-  warn: "text-amber-700",
-  bad: "text-red-700",
+  default: "text-clin-fg",
+  good: "text-clin-success",
+  warn: "text-clin-warning",
+  bad: "text-clin-danger",
 };
 
 export interface QualityMetricCardProps {
@@ -55,28 +59,35 @@ export function QualityMetricCard({
   const hasValue = typeof value === "number" && Number.isFinite(value);
 
   return (
-    <div className="card card-pad flex flex-col">
-      <p className="text-elder text-ink-soft">{label}</p>
-      {hasValue ? (
-        <>
-          <p className={`mt-1 text-elder-2xl font-bold ${TONE_CLASS[tone]}`}>
+    <div className="border-b border-clin-border py-2.5 last:border-b-0">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-clin-xs text-clin-fg-muted">{label}</p>
+        {hasValue ? (
+          <p className={`text-[24px] font-semibold leading-none tabular-nums ${TONE_CLASS[tone]}`}>
             {formatValue(value, format)}
           </p>
+        ) : (
+          <p className="text-clin-sm font-medium leading-none text-clin-fg-subtle">
+            暂无数据
+          </p>
+        )}
+      </div>
+      {hasValue ? (
+        <>
           {footnote ? (
-            <p className="mt-1 text-sm text-ink-mute">{footnote}</p>
+            <p className="mt-1 text-clin-xs text-clin-fg-subtle">{footnote}</p>
+          ) : null}
+          {meaning ? (
+            <p className="mt-0.5 text-clin-xs leading-relaxed text-clin-fg-muted">
+              {meaning}
+            </p>
           ) : null}
         </>
       ) : (
-        <>
-          <p className="mt-1 text-elder-lg font-bold text-ink-mute">暂无数据</p>
-          <p className="mt-1 text-sm text-ink-mute">
-            {unavailableText ?? "暂无数据"}
-          </p>
-        </>
+        <p className="mt-1 text-clin-xs text-clin-fg-subtle">
+          {unavailableText ?? "暂无数据"}
+        </p>
       )}
-      {meaning ? (
-        <p className="mt-2 text-sm leading-relaxed text-ink-soft">{meaning}</p>
-      ) : null}
     </div>
   );
 }
