@@ -26,7 +26,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Core, ElementDefinition, LayoutOptions } from "cytoscape";
-import { LayoutGrid, Maximize2, Network, RefreshCw, RotateCcw, Search } from "lucide-react";
+import { LayoutGrid, Maximize2, Network, RefreshCw, RotateCcw, RotateCw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { KnowledgeEdge, KnowledgeNode } from "@/lib/types";
@@ -443,6 +443,35 @@ export function KnowledgeGraphCytoscape({
     cyRef.current?.fit(undefined, 40);
   }, []);
 
+  /**
+   * 旋转整张图（绕图形中心，逆时针 45°）。
+   *
+   * cytoscape 本身只支持「标签旋转」，没有视图旋转，
+   * 这里直接对所有节点坐标做一次旋转变换——对任意布局都成立，
+   * 边会自动跟随节点。旋转后可用「适应画布」重新取景。
+   */
+  const rotateView = useCallback(() => {
+    const cy = cyRef.current;
+    if (!cy) return;
+    const nodes = cy.nodes();
+    if (!nodes.length) return;
+    const bb = nodes.boundingBox();
+    const cx = (bb.x1 + bb.x2) / 2;
+    const cyy = (bb.y1 + bb.y2) / 2;
+    const rad = (-45 * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    nodes.positions((node: any) => {
+      const p = node.position();
+      const dx = p.x - cx;
+      const dy = p.y - cyy;
+      return {
+        x: cx + dx * cos - dy * sin,
+        y: cyy + dx * sin + dy * cos,
+      };
+    });
+  }, []);
+
   return (
     <div className="relative">
       {/* 工具条：图例 + 布局选择 + 视图控制 */}
@@ -497,6 +526,10 @@ export function KnowledgeGraphCytoscape({
             <RotateCcw className="h-3.5 w-3.5 -scale-x-100" aria-hidden="true" />
             <span className="text-clin-xs">缩小</span>
           </Button>
+          <Button variant="outline" size="sm" aria-label="旋转 45 度" onClick={rotateView}>
+            <RotateCw className="h-3.5 w-3.5" aria-hidden="true" />
+            <span className="text-clin-xs">旋转 45°</span>
+          </Button>
           <Button variant="outline" size="sm" aria-label="适应画布" onClick={fitView}>
             <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />
             <span className="text-clin-xs">适应画布</span>
@@ -539,7 +572,7 @@ export function KnowledgeGraphCytoscape({
       <p className="mt-2 text-clin-xs text-clin-fg-subtle">
         <Network className="mr-1 inline h-3 w-3" aria-hidden="true" />
         节点可拖拽调整位置，拖完位置保留；滚轮缩放、拖动空白处平移、框选多节点；
-        切换布局会重新排布，点击「适应画布」可一键取景。
+        切换布局会重新排布，「旋转 45°」可绕中心转动整张图，点击「适应画布」一键取景。
       </p>
     </div>
   );
