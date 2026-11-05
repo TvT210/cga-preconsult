@@ -99,4 +99,5 @@
 | `docs/review/` | 代码审查与测试报告 |
 | `docs/bug/` | 缺陷记录与复现步骤 |
 | `docs/sql/` | 数据库表设计与 DDL |
+| `docs/frontend/医护端视觉规范.md` | 医护端配色/尺寸/组件规范，**含改造踩坑记录**（tailwind-merge 自定义字号、force-graph 实例方法、canvas 颜色解析），改医护端界面前先读 |
 | `deploy/Install.md` | 环境安装、启动与部署说明（后续创建） |
