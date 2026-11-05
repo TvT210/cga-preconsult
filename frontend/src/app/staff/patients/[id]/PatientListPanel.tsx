@@ -4,6 +4,16 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { assessmentStatusLabel, formatDateTime } from "@/lib/format";
 import type { AssessmentListItem, Paged, Patient } from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { toItems } from "./usePatientWorkspace";
 
 /** 患者在左侧列表中的展示条目 */
@@ -20,7 +30,7 @@ interface PatientListEntry {
 type SortKey = "recent" | "name" | "created";
 
 const STATUS_FILTERS = [
-  { value: "", label: "全部" },
+  { value: "all", label: "全部" },
   { value: "pending", label: "待复核" },
   { value: "in_progress", label: "进行中" },
   { value: "reviewed", label: "已复核" },
@@ -47,7 +57,7 @@ export function PatientListPanel({
   const [patients, setPatients] = useState<Patient[]>([]);
   const [sessions, setSessions] = useState<AssessmentListItem[]>([]);
   const [keyword, setKeyword] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>("recent");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -109,7 +119,7 @@ export function PatientListPanel({
       const code = (entry.patient.code ?? "").toLowerCase();
       if (key && !name.includes(key) && !code.includes(key)) return false;
 
-      if (!statusFilter) return true;
+      if (statusFilter === "all") return true;
       if (statusFilter === "none") return !entry.latestStatus;
       if (statusFilter === "pending") {
         return entry.pendingCount > 0 || entry.latestStatus === "finished";
@@ -134,7 +144,7 @@ export function PatientListPanel({
       const rightTime = timeValue(right.latestAt);
       if (leftTime === rightTime) {
         return (left.patient.name ?? "").localeCompare(
-          right.patient.name ?? "",
+          (right.patient.name ?? "").toString(),
           "zh-CN",
         );
       }
@@ -145,55 +155,59 @@ export function PatientListPanel({
   }, [entries, keyword, sortKey, statusFilter]);
 
   return (
-    <section className="card flex h-full flex-col overflow-hidden">
-      <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
-        <p className="text-elder font-semibold text-ink">患者列表</p>
-        <p className="mt-1 text-sm text-ink-soft">
+    <section className="flex h-full flex-col overflow-hidden rounded-clin border border-clin-border bg-clin-surface">
+      <div className="border-b border-clin-border bg-clin-muted px-3 py-2.5">
+        <p className="text-clin-sm font-medium text-clin-fg">患者列表</p>
+        <p className="mt-0.5 text-clin-xs text-clin-fg-muted">
           共 {entries.length} 位，当前显示 {visible.length} 位
         </p>
 
-        <div className="mt-3 space-y-2">
-          <input
-            className="field-input"
+        <div className="mt-2 space-y-2">
+          <Input
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
             placeholder="搜索姓名 / 编号"
             aria-label="搜索患者"
           />
           <div className="grid grid-cols-2 gap-2">
-            <select
-              className="field-select"
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
-              aria-label="按状态筛选"
-            >
-              {STATUS_FILTERS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <select
-              className="field-select"
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger aria-label="按状态筛选">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_FILTERS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
               value={sortKey}
-              onChange={(event) => setSortKey(event.target.value as SortKey)}
-              aria-label="排序方式"
+              onValueChange={(value) => setSortKey(value as SortKey)}
             >
-              <option value="recent">按最近评估排序</option>
-              <option value="name">按姓名排序</option>
-              <option value="created">按建档时间排序</option>
-            </select>
+              <SelectTrigger aria-label="排序方式">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recent">按最近评估排序</SelectItem>
+                <SelectItem value="name">按姓名排序</SelectItem>
+                <SelectItem value="created">按建档时间排序</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <p className="px-4 py-6 text-center text-elder text-ink-mute">加载中…</p>
+          <p className="px-3 py-6 text-center text-clin-sm text-clin-fg-muted">
+            加载中…
+          </p>
         ) : error ? (
-          <p className="px-4 py-6 text-center text-elder text-ink-mute">{error}</p>
+          <p className="px-3 py-6 text-center text-clin-sm text-clin-danger">{error}</p>
         ) : visible.length === 0 ? (
-          <p className="px-4 py-6 text-center text-elder text-ink-mute">
+          <p className="px-3 py-6 text-center text-clin-sm text-clin-fg-subtle">
             没有符合条件的患者。
           </p>
         ) : (
@@ -206,20 +220,20 @@ export function PatientListPanel({
                     type="button"
                     onClick={() => onSelect(String(entry.patient.id))}
                     aria-current={active ? "true" : undefined}
-                    className={[
-                      "w-full border-b border-slate-100 px-4 py-3 text-left transition-colors",
+                    className={cn(
+                      "w-full border-b border-clin-border border-l-2 px-3 py-2 text-left transition-colors duration-150",
                       active
-                        ? "bg-medical-50 shadow-[inset_4px_0_0_0_#1d4ed8]"
-                        : "hover:bg-slate-50",
-                    ].join(" ")}
+                        ? "border-l-clin-accent bg-clin-accent-soft"
+                        : "border-l-transparent hover:bg-clin-muted",
+                    )}
                   >
-                    <p className="text-elder font-semibold text-ink">
+                    <p className="text-clin-sm font-medium text-clin-fg">
                       {entry.patient.name}
-                      <span className="ml-2 text-sm font-normal text-ink-mute">
+                      <span className="ml-2 text-clin-xs font-normal text-clin-fg-subtle">
                         {entry.patient.code ?? entry.patient.id}
                       </span>
                     </p>
-                    <p className="mt-1 text-sm text-ink-soft">
+                    <p className="mt-0.5 text-clin-xs text-clin-fg-muted">
                       {entry.latestStatus
                         ? `${assessmentStatusLabel(entry.latestStatus)} · ${formatDateTime(
                             entry.latestAt,
@@ -227,9 +241,9 @@ export function PatientListPanel({
                         : "暂无评估记录"}
                     </p>
                     {entry.pendingCount > 0 ? (
-                      <p className="mt-1 text-sm font-semibold text-amber-700">
-                        {entry.pendingCount} 条待复核
-                      </p>
+                      <div className="mt-1">
+                        <Badge variant="warning">{entry.pendingCount} 条待复核</Badge>
+                      </div>
                     ) : null}
                   </button>
                 </li>

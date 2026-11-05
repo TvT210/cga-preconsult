@@ -136,11 +136,22 @@ function ScaleScoreCard({ score }: { score: ScaleScore }) {
 
 function Block({
   title,
+  clinical = false,
   children,
 }: {
   title: string;
+  /** 医护端模式：用 1px 上边框分块，取代老人端的 .card .card-pad 堆叠 */
+  clinical?: boolean;
   children: React.ReactNode;
 }) {
+  if (clinical) {
+    return (
+      <section className="clin-section">
+        <h3 className="clin-section-title mb-4">{title}</h3>
+        {children}
+      </section>
+    );
+  }
   return (
     <section className="card card-pad">
       <h3 className="mb-3 text-elder-lg font-semibold text-ink">{title}</h3>
@@ -151,13 +162,19 @@ function Block({
 
 /**
  * 报告内容渲染。老人端与医护端共用，确保口径一致。
+ *
+ * `clinical` 只影响**外层分块样式**（医护端用 1px 上边框而非卡片堆叠），
+ * 老人端默认走原有 `.card .card-pad`，渲染结果与改动前完全一致。
  */
 export function ReportSectionsView({
   sections,
   disclaimer,
+  clinical = false,
 }: {
   sections: ReportSections;
   disclaimer?: string;
+  /** 医护端简洁风格开关 */
+  clinical?: boolean;
 }) {
   const scaleResults = (sections.scale_results ?? []) as unknown[];
   const dimensionSummary = (sections.dimension_summary ?? []) as unknown[];

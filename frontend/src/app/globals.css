@@ -76,3 +76,226 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ================================================================== */
+/* 医护端主题作用域（线 B）                                           */
+/* ------------------------------------------------------------------ */
+/* 只在 .theme-clinical 容器（医护端 layout 根元素）内生效，          */
+/* 老人端作用域完全不受影响。                                        */
+/* 依据：docs/frontend/医护端视觉规范.md §2 配色 / §3 尺寸与排版      */
+/* ================================================================== */
+.theme-clinical {
+  /* 配色 token：Slate 中性 + 单一 teal 强调色 */
+  --c-bg: #ffffff;
+  --c-surface: #ffffff;
+  --c-muted: #f8fafc;
+  --c-border: #e2e8f0;
+  --c-border-strong: #cbd5e1;
+  --c-fg: #0f172a;
+  --c-fg-muted: #64748b;
+  --c-fg-subtle: #94a3b8;
+  --c-primary: #0f172a;
+  --c-primary-hover: #1e293b;
+  --c-accent: #0d9488;
+  --c-accent-soft: #ccfbf1;
+  --c-danger: #dc2626;
+  --c-warning: #d97706;
+  --c-success: #059669;
+  /* 知识库图谱用的病种色（rose），仅用于画布内节点着色 */
+  --c-rose: #e11d48;
+
+  /* 尺寸与排版 token */
+  --c-radius: 8px;
+  --c-radius-sm: 6px;
+  --c-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --c-font-xs: 12px;
+  --c-font-sm: 13px;
+  --c-font-base: 14px;
+  --c-line-base: 1.6;
+
+  background-color: var(--c-bg);
+  color: var(--c-fg);
+  font-size: var(--c-font-base);
+  line-height: var(--c-line-base);
+}
+
+/* 医护端焦点环：teal，区别于老人端的高对比医疗蓝 */
+.theme-clinical :focus-visible {
+  outline-color: var(--c-accent);
+}
+
+/* 医护端取消进场动画，只保留 120~150ms 的颜色/位移过渡 */
+.theme-clinical .animate-fade-in-up {
+  animation: none;
+}
+
+/* ================================================================== */
+/* 医护端作用域内的「共享组件重映射」                                  */
+/* ------------------------------------------------------------------ */
+/* 背景：两端共用 8 个组件（AppShell / PageHeader / BigButton /       */
+/* ErrorState / StatusBadge / AlertCard / ReportSectionsView / Toast）*/
+/* 若在组件源码里写死医护端样式，老人端会被一起改掉。                   */
+/* 因此这里不改组件源码，只在 .theme-clinical 作用域内把两端共用的   */
+/* 工具类重新映射为医护端 token：                                      */
+/*   - 老人端作用域（默认）：不含 .theme-clinical，以上重映射全部不生效 */
+/*   - 医护端作用域：字号/圆角/阴影/医疗蓝一律换成规范 §2 §3 的值      */
+/* 老人端渲染结果与改动前逐像素一致（组件源码 + 老人端作用域均未改动）。*/
+/* ================================================================== */
+
+/* --- 字号：18px 起 → 14px 起（规范 §3）--- */
+.theme-clinical .text-elder {
+  font-size: var(--c-font-base);
+  line-height: var(--c-line-base);
+}
+.theme-clinical .text-elder-lg {
+  font-size: 16px;
+  line-height: 1.5;
+}
+.theme-clinical .text-elder-xl {
+  font-size: 18px;
+  line-height: 1.4;
+}
+.theme-clinical .text-elder-2xl {
+  font-size: 18px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+/* --- 圆角：16px / 12px → 8px；药丸徽章 → 6px（规范 §3）--- */
+.theme-clinical .rounded-xl2,
+.theme-clinical .rounded-xl,
+.theme-clinical .rounded-2xl {
+  border-radius: var(--c-radius);
+}
+.theme-clinical .rounded-full {
+  border-radius: var(--c-radius-sm);
+}
+
+/* --- 阴影：卡片不加厚阴影；浮层用单层浅阴影（规范 §3）--- */
+.theme-clinical .shadow-card,
+.theme-clinical .shadow-lg,
+.theme-clinical .shadow-md,
+.theme-clinical .shadow-sm {
+  box-shadow: none;
+}
+.theme-clinical .card {
+  border-radius: var(--c-radius);
+  box-shadow: none;
+}
+.theme-clinical .card-pad {
+  padding: 16px;
+}
+
+/* --- 医疗蓝 → 中性近黑 / teal（规范 §2：不用彩色大色块）--- */
+.theme-clinical .bg-medical-700,
+.theme-clinical .bg-medical-800,
+.theme-clinical .bg-medical-900 {
+  background-color: var(--c-primary);
+}
+.theme-clinical .hover\:bg-medical-800:hover,
+.theme-clinical .hover\:bg-medical-900:hover {
+  background-color: var(--c-primary-hover);
+}
+.theme-clinical .bg-medical-50,
+.theme-clinical .bg-medical-100 {
+  background-color: var(--c-muted);
+}
+.theme-clinical .text-medical-700 {
+  color: var(--c-accent);
+}
+.theme-clinical .text-medical-800,
+.theme-clinical .text-medical-900 {
+  color: var(--c-fg);
+}
+.theme-clinical .border-medical-200 {
+  border-color: var(--c-border);
+}
+.theme-clinical .border-medical-300,
+.theme-clinical .border-medical-400,
+.theme-clinical .border-medical-500 {
+  border-color: var(--c-border-strong);
+}
+.theme-clinical .border-medical-700 {
+  border-color: var(--c-accent);
+}
+
+/* --- 中性文字层级 --- */
+.theme-clinical .text-ink {
+  color: var(--c-fg);
+}
+.theme-clinical .text-ink-soft {
+  color: var(--c-fg-muted);
+}
+.theme-clinical .text-ink-mute {
+  color: var(--c-fg-muted);
+}
+.theme-clinical .muted {
+  color: var(--c-fg-muted);
+}
+.theme-clinical .bg-elderbg {
+  background-color: var(--c-bg);
+}
+
+/* --- 控件高度：48px 适老化 → 32px 医护端（规范 §5）--- */
+.theme-clinical button.min-h-btn {
+  min-height: 32px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+.theme-clinical button.min-h-btn-lg {
+  min-height: 36px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+.theme-clinical .field-input,
+.theme-clinical .field-select {
+  min-height: 32px;
+  border-width: 1px;
+  border-radius: var(--c-radius-sm);
+  padding: 4px 10px;
+  font-size: var(--c-font-sm);
+}
+.theme-clinical .field-label {
+  margin-bottom: 4px;
+  font-size: var(--c-font-xs);
+}
+
+/* --- 区块标题：14px / 600 --- */
+.theme-clinical .section-title {
+  font-size: var(--c-font-sm);
+  font-weight: 600;
+}
+
+/* --- 分隔线统一 1px --- */
+.theme-clinical .border-2 {
+  border-width: 1px;
+}
+
+@layer components {
+  /*
+   * 医护端区块：1px 上边框 + 14px 半粗标题 + 24px 区块间距。
+   * 取代老人端的 .card .card-pad 堆叠。
+   */
+  .clin-section {
+    @apply border-t border-clin-border pt-6;
+  }
+
+  .clin-section + .clin-section {
+    @apply mt-6;
+  }
+
+  /* 区块标题：14px / 600，前置 1px 竖线 */
+  .clin-section-title {
+    @apply mb-4 flex items-center gap-2 text-clin-sm font-semibold text-clin-fg;
+  }
+
+  .clin-section-title::before {
+    content: "";
+    @apply block h-3.5 w-px bg-clin-accent;
+  }
+}
+

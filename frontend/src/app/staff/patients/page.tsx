@@ -2,12 +2,28 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { Search, UserPlus } from "lucide-react";
 import { api } from "@/lib/api";
 import { ageFromBirthDate, formatDate } from "@/lib/format";
 import type { Paged, Patient, PatientCreateBody } from "@/lib/types";
-import { BigButton } from "@/components/BigButton";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ErrorState";
-import { PageHeader } from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  ClinEmpty,
+  ClinError,
+  ClinLoading,
+  ClinPageHeader,
+  ClinSection,
+} from "@/app/staff/_components/clinical";
 
 function toItems<T>(payload: T[] | Paged<T> | null | undefined): T[] {
   if (!payload) return [];
@@ -84,219 +100,239 @@ export default function StaffPatientsPage() {
   const totalPages = Math.max(1, Math.ceil(total / size));
 
   return (
-    <div className="space-y-6">
-      <PageHeader
+    <div>
+      <ClinPageHeader
         title="患者管理"
         description="查询患者档案，进入详情页维护预问诊内容、查看评估、报告与匹配结果。"
         actions={
-          <BigButton size="lg" onClick={() => setFormOpen((prev) => !prev)}>
-            {formOpen ? "收起新建表单" : "新建患者"}
-          </BigButton>
+          <Button size="sm" onClick={() => setFormOpen(true)}>
+            <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />
+            新建患者
+          </Button>
         }
       />
 
-      {formOpen ? (
-        <section className="card card-pad">
-          <h2 className="text-elder-lg font-semibold text-ink">新建患者</h2>
-          <div className="mt-4 grid gap-4 md:grid-cols-3">
+      <ClinSection title="检索">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="min-w-[240px] flex-1">
+            <Label htmlFor="patient-keyword">关键字</Label>
+            <Input
+              id="patient-keyword"
+              className="mt-1"
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              placeholder="姓名 / 编号 / 手机号"
+            />
+          </div>
+          <Button variant="outline" size="sm" onClick={() => void load()}>
+            <Search className="h-3.5 w-3.5" aria-hidden="true" />
+            查询
+          </Button>
+        </div>
+      </ClinSection>
+
+      <ClinSection title="患者列表">
+        {loading ? (
+          <ClinLoading label="正在加载患者列表…" />
+        ) : error ? (
+          <ClinError message={error} onRetry={() => void load()} />
+        ) : patients.length === 0 ? (
+          <ClinEmpty message="没有找到符合条件的患者。" />
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[760px] text-left">
+                <thead className="border-b border-clin-border bg-clin-muted">
+                  <tr>
+                    <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                      姓名
+                    </th>
+                    <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                      编号
+                    </th>
+                    <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                      性别
+                    </th>
+                    <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                      年龄
+                    </th>
+                    <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                      联系电话
+                    </th>
+                    <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                      建档日期
+                    </th>
+                    <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                      操作
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {patients.map((patient) => (
+                    <tr
+                      key={patient.id}
+                      className="border-b border-clin-border transition-colors duration-150 last:border-0 hover:bg-clin-muted"
+                    >
+                      <td className="px-3 py-2 text-clin-sm font-medium text-clin-fg">
+                        {patient.name}
+                      </td>
+                      <td className="px-3 py-2 text-clin-sm tabular-nums text-clin-fg-muted">
+                        {patient.code ?? patient.id}
+                      </td>
+                      <td className="px-3 py-2 text-clin-sm text-clin-fg">{patient.gender}</td>
+                      <td className="px-3 py-2 text-clin-sm tabular-nums text-clin-fg">
+                        {patient.age !== undefined
+                          ? `${patient.age} 岁`
+                          : ageFromBirthDate(patient.birth_date)}
+                      </td>
+                      <td className="px-3 py-2 text-clin-sm tabular-nums text-clin-fg-muted">
+                        {patient.phone || "—"}
+                      </td>
+                      <td className="px-3 py-2 text-clin-sm tabular-nums text-clin-fg-muted">
+                        {formatDate(patient.created_at)}
+                      </td>
+                      <td className="px-3 py-2">
+                        <Link
+                          href={`/staff/patients/${patient.id}`}
+                          className="text-clin-sm text-clin-accent hover:underline"
+                        >
+                          进入档案
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-3 flex items-center justify-between text-clin-xs text-clin-fg-muted">
+              <span>共 {total} 位患者</span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                >
+                  上一页
+                </Button>
+                <span className="tabular-nums">
+                  第 {page} / {totalPages} 页
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+                >
+                  下一页
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+      </ClinSection>
+
+      {/* 新建患者：确认框（shadcn dialog） */}
+      <Dialog open={formOpen} onOpenChange={setFormOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>新建患者</DialogTitle>
+            <DialogDescription>
+              填写基础信息后保存。身份证号入库即按掩码存储，响应只回掩码值。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <label className="field-label" htmlFor="new-name">
-                姓名
-              </label>
-              <input
+              <Label htmlFor="new-name">姓名</Label>
+              <Input
                 id="new-name"
-                className="field-input"
+                className="mt-1"
                 value={form.name}
                 onChange={(event) => setForm({ ...form, name: event.target.value })}
               />
             </div>
             <div>
-              <label className="field-label" htmlFor="new-gender">
-                性别
-              </label>
-              <select
-                id="new-gender"
-                className="field-select"
-                value={form.gender}
-                onChange={(event) => setForm({ ...form, gender: event.target.value })}
-              >
-                <option value="女">女</option>
-                <option value="男">男</option>
-              </select>
+              <Label htmlFor="new-gender">性别</Label>
+              <div className="mt-1 flex gap-2">
+                {["女", "男"].map((option) => (
+                  <Button
+                    key={option}
+                    type="button"
+                    size="sm"
+                    variant={form.gender === option ? "default" : "outline"}
+                    onClick={() => setForm({ ...form, gender: option })}
+                  >
+                    {option}
+                  </Button>
+                ))}
+              </div>
             </div>
             <div>
-              <label className="field-label" htmlFor="new-birth">
-                出生日期
-              </label>
-              <input
+              <Label htmlFor="new-birth">出生日期</Label>
+              <Input
                 id="new-birth"
                 type="date"
-                className="field-input"
+                className="mt-1"
                 value={form.birth_date}
                 onChange={(event) => setForm({ ...form, birth_date: event.target.value })}
               />
             </div>
             <div>
-              <label className="field-label" htmlFor="new-phone">
-                联系电话
-              </label>
-              <input
+              <Label htmlFor="new-phone">联系电话</Label>
+              <Input
                 id="new-phone"
-                className="field-input"
+                className="mt-1"
                 value={form.phone}
                 onChange={(event) => setForm({ ...form, phone: event.target.value })}
               />
             </div>
             <div>
-              <label className="field-label" htmlFor="new-idcard">
-                身份证号
-              </label>
-              <input
+              <Label htmlFor="new-idcard">身份证号</Label>
+              <Input
                 id="new-idcard"
-                className="field-input"
+                className="mt-1"
                 value={form.id_card}
                 onChange={(event) => setForm({ ...form, id_card: event.target.value })}
               />
             </div>
             <div>
-              <label className="field-label" htmlFor="new-emergency">
-                紧急联系人
-              </label>
-              <input
+              <Label htmlFor="new-emergency">紧急联系人</Label>
+              <Input
                 id="new-emergency"
-                className="field-input"
+                className="mt-1"
                 value={form.emergency_contact}
                 onChange={(event) =>
                   setForm({ ...form, emergency_contact: event.target.value })
                 }
               />
             </div>
-            <div className="md:col-span-3">
-              <label className="field-label" htmlFor="new-address">
-                居住地址
-              </label>
-              <input
+            <div className="md:col-span-2">
+              <Label htmlFor="new-address">居住地址</Label>
+              <Input
                 id="new-address"
-                className="field-input"
+                className="mt-1"
                 value={form.address}
                 onChange={(event) => setForm({ ...form, address: event.target.value })}
               />
             </div>
           </div>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <BigButton size="lg" loading={saving} onClick={() => void handleCreate()}>
-              保存
-            </BigButton>
-            <BigButton
+          <DialogFooter>
+            <Button
               variant="ghost"
-              size="lg"
+              size="sm"
               onClick={() => {
                 setForm(EMPTY_FORM);
                 setFormOpen(false);
               }}
             >
               取消
-            </BigButton>
-          </div>
-        </section>
-      ) : null}
-
-      <section className="card card-pad">
-        <div className="flex flex-wrap items-end gap-4">
-          <div className="min-w-[240px] flex-1">
-            <label className="field-label" htmlFor="patient-keyword">
-              检索
-            </label>
-            <input
-              id="patient-keyword"
-              className="field-input"
-              value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
-              placeholder="姓名 / 编号 / 手机号"
-            />
-          </div>
-          <BigButton variant="secondary" size="lg" onClick={() => void load()}>
-            查询
-          </BigButton>
-        </div>
-      </section>
-
-      {loading ? (
-        <LoadingState label="正在加载患者列表…" />
-      ) : error ? (
-        <ErrorState message={error} onRetry={() => void load()} />
-      ) : patients.length === 0 ? (
-        <EmptyState message="没有找到符合条件的患者。" />
-      ) : (
-        <section className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-left">
-              <thead className="border-b border-slate-200 bg-slate-50">
-                <tr>
-                  <th className="px-5 py-3 text-elder font-semibold text-ink">姓名</th>
-                  <th className="px-5 py-3 text-elder font-semibold text-ink">编号</th>
-                  <th className="px-5 py-3 text-elder font-semibold text-ink">性别</th>
-                  <th className="px-5 py-3 text-elder font-semibold text-ink">年龄</th>
-                  <th className="px-5 py-3 text-elder font-semibold text-ink">联系电话</th>
-                  <th className="px-5 py-3 text-elder font-semibold text-ink">建档日期</th>
-                  <th className="px-5 py-3 text-elder font-semibold text-ink">操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {patients.map((patient) => (
-                  <tr key={patient.id} className="border-b border-slate-100 last:border-0">
-                    <td className="px-5 py-3 text-elder font-semibold text-ink">
-                      {patient.name}
-                    </td>
-                    <td className="px-5 py-3 text-elder text-ink-soft">
-                      {patient.code ?? patient.id}
-                    </td>
-                    <td className="px-5 py-3 text-elder text-ink">{patient.gender}</td>
-                    <td className="px-5 py-3 text-elder text-ink">
-                      {patient.age !== undefined
-                        ? `${patient.age} 岁`
-                        : ageFromBirthDate(patient.birth_date)}
-                    </td>
-                    <td className="px-5 py-3 text-elder text-ink-soft">
-                      {patient.phone || "—"}
-                    </td>
-                    <td className="px-5 py-3 text-elder text-ink-soft">
-                      {formatDate(patient.created_at)}
-                    </td>
-                    <td className="px-5 py-3">
-                      <Link href={`/staff/patients/${patient.id}`}>
-                        <BigButton variant="secondary">进入档案</BigButton>
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="flex items-center justify-between border-t border-slate-200 px-5 py-3 text-elder text-ink-soft">
-            <span>共 {total} 位患者</span>
-            <div className="flex gap-3">
-              <BigButton
-                variant="secondary"
-                disabled={page <= 1}
-                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-              >
-                上一页
-              </BigButton>
-              <span className="self-center">
-                第 {page} / {totalPages} 页
-              </span>
-              <BigButton
-                variant="secondary"
-                disabled={page >= totalPages}
-                onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-              >
-                下一页
-              </BigButton>
-            </div>
-          </div>
-        </section>
-      )}
+            </Button>
+            <Button size="sm" loading={saving} onClick={() => void handleCreate()}>
+              保存
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

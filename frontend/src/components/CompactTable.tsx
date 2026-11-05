@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
+import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-/** 表格密度：紧凑适合批量核对，标准适合阅读 */
+/** 表格密度：紧凑适合批量核对，宽松适合阅读 */
 export type TableDensity = "compact" | "normal";
 
 export interface TableColumn<T> {
@@ -20,14 +22,16 @@ export interface TableColumn<T> {
   align?: "left" | "center" | "right";
 }
 
-const DENSITY_CLASS: Record<TableDensity, { cell: string; head: string; font: string }> = {
-  compact: { cell: "px-3 py-1.5", head: "px-3 py-2", font: "text-sm" },
-  normal: { cell: "px-5 py-3", head: "px-5 py-3", font: "text-elder" },
+const DENSITY_CLASS: Record<TableDensity, { cell: string; head: string }> = {
+  compact: { cell: "px-3 py-1.5", head: "px-3 py-2" },
+  normal: { cell: "px-3 py-2.5", head: "px-3 py-2" },
 };
 
 /**
- * 紧凑数据表：支持列排序、密度切换与多选。
- * 多选由外部持有选中项，组件只负责渲染勾选框与全选。
+ * 紧凑数据表（**医护端**）：13px 字号、细线分隔、hover 变色、列可排序、可多选。
+ *
+ * 规范 §3：表格 13px，数字 `tabular-nums`；§2：分隔线统一 1px；
+ * 表格与图表之间不做卡片包裹。
  */
 export function CompactTable<T>({
   columns,
@@ -91,20 +95,22 @@ export function CompactTable<T>({
 
   if (rows.length === 0) {
     return (
-      <div className="px-5 py-8 text-center text-elder text-ink-mute">{emptyMessage}</div>
+      <div className="py-8 text-center text-clin-sm text-clin-fg-subtle">
+        {emptyMessage}
+      </div>
     );
   }
 
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left" style={{ minWidth }}>
-        <thead className="border-b border-slate-200 bg-slate-50">
+        <thead className="border-b border-clin-border bg-clin-muted">
           <tr>
             {selectable ? (
-              <th className={`${style.head} w-12`}>
+              <th className={`${style.head} w-10`}>
                 <input
                   type="checkbox"
-                  className="h-5 w-5"
+                  className="h-3.5 w-3.5 accent-clin-accent"
                   checked={allChecked}
                   aria-label="全选"
                   onChange={(event) => onToggleAll?.(event.target.checked)}
@@ -114,13 +120,16 @@ export function CompactTable<T>({
             {columns.map((column) => (
               <th
                 key={column.key}
-                className={`${style.head} text-elder font-semibold text-ink ${
+                className={cn(
+                  style.head,
+                  "text-clin-xs font-medium text-clin-fg-muted",
                   column.align === "center"
                     ? "text-center"
                     : column.align === "right"
                       ? "text-right"
-                      : ""
-                } ${column.className ?? ""}`}
+                      : "",
+                  column.className ?? "",
+                )}
                 aria-sort={
                   sortKey === column.key ? (asc ? "ascending" : "descending") : "none"
                 }
@@ -129,12 +138,21 @@ export function CompactTable<T>({
                   <button
                     type="button"
                     onClick={() => handleSort(column)}
-                    className="inline-flex items-center gap-1 rounded px-1 hover:text-medical-700"
+                    className="inline-flex items-center gap-1 rounded-clin-sm px-1 py-0.5 text-left transition-colors duration-150 hover:text-clin-fg"
                   >
                     {column.header}
-                    <span aria-hidden="true" className="text-xs">
-                      {sortKey === column.key ? (asc ? "▲" : "▼") : "↕"}
-                    </span>
+                    {sortKey === column.key ? (
+                      asc ? (
+                        <ArrowUp className="h-3 w-3" aria-hidden="true" />
+                      ) : (
+                        <ArrowDown className="h-3 w-3" aria-hidden="true" />
+                      )
+                    ) : (
+                      <ChevronsUpDown
+                        className="h-3 w-3 text-clin-fg-subtle"
+                        aria-hidden="true"
+                      />
+                    )}
                   </button>
                 ) : (
                   column.header
@@ -150,15 +168,16 @@ export function CompactTable<T>({
             return (
               <tr
                 key={key}
-                className={`border-b border-slate-100 last:border-0 ${
-                  checked ? "bg-medical-50" : ""
-                }`}
+                className={cn(
+                  "border-b border-clin-border transition-colors duration-150 last:border-0 hover:bg-clin-muted",
+                  checked && "bg-clin-accent-soft",
+                )}
               >
                 {selectable ? (
                   <td className={style.cell}>
                     <input
                       type="checkbox"
-                      className="h-5 w-5"
+                      className="h-3.5 w-3.5 accent-clin-accent"
                       checked={checked}
                       aria-label={`选择第 ${key} 行`}
                       onChange={(event) => onToggleRow?.(key, event.target.checked)}
@@ -168,13 +187,16 @@ export function CompactTable<T>({
                 {columns.map((column) => (
                   <td
                     key={column.key}
-                    className={`${style.cell} ${style.font} ${
+                    className={cn(
+                      style.cell,
+                      "text-clin-sm tabular-nums text-clin-fg",
                       column.align === "center"
                         ? "text-center"
                         : column.align === "right"
                           ? "text-right"
-                          : ""
-                    } ${column.className ?? ""}`}
+                          : "",
+                      column.className ?? "",
+                    )}
                   >
                     {column.render(row)}
                   </td>
