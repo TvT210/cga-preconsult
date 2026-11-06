@@ -65,12 +65,18 @@ export function KnowledgeGraphCytoscape({
   nodes,
   edges,
   selectedId,
+  showIsolated,
+  onShowIsolatedChange,
   onSelect,
 }: {
   nodes: KnowledgeNode[];
   edges: KnowledgeEdge[];
   /** 当前选中节点 id（高亮显示） */
   selectedId?: string | null;
+  /** 是否显示「尚未挂到任何病种」的孤立词条（由页面统一控制，2D/3D 共用） */
+  showIsolated: boolean;
+  /** 切换孤立词条开关 */
+  onShowIsolatedChange: (next: boolean) => void;
   /** 点击节点回调；传 null 表示取消选中 */
   onSelect: (node: KnowledgeNode | null) => void;
 }) {
@@ -78,8 +84,6 @@ export function KnowledgeGraphCytoscape({
   const cyRef = useRef<Core | null>(null);
   /** 布局切换 */
   const [layoutName, setLayoutName] = useState<LayoutName>("fcose");
-  /** 是否显示「尚未挂到任何病种」的孤立词条 */
-  const [showIsolated, setShowIsolated] = useState(false);
   /** 悬停提示 */
   const [hover, setHover] = useState<{ x: number; y: number; label: string } | null>(null);
   /** 画布颜色（从 CSS 变量解析，只在实例创建时取一次） */
@@ -113,7 +117,6 @@ export function KnowledgeGraphCytoscape({
     () => nodes.filter((node) => (degreeMap.get(node.id) ?? 0) === 0).length,
     [nodes, degreeMap],
   );
-
   /** 组装 cytoscape 元素 */
   const elements = useMemo<ElementDefinition[]>(() => {
     const visibleNodes = showIsolated
@@ -506,7 +509,7 @@ export function KnowledgeGraphCytoscape({
             variant={showIsolated ? "default" : "outline"}
             size="sm"
             aria-pressed={showIsolated}
-            onClick={() => setShowIsolated((prev) => !prev)}
+            onClick={() => onShowIsolatedChange(!showIsolated)}
             title="词表中尚未挂到任何病种的条目，默认收起以免干扰图谱"
           >
             <span className="text-clin-xs">

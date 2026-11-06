@@ -60,7 +60,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 mkdirSync(OUT, { recursive: true });
 
 const chrome = spawn(CHROME, [
-  "--headless=new", "--disable-gpu", "--no-first-run", "--hide-scrollbars",
+  // 注意：3D 图谱需要 WebGL，不能加 --disable-gpu；
+  // headless 下用 SwiftShader 软件渲染，并显式允许（Chrome 120+ 默认禁用软件 WebGL）
+  "--headless=new", "--no-first-run", "--hide-scrollbars",
+  "--enable-unsafe-swiftshader", "--use-gl=angle", "--use-angle=swiftshader",
   "--window-size=1600,1100", `--remote-debugging-port=${PORT}`,
   `--user-data-dir=${PROFILE}`, "about:blank",
 ], { stdio: "ignore" });

@@ -36,26 +36,41 @@
 
 ---
 
-## 2. cytoscape.js（知识库图谱）
+## 2. 知识库图谱
+
+### 2.1 react-force-graph-3d + three.js（3D 图谱，主视图）
+
+- **来源**：https://github.com/vasturiano/react-force-graph
+- **版本**：v1.29.2（`react-force-graph-3d`）
+- **许可证**：MIT License
+- **版权**：Copyright (c) 2019 Vasco Asturiano
+- **使用方式**：npm 依赖，用于 `/staff/knowledge` 的 **3D 关系图**：
+  左键拖拽任意角度旋转、滚轮缩放、右键平移；随缩放分三档展示
+  （远景常见病种 → 中景加量表与高连接症状 → 近景全部节点）；
+  中文标签为 **DOM 覆盖层**，按「距相机由近到远」贪心占位、屏幕矩形重叠即隐藏，
+  实现「前面的节点带中文、后面的隐藏」。
+- **随附依赖**：`three`（MIT · v0.187.0）、`3d-force-graph`（MIT · v1.80.1）、
+  `d3-force-3d`（MIT）、`three-forcegraph`（MIT）、`three-render-objects`（MIT）。
+
+### 2.2 cytoscape.js（平面图谱，备选视图）
 
 - **来源**：https://github.com/cytoscape/cytoscape.js
 - **版本**：v3.34.4
 - **许可证**：MIT License
 - **版权**：Copyright (c) 2016-2023 The Cytoscape Consortium
-- **使用方式**：npm 依赖，用于 `/staff/knowledge` 的关系图渲染
-  （canvas 渲染，非 WebGL）。布局为库内建能力，另加装官方力导向扩展。
-- **为什么用它**：布局「一次执行、跑完即静止」，节点位置由用户掌控
-  （可拖拽、可切换布局、可随时重新布局），不存在「引擎冷却结束后自动重排、
-  视图突然变形」的问题；平移、缩放、框选、点选均为库内建交互。
+- **使用方式**：npm 依赖，用于同一页面的「平面图谱」视图（2D 精确读关系）。
+  布局「一次执行、跑完即静止」，节点位置由用户掌控（可拖拽、可切换布局），
+  不存在「引擎冷却结束后自动重排、视图突然变形」的问题。
 
-### 随附依赖
+### 2.3 cytoscape-fcose（平面图谱的力导向布局扩展）
 
-- `cytoscape-fcose` — MIT License — https://github.com/cytoscape/cytoscape-fcose
-  （v2.2.0，官方力导向布局扩展；`cytoscape.js` 本体零运行时依赖）
+- **来源**：https://github.com/cytoscape/cytoscape-fcose
+- **版本**：v2.2.0 · MIT License
 
-> 本项目曾在评估阶段采用 `react-force-graph-2d`（MIT），后因「引擎结束后视图
-> 自动变形 + 节点不可拖动 + 无法切换布局」而更换为 cytoscape.js。
-> 换型复盘见 `docs/research/2026-11-04-知识库可视化开源方案选型.md`。
+> 换型过程留痕：最初采用 `react-force-graph-2d`（MIT），因「引擎结束后视图自动变形 +
+> 节点不可拖拽 + 无法切换布局」而更换为 cytoscape.js；后按需求追加 3D 视图，
+> 主视图改为 `react-force-graph-3d`。
+> 完整复盘见 `docs/research/2026-11-04-知识库可视化开源方案选型.md`。
 
 ---
 
