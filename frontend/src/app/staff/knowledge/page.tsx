@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { LayoutGrid, Network, RefreshCw, Search } from "lucide-react";
+import { LayoutGrid, Network, RefreshCw, Search, Box } from "lucide-react";
 import { getKnowledgeGraph, getKnowledgeOverview } from "@/lib/api";
 import type {
   KnowledgeGraph,
@@ -21,6 +21,7 @@ import {
   ClinSection,
 } from "@/app/staff/_components/clinical";
 import { KnowledgeGraphCytoscape } from "@/components/knowledge/KnowledgeGraphCytoscape";
+import { KnowledgeGraph3D } from "@/components/knowledge/KnowledgeGraph3D";
 import { KnowledgeMatrix } from "@/components/knowledge/KnowledgeMatrix";
 import { KnowledgeDetail } from "@/components/knowledge/KnowledgeDetail";
 import {
@@ -63,8 +64,10 @@ export default function StaffKnowledgePage() {
   /** 已提交到后端的关键词（搜索时用 keyword 参数走后端） */
   const [submittedKeyword, setSubmittedKeyword] = useState("");
 
-  /** 视图模式：图谱 / 矩阵 */
-  const [view, setView] = useState<"graph" | "matrix">("graph");
+  /** 视图模式：3D 图谱 / 平面图谱 / 矩阵 */
+  const [view, setView] = useState<"3d" | "graph" | "matrix">("3d");
+  /** 是否展示「尚未挂到任何病种」的孤立词条（2D / 3D 共用） */
+  const [showIsolated, setShowIsolated] = useState(false);
   /** 选中节点 */
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -174,12 +177,20 @@ export default function StaffKnowledgePage() {
         actions={
           <>
             <Button
+              variant={view === "3d" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setView("3d")}
+            >
+              <Box className="h-3.5 w-3.5" aria-hidden="true" />
+              3D 图谱
+            </Button>
+            <Button
               variant={view === "graph" ? "default" : "outline"}
               size="sm"
               onClick={() => setView("graph")}
             >
               <Network className="h-3.5 w-3.5" aria-hidden="true" />
-              图谱视图
+              平面图谱
             </Button>
             <Button
               variant={view === "matrix" ? "default" : "outline"}
@@ -350,11 +361,21 @@ export default function StaffKnowledgePage() {
             <ClinError message={error} onRetry={() => void load()} />
           ) : finalNodes.length === 0 ? (
             <ClinEmpty message="当前筛选条件下没有可展示的节点。" />
+          ) : view === "3d" ? (
+            <KnowledgeGraph3D
+              nodes={finalNodes}
+              edges={finalEdges}
+              showIsolated={showIsolated}
+              onShowIsolatedChange={setShowIsolated}
+              onSelect={(node) => setSelectedId(node ? node.id : null)}
+            />
           ) : view === "graph" ? (
             <KnowledgeGraphCytoscape
               nodes={finalNodes}
               edges={finalEdges}
               selectedId={selectedId}
+              showIsolated={showIsolated}
+              onShowIsolatedChange={setShowIsolated}
               onSelect={(node) => setSelectedId(node ? node.id : null)}
             />
           ) : (
@@ -382,7 +403,9 @@ export default function StaffKnowledgePage() {
               取消选中
             </Button>
             <p className="text-clin-xs text-clin-fg-subtle">
-              节点大小按关联度数；点击节点查看详情，拖动节点可调整位置。
+              {view === "3d"
+                ? "3D 图谱：左键拖拽旋转、滚轮缩放、右键平移；标签按远近贪心避让，缩放时分档展示。"
+                : "节点大小按关联度数；点击节点查看详情，拖动节点可调整位置。"}
               {view === "matrix"
                 ? "矩阵视图为图谱不可用时的降级路径。"
                 : "若画布不可用，可切换到「矩阵视图」。"}
