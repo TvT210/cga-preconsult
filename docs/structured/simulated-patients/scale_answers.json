@@ -1,0 +1,1459 @@
+{
+ "synthetic": true,
+ "answers": [
+  {
+   "patient_id": "SP001",
+   "answers": [
+    {
+     "scale_code": "B.19",
+     "note": "营养/认知筛查提示异常",
+     "answer": {
+      "score": 14
+     },
+     "expected_risk_note": "常规"
+    },
+    {
+     "scale_code": "B.3",
+     "note": "体能与平衡下降",
+     "answer": {
+      "score": 7
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP002",
+   "answers": [
+    {
+     "scale_code": "B.3",
+     "note": "体能与平衡下降",
+     "answer": {
+      "score": 7
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP003",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP004",
+   "answers": [
+    {
+     "scale_code": "B.9",
+     "note": "居家环境存在跌倒风险项",
+     "answer": {
+      "risk_items": [
+       "地面湿滑",
+       "无扶手",
+       "照明不足"
+      ]
+     },
+     "expected_risk_note": "立即就医"
+    },
+    {
+     "scale_code": "B.3",
+     "note": "简易体能：跌倒后步速与起立能力下降",
+     "answer": {
+      "score": 6
+     },
+     "expected_risk_note": "立即就医"
+    },
+    {
+     "scale_code": "B.3",
+     "note": "体能与平衡下降",
+     "answer": {
+      "score": 7
+     },
+     "expected_risk_note": "立即就医"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP005",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP006",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "肺功能与活动耐量下降",
+     "answer": {
+      "score": 18
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP007",
+   "answers": [
+    {
+     "scale_code": "B.21",
+     "note": "意识与谵妄条目需人工确认",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "立即就医"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP008",
+   "answers": [
+    {
+     "scale_code": "B.18",
+     "note": "疼痛评分与主诉一致",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP009",
+   "answers": [
+    {
+     "scale_code": "B.18",
+     "note": "疼痛评分与主诉一致",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "立即就医"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP010",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP011",
+   "answers": [
+    {
+     "scale_code": "B.14",
+     "note": "疼痛评分",
+     "answer": {
+      "score": 4
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP012",
+   "answers": [
+    {
+     "scale_code": "B.19",
+     "note": "营养/认知筛查提示异常",
+     "answer": {
+      "score": 14
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP013",
+   "answers": [
+    {
+     "scale_code": "B.19",
+     "note": "营养/认知筛查提示异常",
+     "answer": {
+      "score": 14
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP014",
+   "answers": [
+    {
+     "scale_code": "B.19",
+     "note": "营养/认知筛查提示异常",
+     "answer": {
+      "score": 14
+     },
+     "expected_risk_note": "常规"
+    },
+    {
+     "scale_code": "B.3",
+     "note": "体能与平衡下降",
+     "answer": {
+      "score": 7
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP015",
+   "answers": [
+    {
+     "scale_code": "B.9",
+     "note": "居家环境存在跌倒风险项",
+     "answer": {
+      "risk_items": [
+       "地面湿滑",
+       "无扶手",
+       "照明不足"
+      ]
+     },
+     "expected_risk_note": "立即就医"
+    },
+    {
+     "scale_code": "B.3",
+     "note": "简易体能：跌倒后步速与起立能力下降",
+     "answer": {
+      "score": 6
+     },
+     "expected_risk_note": "立即就医"
+    },
+    {
+     "scale_code": "B.3",
+     "note": "体能与平衡下降",
+     "answer": {
+      "score": 7
+     },
+     "expected_risk_note": "立即就医"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP016",
+   "answers": [
+    {
+     "scale_code": "B.19",
+     "note": "营养/认知筛查提示异常",
+     "answer": {
+      "score": 14
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP017",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP018",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "立即就医"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP019",
+   "answers": [
+    {
+     "scale_code": "B.14",
+     "note": "疼痛评分",
+     "answer": {
+      "score": 4
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP020",
+   "answers": [
+    {
+     "scale_code": "B.19",
+     "note": "营养/认知筛查提示异常",
+     "answer": {
+      "score": 14
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP021",
+   "answers": [
+    {
+     "scale_code": "B.19",
+     "note": "营养/认知筛查提示异常",
+     "answer": {
+      "score": 14
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP022",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP023",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP024",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP025",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "立即就医"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP026",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP027",
+   "answers": [
+    {
+     "scale_code": "B.18",
+     "note": "疼痛评分与主诉一致",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP028",
+   "answers": [
+    {
+     "scale_code": "B.18",
+     "note": "疼痛评分与主诉一致",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "立即就医"
+    },
+    {
+     "scale_code": "B.21",
+     "note": "意识与谵妄条目需人工确认",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "立即就医"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP029",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "立即就医"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP030",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP031",
+   "answers": [
+    {
+     "scale_code": "B.19",
+     "note": "营养/认知筛查提示异常",
+     "answer": {
+      "score": 14
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP032",
+   "answers": [
+    {
+     "scale_code": "B.18",
+     "note": "疼痛评分与主诉一致",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP033",
+   "answers": [
+    {
+     "scale_code": "B.11",
+     "note": "尿失禁问卷应答",
+     "answer": {
+      "score": 4
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP034",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "立即就医"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP035",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "肺功能与活动耐量下降",
+     "answer": {
+      "score": 18
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP036",
+   "answers": [
+    {
+     "scale_code": "B.3",
+     "note": "体能与平衡下降",
+     "answer": {
+      "score": 7
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP037",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP038",
+   "answers": [
+    {
+     "scale_code": "B.19",
+     "note": "营养/认知筛查提示异常",
+     "answer": {
+      "score": 14
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP039",
+   "answers": [
+    {
+     "scale_code": "B.11",
+     "note": "尿失禁问卷应答",
+     "answer": {
+      "score": 4
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP040",
+   "answers": [
+    {
+     "scale_code": "B.14",
+     "note": "疼痛评分",
+     "answer": {
+      "score": 4
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP041",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP042",
+   "answers": [
+    {
+     "scale_code": "B.19",
+     "note": "营养/认知筛查提示异常",
+     "answer": {
+      "score": 14
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP043",
+   "answers": [
+    {
+     "scale_code": "B.3",
+     "note": "体能与平衡下降",
+     "answer": {
+      "score": 7
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP044",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "立即就医"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP045",
+   "answers": [
+    {
+     "scale_code": "B.18",
+     "note": "疼痛评分与主诉一致",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "立即就医"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP046",
+   "answers": [
+    {
+     "scale_code": "B.18",
+     "note": "疼痛评分与主诉一致",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP047",
+   "answers": [
+    {
+     "scale_code": "B.19",
+     "note": "营养/认知筛查提示异常",
+     "answer": {
+      "score": 14
+     },
+     "expected_risk_note": "常规"
+    },
+    {
+     "scale_code": "B.3",
+     "note": "体能与平衡下降",
+     "answer": {
+      "score": 7
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP048",
+   "answers": [
+    {
+     "scale_code": "B.21",
+     "note": "意识与谵妄条目需人工确认",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "立即就医"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP049",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP050",
+   "answers": [
+    {
+     "scale_code": "B.19",
+     "note": "营养/认知筛查提示异常",
+     "answer": {
+      "score": 14
+     },
+     "expected_risk_note": "常规"
+    },
+    {
+     "scale_code": "B.3",
+     "note": "体能与平衡下降",
+     "answer": {
+      "score": 7
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP051",
+   "answers": [
+    {
+     "scale_code": "B.14",
+     "note": "疼痛评分",
+     "answer": {
+      "score": 4
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP052",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP053",
+   "answers": [
+    {
+     "scale_code": "B.3",
+     "note": "体能与平衡下降",
+     "answer": {
+      "score": 7
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP054",
+   "answers": [
+    {
+     "scale_code": "B.11",
+     "note": "尿失禁问卷应答",
+     "answer": {
+      "score": 4
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP055",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP056",
+   "answers": [
+    {
+     "scale_code": "B.19",
+     "note": "营养/认知筛查提示异常",
+     "answer": {
+      "score": 14
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP057",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "肺功能与活动耐量下降",
+     "answer": {
+      "score": 18
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP058",
+   "answers": [
+    {
+     "scale_code": "B.19",
+     "note": "营养/认知筛查提示异常",
+     "answer": {
+      "score": 14
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP059",
+   "answers": [
+    {
+     "scale_code": "B.18",
+     "note": "疼痛评分与主诉一致",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP060",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP061",
+   "answers": [
+    {
+     "scale_code": "B.14",
+     "note": "疼痛评分",
+     "answer": {
+      "score": 4
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP062",
+   "answers": [
+    {
+     "scale_code": "B.18",
+     "note": "疼痛评分与主诉一致",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP063",
+   "answers": [
+    {
+     "scale_code": "B.19",
+     "note": "营养/认知筛查提示异常",
+     "answer": {
+      "score": 14
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP064",
+   "answers": [
+    {
+     "scale_code": "B.19",
+     "note": "营养/认知筛查提示异常",
+     "answer": {
+      "score": 14
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP065",
+   "answers": [
+    {
+     "scale_code": "B.18",
+     "note": "疼痛评分与主诉一致",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP066",
+   "answers": [
+    {
+     "scale_code": "B.14",
+     "note": "疼痛评分",
+     "answer": {
+      "score": 4
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP067",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP068",
+   "answers": [
+    {
+     "scale_code": "B.21",
+     "note": "意识与谵妄条目需人工确认",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "立即就医"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP069",
+   "answers": [
+    {
+     "scale_code": "B.19",
+     "note": "营养/认知筛查提示异常",
+     "answer": {
+      "score": 14
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP070",
+   "answers": [
+    {
+     "scale_code": "B.18",
+     "note": "疼痛评分与主诉一致",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "立即就医"
+    },
+    {
+     "scale_code": "B.21",
+     "note": "意识与谵妄条目需人工确认",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "立即就医"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP071",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP072",
+   "answers": [
+    {
+     "scale_code": "B.18",
+     "note": "疼痛评分与主诉一致",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP073",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "肺功能与活动耐量下降",
+     "answer": {
+      "score": 18
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP074",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP075",
+   "answers": [
+    {
+     "scale_code": "B.18",
+     "note": "疼痛评分与主诉一致",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "立即就医"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP076",
+   "answers": [
+    {
+     "scale_code": "B.3",
+     "note": "体能与平衡下降",
+     "answer": {
+      "score": 7
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP077",
+   "answers": [
+    {
+     "scale_code": "B.19",
+     "note": "营养/认知筛查提示异常",
+     "answer": {
+      "score": 14
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP078",
+   "answers": [
+    {
+     "scale_code": "B.18",
+     "note": "疼痛评分与主诉一致",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "立即就医"
+    },
+    {
+     "scale_code": "B.21",
+     "note": "意识与谵妄条目需人工确认",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "立即就医"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP079",
+   "answers": [
+    {
+     "scale_code": "B.11",
+     "note": "尿失禁问卷应答",
+     "answer": {
+      "score": 4
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP080",
+   "answers": [
+    {
+     "scale_code": "B.19",
+     "note": "营养/认知筛查提示异常",
+     "answer": {
+      "score": 14
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP081",
+   "answers": [
+    {
+     "scale_code": "B.14",
+     "note": "疼痛评分",
+     "answer": {
+      "score": 4
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP082",
+   "answers": [
+    {
+     "scale_code": "B.3",
+     "note": "体能与平衡下降",
+     "answer": {
+      "score": 7
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP083",
+   "answers": [
+    {
+     "scale_code": "B.11",
+     "note": "尿失禁问卷应答",
+     "answer": {
+      "score": 4
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP084",
+   "answers": [
+    {
+     "scale_code": "B.19",
+     "note": "营养/认知筛查提示异常",
+     "answer": {
+      "score": 14
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP085",
+   "answers": [
+    {
+     "scale_code": "B.19",
+     "note": "营养/认知筛查提示异常",
+     "answer": {
+      "score": 14
+     },
+     "expected_risk_note": "常规"
+    },
+    {
+     "scale_code": "B.3",
+     "note": "体能与平衡下降",
+     "answer": {
+      "score": 7
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP086",
+   "answers": [
+    {
+     "scale_code": "B.21",
+     "note": "意识与谵妄条目需人工确认",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "立即就医"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP087",
+   "answers": [
+    {
+     "scale_code": "B.18",
+     "note": "疼痛评分与主诉一致",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP088",
+   "answers": [
+    {
+     "scale_code": "B.18",
+     "note": "疼痛评分与主诉一致",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP089",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "立即就医"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP090",
+   "answers": [
+    {
+     "scale_code": "B.18",
+     "note": "疼痛评分与主诉一致",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP091",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP092",
+   "answers": [
+    {
+     "scale_code": "B.1",
+     "note": "常规基线量表",
+     "answer": {
+      "score": 25
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP093",
+   "answers": [
+    {
+     "scale_code": "B.9",
+     "note": "居家环境与照护能力评估",
+     "answer": {
+      "risk_items": [
+       "长期卧床",
+       "翻身困难"
+      ]
+     },
+     "expected_risk_note": "常规"
+    },
+    {
+     "scale_code": "B.2",
+     "note": "基础日常生活活动受限",
+     "answer": {
+      "score": 45
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP094",
+   "answers": [
+    {
+     "scale_code": "B.21",
+     "note": "意识与谵妄条目需人工确认",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "立即就医"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP095",
+   "answers": [
+    {
+     "scale_code": "B.19",
+     "note": "营养/认知筛查提示异常",
+     "answer": {
+      "score": 14
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP096",
+   "answers": [
+    {
+     "scale_code": "B.19",
+     "note": "营养/认知筛查提示异常",
+     "answer": {
+      "score": 14
+     },
+     "expected_risk_note": "常规"
+    },
+    {
+     "scale_code": "B.3",
+     "note": "体能与平衡下降",
+     "answer": {
+      "score": 7
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP097",
+   "answers": [
+    {
+     "scale_code": "B.9",
+     "note": "居家环境存在跌倒风险项",
+     "answer": {
+      "risk_items": [
+       "地面湿滑",
+       "无扶手",
+       "照明不足"
+      ]
+     },
+     "expected_risk_note": "立即就医"
+    },
+    {
+     "scale_code": "B.3",
+     "note": "简易体能：跌倒后步速与起立能力下降",
+     "answer": {
+      "score": 6
+     },
+     "expected_risk_note": "立即就医"
+    },
+    {
+     "scale_code": "B.3",
+     "note": "体能与平衡下降",
+     "answer": {
+      "score": 7
+     },
+     "expected_risk_note": "立即就医"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP098",
+   "answers": [
+    {
+     "scale_code": "B.18",
+     "note": "疼痛评分与主诉一致",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "立即就医"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP099",
+   "answers": [
+    {
+     "scale_code": "B.9",
+     "note": "居家环境与照护能力评估",
+     "answer": {
+      "risk_items": [
+       "长期卧床",
+       "翻身困难"
+      ]
+     },
+     "expected_risk_note": "常规"
+    },
+    {
+     "scale_code": "B.2",
+     "note": "基础日常生活活动受限",
+     "answer": {
+      "score": 45
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  },
+  {
+   "patient_id": "SP100",
+   "answers": [
+    {
+     "scale_code": "B.18",
+     "note": "疼痛评分与主诉一致",
+     "answer": {
+      "score": 3
+     },
+     "expected_risk_note": "常规"
+    }
+   ]
+  }
+ ]
+}
