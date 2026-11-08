@@ -6,6 +6,8 @@ import os
 import pathlib
 import tempfile
 
+import pytest
+
 TEST_DB = pathlib.Path(tempfile.gettempdir()) / "cga_pytest.db"
 if TEST_DB.exists():
     TEST_DB.unlink()
@@ -16,3 +18,16 @@ os.environ.setdefault("CGA_LLM_PROVIDER", "mock")
 from app.db.init_db import init_db  # noqa: E402
 
 init_db(seed=True)
+
+
+@pytest.fixture()
+def db_session():
+    """独立数据库会话：用例内自行提交/回滚，退出时关闭。"""
+    from app.db.base import SessionLocal
+
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.rollback()
+        session.close()

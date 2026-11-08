@@ -22,6 +22,11 @@ from app.db.models import (
     PeriodicAssessment,
 )
 from app.services.scales_store import load_symptoms
+from app.services.prompt_store import (
+    PROMPT_CODE_DIALOGUE,
+    PROMPT_CODE_PERIODIC,
+    resolve_prompt,
+)
 from packages.medagent.llm import get_provider, timed_chat
 
 DIALOGUE_PROMPT_VERSION = "0.1.0-draft"
@@ -106,19 +111,34 @@ def detect_conflicts(dialogue_symptoms: list[dict], scale_results: list[dict]) -
     return flags
 
 
-def build_messages(patient_name: str, history: list[dict], user_text: str) -> list[dict[str, str]]:
-    system = (
+def build_messages(
+    db: Session,
+    patient_name: str,
+    history: list[dict],
+    user_text: str,
+) -> tuple[list[dict[str, str]], str]:
+    """构造对话消息。
+
+    提示词优先取 `prompt_templates` 表里的生效版本（运营可改），
+    表里没有则用代码内置版本；返回的版本号用于 `model_runs` 留痕。
+
+    :return: ``(messages, 提示词版本号)``
+    """
+    fallback_system = (
         "你是老年人就医前预问诊助手。任务是用通俗、简短、关心的语气，围绕以下话题引导式提问："
         + "、".join(TOPIC_LIST)
         + "。每次只问一个问题。不得诊断、不得建议加药减药停药、不得承诺疗效。"
         "若老人描述急症表现，立即提示其立即就医并转人工。"
         "回答使用简体中文，不超过 80 字。"
     )
+    system, version = resolve_prompt(
+        db, PROMPT_CODE_DIALOGUE, fallback_system, DIALOGUE_PROMPT_VERSION
+    )
     messages: list[dict[str, str]] = [{"role": "system", "content": system}]
     for turn in history[-6:]:
         messages.append({"role": turn.get("role", "user"), "content": turn.get("content", "")})
     messages.append({"role": "user", "content": user_text})
-    return messages
+    return messages, version
 
 
 def _latest_scale_results(db: Session, patient_id: int) -> list[dict]:
@@ -162,7 +182,7 @@ def run_dialogue_turn(
         for turn in db.query(DialogueTurn).filter(DialogueTurn.session_id == session.id).all()
     ]
     provider = get_provider()
-    messages = build_messages("老人", history, user_text)
+    messages, prompt_version = build_messages(db, "老人", history, user_text)
     reply, latency = timed_chat(provider, messages)
 
     extracted_symptoms = extract_symptoms(user_text)
@@ -192,7 +212,7 @@ def run_dialogue_turn(
         ModelRun(
             task="dialogue",
             model=getattr(provider, "model", "mock"),
-            prompt_version=DIALOGUE_PROMPT_VERSION,
+            prompt_version=prompt_version,
             latency_ms=latency,
             input_snapshot={"user_text": user_text},
             output_snapshot={"reply": reply},
@@ -240,14 +260,18 @@ def generate_periodic_assessment(db: Session, patient_id: int) -> PeriodicAssess
     symptoms = (profile.symptoms if profile else []) or []
     conditions = (profile.conditions if profile else []) or []
     provider = get_provider()
+    fallback_system = (
+        "你是老年综合评估的辅助分析助手。仅依据给定信息，按躯体功能、精神心理、社会与环境、"
+        "老年综合征四个维度给出补充性结论与变化趋势。不得虚构未采集的内容，不得输出诊断，"
+        "并标注信息来源为「AI 补充评估」。用简体中文，输出 JSON。"
+    )
+    system, prompt_version = resolve_prompt(
+        db, PROMPT_CODE_PERIODIC, fallback_system, DIALOGUE_PROMPT_VERSION
+    )
     messages = [
         {
             "role": "system",
-            "content": (
-                "你是老年综合评估的辅助分析助手。仅依据给定信息，按躯体功能、精神心理、社会与环境、"
-                "老年综合征四个维度给出补充性结论与变化趋势。不得虚构未采集的内容，不得输出诊断，"
-                "并标注信息来源为「AI 补充评估」。用简体中文，输出 JSON。"
-            ),
+            "content": system,
         },
         {
             "role": "user",
@@ -266,7 +290,7 @@ def generate_periodic_assessment(db: Session, patient_id: int) -> PeriodicAssess
         dimension_conclusions=dimensions,
         trend=[],
         model=getattr(provider, "model", "mock"),
-        prompt_version=DIALOGUE_PROMPT_VERSION,
+        prompt_version=prompt_version,
         input_snapshot={"symptoms": symptoms, "conditions": conditions},
         notice="AI 补充评估，不替代正式量表施测；与量表结果冲突时以人工复核为准。",
     )
@@ -275,7 +299,7 @@ def generate_periodic_assessment(db: Session, patient_id: int) -> PeriodicAssess
         ModelRun(
             task="periodic_assessment",
             model=getattr(provider, "model", "mock"),
-            prompt_version=DIALOGUE_PROMPT_VERSION,
+            prompt_version=prompt_version,
             latency_ms=latency,
             input_snapshot={"symptoms": symptoms},
             output_snapshot={"reply": reply[:500]},

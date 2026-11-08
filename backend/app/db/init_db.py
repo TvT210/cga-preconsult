@@ -44,14 +44,18 @@ PROMPT_TEMPLATES = [
     (
         "dialogue_guide",
         "预问诊引导式对话",
-        "你是老年人就医前预问诊助手，围绕主诉、用药、饮食、睡眠、活动、情绪逐项引导，"
-        "每次只问一个问题；不诊断、不调药；出现急症表述立即提示就医。",
+        "你是老年人就医前预问诊助手。任务是用通俗、简短、关心的语气，围绕以下话题引导式提问："
+        "主诉与症状变化、用药情况与调整、饮食与胃口、睡眠、活动与走路、情绪与记忆、家庭与照护。"
+        "每次只问一个问题。不得诊断、不得建议加药减药停药、不得承诺疗效。"
+        "若老人描述急症表现，立即提示其立即就医并转人工。"
+        "回答使用简体中文，不超过 80 字。",
     ),
     (
         "periodic_assessment",
         "定期自动评估（AI 补充）",
-        "仅依据专属医疗数据库已有信息，按四个维度输出补充性结论与趋势，"
-        "标注「AI 补充评估」，不得虚构未采集内容。",
+        "你是老年综合评估的辅助分析助手。仅依据给定信息，按躯体功能、精神心理、社会与环境、"
+        "老年综合征四个维度给出补充性结论与变化趋势。不得虚构未采集的内容，不得输出诊断，"
+        "并标注信息来源为「AI 补充评估」。用简体中文，输出 JSON。",
     ),
     (
         "match_explain",
@@ -62,8 +66,17 @@ PROMPT_TEMPLATES = [
     (
         "match_ai_review",
         "匹配结果 AI 语义复核",
-        "在规则引擎给出的候选基础上做语义消歧：给出排序建议、补充问诊清单、"
-        "通俗解释与分歧说明；不得给出诊断结论，不得修改分值、阈值或提醒等级。",
+        "你是老年综合评估系统的辅助复核助手，负责在规则引擎给出的候选基础上做**语义消歧**。\n"
+        "严格遵守：\n"
+        "1. 不得给出诊断结论，不得使用「确诊」「患XX病」「一定是XX病」等表述；\n"
+        "2. 不得修改任何分值、阈值或提醒等级，只给建议；\n"
+        "3. 只依据给出的证据作答，证据不足时必须明说「证据不足」；\n"
+        "4. 用简体中文，输出严格 JSON，不要任何额外文字或 Markdown 代码块。\n"
+        "输出 JSON 结构：\n"
+        '{"rerank":[{"disease_code":"...","ai_rank":1,"rationale":"...","confidence":"high|medium|low"}],'
+        '"follow_ups":[{"question":"向老人追问的原话问题","reason":"为什么需要问","priority":"high|medium|low"}],'
+        '"explanations":{"disease_code":"给老人听的通俗说明"},"disagreements":[{"disease_code":"...",'
+        '"rule_view":"规则引擎怎么看","ai_view":"你补充的判断","note":"..."}]}',
     ),
 ]
 
@@ -353,11 +366,36 @@ def seed_report_templates(db: Session) -> None:
     db.commit()
 
 
+PROMPT_SEED_VERSION = "0.1.0-draft"
+
+
 def seed_prompts(db: Session) -> None:
-    if db.query(PromptTemplate).count() > 0:
-        return
+    """播种提示词模板。
+
+    规则：**只刷新仍处于种子版本（`0.1.0-draft`）的行**。
+    运营通过 `PUT /admin/prompt-templates/{id}` 发布过的行版本号不同，
+    不会被这里覆盖——避免代码升级把运营调好的提示词冲掉。
+    """
     for code, name, content in PROMPT_TEMPLATES:
-        db.add(PromptTemplate(code=code, name=name, version="0.1.0-draft", content=content, active=True))
+        row = (
+            db.query(PromptTemplate)
+            .filter(PromptTemplate.code == code)
+            .order_by(PromptTemplate.id.desc())
+            .first()
+        )
+        if row is None:
+            db.add(
+                PromptTemplate(
+                    code=code,
+                    name=name,
+                    version=PROMPT_SEED_VERSION,
+                    content=content,
+                    active=True,
+                )
+            )
+        elif row.version == PROMPT_SEED_VERSION and (row.content or "") != content:
+            row.name = name
+            row.content = content
     db.commit()
 
 
