@@ -42,10 +42,10 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.db.models import MatchAiReview, ModelRun
+from app.services.prompt_store import PROMPT_CODE_MATCH_REVIEW, resolve_prompt
 from packages.medagent.llm import get_provider
 
 AI_REVIEW_PROMPT_VERSION = "0.1.0-draft"
-PROMPT_CODE = "match_ai_review"
 
 DISCLAIMER = "AI 复核意见仅供参考，不构成诊断，请以医师判断为准。"
 
@@ -279,13 +279,18 @@ def review_match(
     """对一次匹配批次执行 AI 复核，落库并留痕。"""
     payload = _build_payload(patient, evidence, candidates, disease_profiles)
     provider = get_provider()
+    # 提示词优先取 prompt_templates 表里的生效版本（运营可改），没有则用内置版本
+    system_prompt, prompt_version = resolve_prompt(
+        db, PROMPT_CODE_MATCH_REVIEW, SYSTEM_PROMPT, AI_REVIEW_PROMPT_VERSION
+    )
 
     started = time.perf_counter()
     if getattr(provider, "name", "") == "mock":
         review = _mock_review(payload, candidates)
+        review.prompt_version = prompt_version
     else:
         messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
         ]
         text = provider.chat(messages, temperature=0.2)
@@ -296,7 +301,7 @@ def review_match(
             explanations=parsed.get("explanations") or {},
             disagreements=parsed.get("disagreements") or [],
             model=getattr(provider, "model", "unknown"),
-            prompt_version=AI_REVIEW_PROMPT_VERSION,
+            prompt_version=prompt_version,
             raw_output=text[:4000],
         )
     review.latency_ms = int((time.perf_counter() - started) * 1000)

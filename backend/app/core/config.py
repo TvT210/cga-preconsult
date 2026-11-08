@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from functools import lru_cache
 from pathlib import Path
@@ -75,13 +76,62 @@ def _load_yaml_overrides() -> dict[str, Any]:
     return {}
 
 
+# 只允许从环境变量 / .env 读取的敏感项。
+#
+# 这些字段**禁止**从 config.yaml 覆盖——config.yaml 虽不入库，但仍可能被人
+# 复制、贴到工单或误提交。密钥只允许存在于机器环境变量（或 .env）里。
+ENV_ONLY_FIELDS = {"llm_api_key", "jwt_secret"}
+
+
+def _env_defined_keys() -> set[str]:
+    """返回在环境变量或 .env 中**显式设置过**的配置项名（小写，不含前缀）。
+
+    用于实现「环境变量优先于 config.yaml」：凡是环境里已经给过值的项，
+    yaml 里的同名项一律忽略。
+    """
+    keys: set[str] = set()
+    for name in os.environ:
+        if name.startswith("CGA_"):
+            keys.add(name[4:].lower())
+    for candidate in (BASE_DIR / ".env", REPO_ROOT / ".env"):
+        if not candidate.exists():
+            continue
+        try:
+            content = candidate.read_text(encoding="utf-8")
+        except OSError:  # pragma: no cover - 读不到就当没有
+            continue
+        for line in content.splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            name = line.split("=", 1)[0].strip()
+            if name.startswith("CGA_"):
+                keys.add(name[4:].lower())
+    return keys
+
+
 @lru_cache
 def get_settings() -> Settings:
+    """装配配置：**环境变量 / .env > config.yaml > 默认值**。
+
+    注意：pydantic-settings 会在实例化时读取环境变量与 .env，
+    因此这里只在「环境里没有给过」的项上应用 yaml 覆盖，
+    才能保证环境变量真正优先（否则 yaml 会反过来盖掉环境变量）。
+    """
     settings = Settings()
     overrides = _load_yaml_overrides()
+    env_keys = _env_defined_keys()
     for key, value in overrides.items():
-        if hasattr(settings, key) and value is not None:
-            setattr(settings, key, value)
+        if not hasattr(settings, key) or value is None:
+            continue
+        if key in ENV_ONLY_FIELDS:
+            logging.getLogger(__name__).warning(
+                "config.yaml 中的 %s 已被忽略：敏感项只允许通过环境变量或 .env 提供", key
+            )
+            continue
+        if key in env_keys:
+            continue  # 环境变量优先
+        setattr(settings, key, value)
     if os.getenv("CGA_DATABASE_URL"):
         settings.database_url = os.environ["CGA_DATABASE_URL"]
     return settings

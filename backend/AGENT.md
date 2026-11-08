@@ -46,6 +46,7 @@ backend/
 │     ├─ scoring.py dialogue.py  # 线 A：计分引擎、对话与抽取
 │     ├─ disease_library.py      # 线 B：疾病库/症状词表读取 + 证据准备
 │     ├─ matching.py report.py ai_review.py audit.py                # 线 B：匹配、报告、AI复核、质控
+│     └─ prompt_store.py         # 线 B：提示词模板读取（表优先，回落代码内置版本）
 ├─ packages/medagent/llm.py  # 可插拔大模型 Provider
 └─ tests/                   # pytest：计分 / 匹配 / 对话 / AI复核 / API 端到端
 ```
@@ -63,6 +64,64 @@ backend/
 
 > 症状词表分两层：**词条本体**（标准词、分类）归 B；**`synonyms`**（老人怎么说）归 A，
 > 改同义词不改变医学定义。
+
+## 2.2 大模型接入（Provider / 提示词 / 密钥）
+
+### 2.2.1 配置来源与优先级
+
+```
+环境变量 / .env  >  config.yaml（不入库）  >  代码默认值
+```
+
+- 环境变量前缀 `CGA_`，例如 `CGA_LLM_PROVIDER`、`CGA_LLM_BASE_URL`、
+  `CGA_LLM_API_KEY`、`CGA_LLM_MODEL`、`CGA_LLM_TIMEOUT`；
+- `config.yaml` 读仓库根或 `backend/` 下的同名文件（`.gitignore` 已排除）；
+- **敏感项例外**：`llm_api_key`、`jwt_secret` **只允许**来自环境变量或 `.env`。
+  即使写进 `config.yaml` 也会被忽略并打警告——避免密钥被人复制、贴单或误提交。
+
+### 2.2.2 接上真实模型
+
+```powershell
+# 在本机环境变量里设置（不要写进任何文件）
+$env:CGA_LLM_PROVIDER = "openai_compatible"
+$env:CGA_LLM_BASE_URL = "https://api.minimax.chat/v1"   # OpenAI 兼容 /chat/completions
+$env:CGA_LLM_API_KEY  = "<你的 key>"
+$env:CGA_LLM_MODEL    = "MiniMax-Text-01"
+python -c "from packages.medagent.llm import get_provider; print(get_provider().name)"
+```
+
+未设 `CGA_LLM_BASE_URL` 或 provider 不是 `openai_compatible` 时自动回落 `MockProvider`
+（离线可跑、结果确定性，用于演示与自动化测试）。
+
+### 2.2.3 三个 AI 调用点与留痕
+
+| 位置 | 作用 | 留痕 |
+| --- | --- | --- |
+| `services/dialogue.py` 预问诊每轮 | 引导式追问 | `model_runs` task=`dialogue` |
+| `services/dialogue.py` 周期评估 | AI 补充评估（四维度） | `model_runs` task=`periodic_assessment` |
+| `services/ai_review.py` | 匹配复核：重排建议 / 追问清单 / 通俗解释 / 分歧 | `model_runs` task=`match_ai_review` |
+
+**规则与 AI 的分工**：症状抽取（标准词 + 同义词子串匹配）、计分判读、匹配打分、
+报告主体都是**规则**；AI 只做语义消歧与建议，不改分值、阈值、提醒等级，不下诊断结论。
+
+### 2.2.4 提示词模板：表优先，回落内置版本
+
+`services/prompt_store.py::resolve_prompt(db, code, 内置内容, 内置版本)`：
+
+- `prompt_templates` 表里有**生效**版本 → 用它的内容，并记录**它的版本号**；
+- 没有 → 用代码内置版本，记录内置版本号。
+
+因此 `model_runs.prompt_version` 永远对应**实际生效的那一版**，事后可复现。
+
+模板编码：`dialogue_guide`（预问诊对话）、`periodic_assessment`（周期补充评估）、
+`match_explain`（候选通俗说明）、`match_ai_review`（匹配语义复核）。
+
+**运营改提示词**：`PUT /api/v1/admin/prompt-templates/{id}`（管理员）。
+该接口**不覆盖历史行**——旧版本置停用、新版本另起一行，并写审计日志，
+保证「某次结论用的是哪版提示词」永远可查。
+
+> 播种规则：只刷新仍处于种子版本 `0.1.0-draft` 的行；运营发布过的行版本号不同，
+> 不会被代码升级覆盖。
 
 ## 3. 计分与判读引擎（services/scoring.py）
 

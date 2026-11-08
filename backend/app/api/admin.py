@@ -122,3 +122,64 @@ def list_prompt_templates(user: User = Depends(require_roles(ROLE_ADMIN)), db: S
         }
         for row in rows
     ]
+
+
+@router.put("/admin/prompt-templates/{template_id}")
+def publish_prompt_template(
+    template_id: int,
+    payload: dict,
+    user: User = Depends(require_roles(ROLE_ADMIN)),
+    db: Session = Depends(get_db),
+):
+    """发布提示词新版本。
+
+    规则：**不覆盖历史行**——旧版本置为停用，新版本另起一行，
+    这样 `model_runs.prompt_version` 记的版本号始终能对应到一条真实内容，
+    事后可复现「某次结论用的是哪版提示词」。
+    """
+    row = db.query(PromptTemplate).filter(PromptTemplate.id == template_id).first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="提示词模板不存在")
+    content = (payload.get("content") or "").strip()
+    if not content:
+        raise HTTPException(status_code=422, detail="提示词内容不能为空")
+
+    version = (payload.get("version") or "").strip()
+    if not version:
+        version = f"{row.version.split('-published')[0]}.published"
+
+    # 同一 code 下只保留一个生效版本
+    for other in (
+        db.query(PromptTemplate)
+        .filter(PromptTemplate.code == row.code, PromptTemplate.active.is_(True))
+        .all()
+    ):
+        other.active = False
+
+    published = PromptTemplate(
+        code=row.code,
+        name=(payload.get("name") or row.name),
+        version=version,
+        content=content,
+        active=True,
+    )
+    db.add(published)
+    db.flush()
+    audit.record(
+        db,
+        user,
+        "publish_prompt_template",
+        "prompt_template",
+        str(published.id),
+        {"code": row.code, "version": version},
+    )
+    db.commit()
+    return {
+        "id": published.id,
+        "code": published.code,
+        "name": published.name,
+        "version": published.version,
+        "content": published.content,
+        "active": True,
+        "created_at": published.created_at.isoformat(),
+    }
