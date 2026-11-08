@@ -73,8 +73,17 @@ backend/
 环境变量 / .env  >  config.yaml（不入库）  >  代码默认值
 ```
 
-- 环境变量前缀 `CGA_`，例如 `CGA_LLM_PROVIDER`、`CGA_LLM_BASE_URL`、
-  `CGA_LLM_API_KEY`、`CGA_LLM_MODEL`、`CGA_LLM_TIMEOUT`；
+- 环境变量前缀 `CGA_`：
+
+  | 变量 | 说明 | 默认 |
+  | --- | --- | --- |
+  | `CGA_LLM_PROVIDER` | `mock` / `openai_compatible` | `mock` |
+  | `CGA_LLM_BASE_URL` | OpenAI 兼容地址（到 `/v1`，不含 `/chat/completions`） | 空 |
+  | `CGA_LLM_API_KEY` | **密钥，只允许来自环境变量或 `.env`** | 空 |
+  | `CGA_LLM_MODEL` | 模型名 | 空 |
+  | `CGA_LLM_MAX_TOKENS` | 单次生成 token 上限 | `4000` |
+  | `CGA_LLM_TIMEOUT` | 请求超时（秒） | `60` |
+
 - `config.yaml` 读仓库根或 `backend/` 下的同名文件（`.gitignore` 已排除）；
 - **敏感项例外**：`llm_api_key`、`jwt_secret` **只允许**来自环境变量或 `.env`。
   即使写进 `config.yaml` 也会被忽略并打警告——避免密钥被人复制、贴单或误提交。
@@ -84,16 +93,37 @@ backend/
 ```powershell
 # 在本机环境变量里设置（不要写进任何文件）
 $env:CGA_LLM_PROVIDER = "openai_compatible"
-$env:CGA_LLM_BASE_URL = "https://api.minimax.chat/v1"   # OpenAI 兼容 /chat/completions
+$env:CGA_LLM_BASE_URL = "https://api.minimax.chat/v1"
 $env:CGA_LLM_API_KEY  = "<你的 key>"
-$env:CGA_LLM_MODEL    = "MiniMax-Text-01"
+$env:CGA_LLM_MODEL    = "MiniMax-M2.7-highspeed"
+$env:CGA_LLM_MAX_TOKENS = "4000"
 python -c "from packages.medagent.llm import get_provider; print(get_provider().name)"
 ```
 
 未设 `CGA_LLM_BASE_URL` 或 provider 不是 `openai_compatible` 时自动回落 `MockProvider`
 （离线可跑、结果确定性，用于演示与自动化测试）。
 
-### 2.2.3 三个 AI 调用点与留痕
+### 2.2.3 推理模型的三个坑（接真实模型必看）
+
+以 MiniMax 为例，实测踩到：
+
+1. **token 预算被 reasoning 吃掉**。推理模型会把 `max_tokens` 花在思考上，
+   预算不足时**正文为空、`content` 字段直接缺失**（不是空串）。
+   Provider 对此抛 `LLMEmptyResponse` 并提示调大 `CGA_LLM_MAX_TOKENS`。
+   实测：`max_tokens=800` → 思考 799、正文 0；`4000` → 思考 1074、正文 466，正常。
+2. **思考过程会写进正文**。部分模型（如 `*-highspeed` 变体）返回
+   `<think>…</think>` + 正式回答混排。Provider 统一用 `strip_think()` 剥离，
+   老人端只应看到正式回答。
+3. **延迟差异很大**。实测同一提示词：`M3.1-Flash` 复核 26s（思考 2246 tok），
+   `M2.7-highspeed` 复核 6.4s（思考 206 tok）。预问诊逐轮追问用 highspeed 更合适。
+
+### 2.2.4 模型异常不拖垮主流程
+
+- 对话轮次：模型异常/正文为空 → 降级为「抱歉，我没太听清您刚才说的，能再说一遍吗？」，
+  并把错误写进 `model_runs.output_snapshot.model_error`；
+- AI 复核：模型异常 → 返回空意见 + 提示「AI 复核未完成」，**匹配主流程照常出结果**。
+
+### 2.2.5 三个 AI 调用点与留痕
 
 | 位置 | 作用 | 留痕 |
 | --- | --- | --- |
@@ -104,7 +134,7 @@ python -c "from packages.medagent.llm import get_provider; print(get_provider().
 **规则与 AI 的分工**：症状抽取（标准词 + 同义词子串匹配）、计分判读、匹配打分、
 报告主体都是**规则**；AI 只做语义消歧与建议，不改分值、阈值、提醒等级，不下诊断结论。
 
-### 2.2.4 提示词模板：表优先，回落内置版本
+### 2.2.6 提示词模板：表优先，回落内置版本
 
 `services/prompt_store.py::resolve_prompt(db, code, 内置内容, 内置版本)`：
 

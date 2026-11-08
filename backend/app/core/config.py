@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     llm_api_key: str = ""
     llm_model: str = ""
     llm_timeout: float = 60.0
+    # 单次生成的 token 上限。推理模型（如 MiniMax-M3 系列）会把预算花在
+    # reasoning 上，正文预算不足时返回空内容——默认给足。
+    llm_max_tokens: int = 4000
 
     # 匹配引擎权重（可在 matching_rules 表中覆盖）
     core_symptom_weight: float = 3.0

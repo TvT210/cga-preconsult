@@ -293,17 +293,26 @@ def review_match(
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
         ]
-        text = provider.chat(messages, temperature=0.2)
-        parsed = _extract_json(text) or {}
-        review = AiReview(
-            rerank=parsed.get("rerank") or [],
-            follow_ups=parsed.get("follow_ups") or [],
-            explanations=parsed.get("explanations") or {},
-            disagreements=parsed.get("disagreements") or [],
-            model=getattr(provider, "model", "unknown"),
-            prompt_version=prompt_version,
-            raw_output=text[:4000],
-        )
+        try:
+            text = provider.chat(messages, temperature=0.2)
+        except Exception as exc:  # 模型异常不阻断匹配主流程：降级为「无 AI 意见」
+            review = AiReview(
+                model=getattr(provider, "model", "unknown"),
+                prompt_version=prompt_version,
+                notice=f"{DISCLAIMER}（AI 复核未完成：{type(exc).__name__}）",
+            )
+            text = ""
+        else:
+            parsed = _extract_json(text) or {}
+            review = AiReview(
+                rerank=parsed.get("rerank") or [],
+                follow_ups=parsed.get("follow_ups") or [],
+                explanations=parsed.get("explanations") or {},
+                disagreements=parsed.get("disagreements") or [],
+                model=getattr(provider, "model", "unknown"),
+                prompt_version=prompt_version,
+                raw_output=text[:4000],
+            )
     review.latency_ms = int((time.perf_counter() - started) * 1000)
 
     record = MatchAiReview(
