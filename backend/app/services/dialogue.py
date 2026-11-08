@@ -27,7 +27,7 @@ from app.services.prompt_store import (
     PROMPT_CODE_PERIODIC,
     resolve_prompt,
 )
-from packages.medagent.llm import get_provider, timed_chat
+from packages.medagent.llm import LLMEmptyResponse, get_provider, timed_chat
 
 DIALOGUE_PROMPT_VERSION = "0.1.0-draft"
 
@@ -183,7 +183,19 @@ def run_dialogue_turn(
     ]
     provider = get_provider()
     messages, prompt_version = build_messages(db, "老人", history, user_text)
-    reply, latency = timed_chat(provider, messages)
+    try:
+        reply, latency = timed_chat(provider, messages)
+        model_error = ""
+    except LLMEmptyResponse as exc:
+        # 模型没给出可用正文（推理模型预算耗尽等）——不能编，也不能静默空回复。
+        # 退化为「请再说一遍」，既符合适老化，也符合「不臆断」红线。
+        reply = "抱歉，我没太听清您刚才说的，方便再说一遍吗？"
+        latency = 0
+        model_error = str(exc)
+    except Exception as exc:  # 网络异常、鉴权失败等
+        reply = "不好意思，这边网络不太顺，您稍后再试，或者先跟我再说一遍刚才的情况。"
+        latency = 0
+        model_error = f"{type(exc).__name__}: {exc}"
 
     extracted_symptoms = extract_symptoms(user_text)
     safety_note = check_safety(user_text) or check_safety(reply)
@@ -215,7 +227,7 @@ def run_dialogue_turn(
             prompt_version=prompt_version,
             latency_ms=latency,
             input_snapshot={"user_text": user_text},
-            output_snapshot={"reply": reply},
+            output_snapshot={"reply": reply, **({"model_error": model_error} if model_error else {})},
         )
     )
     _update_profile(db, session.patient_id, extracted_symptoms)

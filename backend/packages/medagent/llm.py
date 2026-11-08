@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import json
+import re
 import time
 from typing import Any, Protocol
 
@@ -19,7 +20,23 @@ class LLMProvider(Protocol):
     name: str
     model: str
 
-    def chat(self, messages: list[dict[str, str]], temperature: float = 0.3, max_tokens: int = 800) -> str: ...
+    def chat(self, messages: list[dict[str, str]], temperature: float = 0.3, max_tokens: int | None = None) -> str: ...
+
+
+# 推理模型会把 <think>…</think> 思考过程写进正文，
+# 老人端直接看到这段思考是不合适的，必须剥掉。
+_THINK_BLOCK = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
+# 有些模型只输出未闭合的 <think> 起始标记
+_THINK_OPEN = re.compile(r"<think>.*$", re.DOTALL | re.IGNORECASE)
+
+
+def strip_think(text: str) -> str:
+    """去掉模型输出里的思考过程，只保留正式回答。"""
+    if not text:
+        return ""
+    cleaned = _THINK_BLOCK.sub("", text)
+    cleaned = _THINK_OPEN.sub("", cleaned)
+    return cleaned.strip()
 
 
 class MockProvider:
@@ -30,13 +47,17 @@ class MockProvider:
     def __init__(self) -> None:
         self.model = "mock-deterministic-v1"
 
-    def chat(self, messages: list[dict[str, str]], temperature: float = 0.3, max_tokens: int = 800) -> str:
+    def chat(self, messages: list[dict[str, str]], temperature: float = 0.3, max_tokens: int | None = None) -> str:
         user_text = ""
         for message in reversed(messages):
             if message.get("role") == "user":
                 user_text = message.get("content", "")
                 break
         return _mock_reply(user_text)
+
+
+class LLMEmptyResponse(RuntimeError):
+    """模型没有返回可用正文（推理模型 token 预算耗尽、或返回被网关截断）。"""
 
 
 class OpenAICompatibleProvider:
@@ -49,12 +70,12 @@ class OpenAICompatibleProvider:
         self.base_url = settings.llm_base_url.rstrip("/")
         self.api_key = settings.llm_api_key
 
-    def chat(self, messages: list[dict[str, str]], temperature: float = 0.3, max_tokens: int = 800) -> str:
+    def chat(self, messages: list[dict[str, str]], temperature: float = 0.3, max_tokens: int | None = None) -> str:
         payload = {
             "model": self.model,
             "messages": messages,
             "temperature": temperature,
-            "max_tokens": max_tokens,
+            "max_tokens": max_tokens or settings.llm_max_tokens,
             "stream": False,
         }
         headers = {"Content-Type": "application/json"}
@@ -64,7 +85,18 @@ class OpenAICompatibleProvider:
             response = client.post(f"{self.base_url}/chat/completions", json=payload, headers=headers)
             response.raise_for_status()
             data = response.json()
-        return data["choices"][0]["message"]["content"]
+        message = (data.get("choices") or [{}])[0].get("message") or {}
+        content = strip_think(message.get("content") or "")
+        if not content.strip():
+            # 推理模型（如 MiniMax-M3）会把 token 预算花在 reasoning 上，
+            # 预算耗尽时正文为空——必须显式报错，不能把空串当成回复返回。
+            raise LLMEmptyResponse(
+                f"模型 {self.model} 未返回可用正文（finish_reason="
+                f"{data.get('choices', [{}])[0].get('finish_reason')}，"
+                f"max_tokens={payload['max_tokens']}）；"
+                f"若为推理模型，请调大 CGA_LLM_MAX_TOKENS"
+            )
+        return content
 
 
 def get_provider() -> LLMProvider:
