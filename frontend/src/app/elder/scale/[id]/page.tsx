@@ -41,34 +41,75 @@ function scoreForQuestion(
   entry: AnswerEntry | undefined,
 ): { text: string; score: number | null } {
   const options = question.options ?? [];
-  if (!entry || entry.value === null || entry.value === undefined || entry.value === "") {
+  const recorded =
+    entry?.measured !== undefined && entry?.measured !== null
+      ? Number(entry.measured)
+      : null;
+  const selected = entry?.value === null || entry?.value === undefined
+    ? ""
+    : Array.isArray(entry.value)
+      ? entry.value.map((v) => String(v)).join("、")
+      : String(entry.value);
+
+  if (recorded === null && !selected) {
     return { text: "未作答", score: null };
   }
+
+  // 实测分档题：显示「实测值（落入档位）」，避免把秒数误读成分值
+  if (question.banded_input) {
+    const unit = question.unit ?? "";
+    if (recorded !== null) {
+      const band = options.find((option) => {
+        if (option.min === undefined && option.max === undefined) return false;
+        const low = option.min ?? Number.NEGATIVE_INFINITY;
+        const high = option.max ?? Number.POSITIVE_INFINITY;
+        return recorded >= low && recorded <= high;
+      });
+      const label = band?.label ?? "未落入任何分档区间，需人工核对";
+      return {
+        text: `实测 ${recorded}${unit}（${label}）`,
+        score: band?.score ?? null,
+      };
+    }
+    const fallback = options.find((option) => option.value === selected);
+    return { text: fallback?.label ?? selected, score: fallback?.score ?? null };
+  }
+
   if (question.input_type === "number") {
     return {
-      text: `${entry.value}${question.unit ?? ""}`,
+      text: `${selected || recorded}${question.unit ?? ""}`,
       score: null,
     };
   }
   if (question.input_type === "multi") {
-    const selected = Array.isArray(entry.value)
+    const picked = Array.isArray(entry?.value)
       ? entry.value.map((v) => String(v))
-      : [];
-    if (!selected.length) return { text: "未作答", score: null };
-    const labels = selected.map(
+      : selected
+        ? selected.split(",")
+        : [];
+    if (!picked.length) return { text: "未作答", score: null };
+    const labels = picked.map(
       (v) => options.find((option) => option.value === v)?.label ?? v,
     );
-    const score = selected.reduce(
+    const score = picked.reduce(
       (sum, v) => sum + (options.find((option) => option.value === v)?.score ?? 0),
       0,
     );
     return { text: labels.join("、"), score };
   }
-  const matched = options.find((option) => option.value === String(entry.value));
+  const matched = options.find((option) => option.value === String(entry?.value));
   return {
-    text: matched?.label ?? String(entry.value),
+    text: matched?.label ?? String(entry?.value ?? ""),
     score: matched?.score ?? null,
   };
+}
+
+/** 实测分档题是否已作答：填了数值或选了兜底选项都算 */
+function isAnswered(entry: AnswerEntry | undefined): boolean {
+  if (!entry) return false;
+  if (entry.measured !== undefined && entry.measured !== null) return true;
+  if (Array.isArray(entry.value)) return entry.value.length > 0;
+  return !(entry.value === null || entry.value === undefined || entry.value === "");
 }
 
 export default function ElderScalePage() {
@@ -199,12 +240,21 @@ export default function ElderScalePage() {
   const currentEntry = currentQuestion ? answers[currentQuestion.code] : undefined;
   const answeredCount = Object.keys(answers).length;
 
-  /** 朗读内容：题目 + 白话解释 + 选项 */
+  /** 朗读内容：题目 + 白话解释 + 选项 + 实测施测提示 */
   const speechText = useMemo(() => {
     if (!currentQuestion) return "";
     const parts = [currentQuestion.text];
     if (currentQuestion.plain_text) parts.push(currentQuestion.plain_text);
-    if (currentQuestion.options?.length) {
+    if (currentQuestion.banded_input) {
+      parts.push(
+        currentQuestion.unit_hint ??
+          "这道题由工作人员陪同完成，测完把数值填进来就行。",
+      );
+      const bands = (currentQuestion.options ?? []).filter(
+        (option) => option.min !== undefined || option.max !== undefined,
+      );
+      if (bands.length) parts.push("可选答案：" + bands.map((o) => o.label).join("；"));
+    } else if (currentQuestion.options?.length) {
       parts.push("可选答案：" + currentQuestion.options.map((o) => o.label).join("；"));
     }
     if (currentQuestion.unit) parts.push(`单位：${currentQuestion.unit}`);
@@ -266,11 +316,8 @@ export default function ElderScalePage() {
   const handleNext = useCallback(async () => {
     if (!currentQuestion || !session) return;
     const entry = answers[currentQuestion.code];
-    if (!entry || entry.value === null || entry.value === undefined || entry.value === "") {
-      toast("请先选择答案，或点「跳过本题」。", "warning");
-      return;
-    }
-    if (Array.isArray(entry.value) && entry.value.length === 0) {
+    // 实测分档题只填数值时 value 为 null，不能据此判为未作答
+    if (!isAnswered(entry)) {
       toast("请先选择答案，或点「跳过本题」。", "warning");
       return;
     }
@@ -320,7 +367,7 @@ export default function ElderScalePage() {
   const handlePause = useCallback(async () => {
     if (currentQuestion) {
       const entry = answers[currentQuestion.code];
-      if (entry && entry.value !== null && entry.value !== undefined && entry.value !== "") {
+      if (isAnswered(entry)) {
         await saveAnswer(currentQuestion, entry);
       }
     }
@@ -417,10 +464,21 @@ export default function ElderScalePage() {
         speechText={speechText}
         rate={rate}
         onRateChange={setRate}
-        allowInput={currentQuestion.input_type === "number"}
+        allowInput={
+          currentQuestion.input_type === "number" || Boolean(currentQuestion.banded_input)
+        }
         onTranscript={(text) => {
           const numeric = text.replace(/[^\d.]/g, "");
-          if (currentQuestion.input_type === "number" && numeric) {
+          if (!numeric) return;
+          // 实测分档题说出的数值是「实测值」，须交给服务端落档，不能当选项值
+          if (currentQuestion.banded_input) {
+            setAnswers((prev) => ({
+              ...prev,
+              [currentQuestion.code]: { value: null, measured: Number(numeric) },
+            }));
+            return;
+          }
+          if (currentQuestion.input_type === "number") {
             setAnswers((prev) => ({
               ...prev,
               [currentQuestion.code]: {
@@ -437,6 +495,7 @@ export default function ElderScalePage() {
         index={index + 1}
         total={questions.length}
         value={currentEntry?.value ?? null}
+        measured={currentEntry?.measured}
         isProxy={proxyMode}
         onChange={(value, measured) => {
           setAnswers((prev) => ({

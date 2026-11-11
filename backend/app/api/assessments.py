@@ -14,6 +14,7 @@ from app.core.deps import ROLE_ELDER, ensure_patient_access, get_current_user
 from app.db.base import get_db
 from app.db.models import AssessmentAnswer, AssessmentScore, AssessmentSession, Patient, User
 from app.services import audit
+from app.services.scale_presenter import present_questions, present_sections
 from app.services.scales_store import get_scale
 from app.services.scoring import AnswerRecord, branch_recommendations, evaluate_scale
 
@@ -80,6 +81,8 @@ def _session_payload(db: Session, session: AssessmentSession, include_questions:
                 "question_code": code,
                 "value": record.value,
                 "score": record.score,
+                # 实测原始值：断点续填时前端要能还原秒数/词语数，不能只拿归档档位
+                "measured": record.measured,
                 "skipped": record.skipped,
                 "proxy_flag": record.proxy_flag,
                 "answered_by": record.answered_by,
@@ -88,8 +91,9 @@ def _session_payload(db: Session, session: AssessmentSession, include_questions:
         ],
     }
     if include_questions:
-        payload["questions"] = questions
-        payload["sections"] = scale.get("sections", [])
+        # 表示层展开：与 GET /scales/{code} 保持同一套字段，避免两处不一致
+        payload["questions"] = present_questions(questions)
+        payload["sections"] = present_sections(scale.get("sections", []))
         payload["collection"] = scale.get("collection", {})
     return payload
 

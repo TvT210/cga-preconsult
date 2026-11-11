@@ -12,6 +12,7 @@ from app.core.deps import ROLE_ADMIN, ROLE_DOCTOR, get_current_user, require_rol
 from app.db.base import get_db
 from app.db.models import ScaleTemplate, ScaleVersion, TemplateApproval, User
 from app.services import audit
+from app.services.scale_presenter import present_scale
 from app.services.scales_store import get_scale, list_scales
 
 REVIEW_STATES = {"draft_pending_medical_review", "approved", "deprecated"}
@@ -28,7 +29,8 @@ def get_scale_detail(code: str, user: User = Depends(get_current_user), db: Sess
     if scale is None:
         raise HTTPException(status_code=404, detail="量表不存在")
     item_count = sum(len(section.get("questions", [])) for section in scale.get("sections", []))
-    scale = dict(scale)
+    # 表示层展开：把 measure.unit/hint 提到顶层，并标注实测分档题与兜底选项
+    scale = present_scale(scale)
     scale["item_count"] = item_count
     scale["ready_for_scoring"] = item_count > 0
     if item_count == 0:

@@ -254,6 +254,62 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
 | `single` | 单选按钮组 | 选项 `value` 字符串 |
 | `multi` | 多选 | 数组或逗号串；后端按选项 `score` 求和 |
 | `number` | 数字输入（实测项） | 数字，**同时**填 `measured` |
+| `single` + `banded_input=true` | 数字输入 + 计时器 + 兜底选项按钮 | **只填 `measured`**，由后端按 `options[].min/max` 定档；选兜底项时填 `value` |
+
+**实测项字段展开（服务端保证，前端可直接依赖）** ｜ CA-20261111-01
+
+题库用 `measure: { unit, hint }` 描述实测项，`GET /scales/{code}` 与 `GET /assessments/{id}` 的题目**均已展开**，无需前端自行映射：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `unit` | string | 单位（`s` / `个` / `月`），来自 `measure.unit` |
+| `unit_hint` | string | 施测提示，来自 `measure.hint` |
+| `banded_input` | boolean | `true` = 实测分档题：可填数值，档位由后端裁定（`input_type` 仍为 `single`） |
+| `fallback_options` | string[] | 无 `min`/`max` 的兜底选项 value（如「不能完成」），与数值输入互斥 |
+| `measure` | object | 题库原始字段，保留未删 |
+| `record_only` | boolean | 仅记录、不参与计分 |
+| `when` | object | 条目级生效条件（如 B.15 仅在插管时启用第 3 项） |
+
+`options[]` 增补：
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `min` / `max` | number | 实测分档区间（闭区间）。两者都缺省者即兜底选项 |
+| `level` / `abnormal` / `severity` | string / boolean / string | 分级型量表的选项级结论（`single_option_level` 使用） |
+
+实测分档题示例（B.3 SPPB 步速）：
+
+```json
+{ "code": "B3-04", "text": "4 米步速", "input_type": "single", "required": true,
+  "measure": { "unit": "s", "hint": "填写两次测量中的最佳值（秒）" },
+  "unit": "s", "unit_hint": "填写两次测量中的最佳值（秒）",
+  "banded_input": true, "fallback_options": ["unable"],
+  "options": [ { "value": "lt_4_82", "label": "<4.82 s", "score": 4, "min": 0, "max": 4.82 },
+               { "value": "4_82_6_20", "label": "4.82~6.20 s", "score": 3, "min": 4.821, "max": 6.2 },
+               { "value": "unable", "label": "不能完成", "score": 0 } ] }
+```
+
+**提交实测值的两条路径**（后端行为）：
+
+1. `{"question_code":"B3-04","measured":4.5}` → 落 `lt_4_82`、得 4 分；
+2. `{"question_code":"B3-04","value":"unable"}` → 落兜底档、得 0 分。
+
+数值不在任何区间内 → `422`「实测值不在任何分档区间内，请核对或交由医护人员判定」；
+同时给 `value` 与 `measured` 但两者矛盾 → 采信 `value`，并在判读 `rule_refs` 记 `measured:band_check`，`needs_manual_review=true`。
+
+**判读规则类型（`scoring.*.rule_type`）** ｜ CA-20261111-01 增补两项
+
+| `rule_type` | 语义 |
+| --- | --- |
+| `sum` | 条目得分求和 |
+| `count_positive` | 统计阳性条目数 |
+| `max` | 取条目最大值 |
+| `level_map` | 按 `config.levels[].min/max` 映射等级 |
+| `condition` | 条件触发（`flags`） |
+| `criteria` | **布尔组合判读**：`config.groups` 定义布尔量，`config.rules[].expr` 用 `and/or/not` 组合，按顺序取首个命中；无命中则用 `expr="default"` |
+| `single_option_level` | **选项直挂结论**：等级取 `config.question` 所指题目的所选选项上的 `level/abnormal/severity`（如洼田 1~5 级） |
+
+量表级 `review_required: true` = 标准要求「由医务人员判断」，服务端强制 `needs_manual_review=true`，前端须显示人工复核提示。
 
 **条件算子语义（前端「规则预览」如需展示，须照此解释）**：
 `eq` / `ne` / `in` 比较**选项 value 字符串**；`lt` / `lte` / `gt` / `gte` 比较**选项 score 数值**。

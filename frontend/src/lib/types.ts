@@ -177,6 +177,14 @@ export interface ScaleOption {
   value: string;
   label: string;
   score?: number;
+  /** 实测分档区间下界（含）；与 `max` 同为 undefined 者为兜底选项，如「不能完成」 */
+  min?: number;
+  /** 实测分档区间上界（含） */
+  max?: number;
+  /** 分级型量表的选项自带结论（如洼田 1 级/2 级），由后端 `single_option_level` 使用 */
+  level?: string;
+  abnormal?: boolean;
+  severity?: string;
 }
 
 export type InputType = "single" | "multi" | "number";
@@ -188,8 +196,23 @@ export interface ScaleQuestion {
   input_type: InputType;
   required?: boolean;
   options?: ScaleOption[];
-  /** 实测项单位，如“秒”“米”“厘米” */
+  /** 实测项单位，如“秒”“米”“厘米”（题库 `measure.unit` 的展开结果） */
   unit?: string;
+  /** 实测项施测提示（题库 `measure.hint` 的展开结果） */
+  unit_hint?: string;
+  /** 题库原始字段，服务端保留未删 */
+  measure?: { unit?: string; hint?: string };
+  /**
+   * 实测分档题：可填数值，由服务端按 `options[].min/max` 自动落档。
+   * 为 true 时前端渲染「数值输入 + 计时器」，而不是手动点档位。
+   */
+  banded_input?: boolean;
+  /** 无区间的兜底选项 value（「不能完成」「不尝试」等），与数值输入互斥 */
+  fallback_options?: string[];
+  /** 仅记录、不参与计分的题目 */
+  record_only?: boolean;
+  /** 条目级生效条件（如 B.15 仅在插管时启用第 3 项） */
+  when?: Record<string, unknown>;
   min?: number;
   max?: number;
 }
