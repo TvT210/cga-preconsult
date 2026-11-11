@@ -14,6 +14,7 @@ from app.core.deps import ROLE_ELDER, ensure_patient_access, get_current_user
 from app.db.base import get_db
 from app.db.models import AssessmentAnswer, AssessmentScore, AssessmentSession, Patient, User
 from app.services import audit
+from app.services.branch_dispatch import dispatch_branches
 from app.services.scale_presenter import present_questions, present_sections
 from app.services.scales_store import get_scale
 from app.services.scoring import AnswerRecord, branch_recommendations, evaluate_scale
@@ -488,7 +489,21 @@ def finish_assessment(
     session.status = "finished"
     session.finished_at = dt.datetime.now(dt.timezone.utc)
     db.commit()
-    audit.record(db, user, "finish", "assessment", session.id, {"total": score.total, "level": score.level})
+    # 筛查阳性 → 为患者派生待办任务（只建任务，不代填、不下结论）
+    dispatched = dispatch_branches(db, user, session, branches)
+    db.commit()
+    audit.record(
+        db,
+        user,
+        "finish",
+        "assessment",
+        session.id,
+        {
+            "total": score.total,
+            "level": score.level,
+            "dispatched": sum(1 for item in dispatched if item["status"] == "dispatched"),
+        },
+    )
     db.commit()
     return {
         "scores": [
@@ -507,6 +522,7 @@ def finish_assessment(
             }
         ],
         "branches": branches,
+        "dispatched": dispatched,
         "needs_manual_review": score.needs_manual_review,
         "notices": [
             "题库条目待评审，结论仅供演示，不作为正式临床结论。"

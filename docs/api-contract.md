@@ -388,9 +388,27 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
                               { "rule": "levels:level_map", "matched_level": "中度依赖", "range": [41, 60] } ],
                 "missing_items": [], "needs_manual_review": true } ],
   "branches": [ { "branch_code": "B1-B1", "target_scale": "B.3", "reason": "…", "source_scale": "B.1" } ],
+  "dispatched": [ { "branch_code": "B1-B1", "source_scale": "B.1", "target_scale": "B.3",
+                    "target_name": "简易体能状况量表（SPPB）", "reason": "平地行走不能独立，建议实测体能。",
+                    "status": "dispatched", "skip_reason": "", "session_id": 88,
+                    "session_status": "in_progress" } ],
   "needs_manual_review": true, "notices": [ "题库条目待医护/专家评审，结论仅供演示，不作为正式临床结论。" ] }
 ```
 > `rule_refs` 是「结论可回溯」的载体，前端应在结果页展示逐题作答与分值。
+
+**分支自动派发 `dispatched`（非破坏性新增）** ｜ CA-20261111-02
+
+`branches` 仍是「建议」列表，语义不变；`dispatched` 是这些建议的实际落库结果。筛查阳性时服务端为患者**创建待办任务**（`in_progress` 空壳），前端直接跳转 `/elder/scale/{target_scale}` 即可续填——量表页会按「患者 + 量表」自动接上这条任务，无需传 `session_id`。
+
+| `status` | 含义 | 前端处理 |
+| --- | --- | --- |
+| `dispatched` | 本次新建了待办任务 | 显示「开始评估」，跳 `target_scale` |
+| `reused` | 复用已有任务（此前派发过或患者自建） | 按 `session_status` 显示「继续填写」/「查看结果」 |
+| `skipped` | 未派发，见 `skip_reason` | 只说明原因，不出入口 |
+
+`skip_reason` 取值：`cycle`（目标量表已在本次评估链上，环形防护）/ `duplicate`（同一批重复推荐）/ `no_questions`（条目未补录）/ `scale_missing`（题库无此量表）。
+
+> **约束**：派发只建任务，不代填答案、不产出结论，也不改变任何量表的分级；是否加做由患者与医护决定。题库 21 张量表共 28 条分支边且存在回指（B.1↔B.3、B.4↔B.5、B.6↔B.7、B.14↔B.15、B.8↔B.21、B.19↔B.18），服务端沿 `dispatched_from_id` 回溯评估链做环形防护，同一会话重复 `finish` 也不会重复派生（幂等）。
 
 ### POST `/assessments/{session_id}/review` ✅（staff+）
 ```json
