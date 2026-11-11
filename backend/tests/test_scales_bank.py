@@ -377,3 +377,94 @@ def test_rule_refs_traceable_to_answers():
     assert traced["B11-01"] == "3"
     assert score_ref["answered_count"] == 3
     assert any(ref["rule"] == "levels:level_map" for ref in result.rule_refs)
+
+
+# ------------------------------------------------ 4. 原文符合性（A-1 核对补充）
+
+
+@pytest.mark.parametrize("code", SCALE_CODES)
+def test_level_map_ranges_never_overlap(code):
+    """分级区间必须互不重叠。
+
+    按 level_map 顺序匹配时，重叠会让后一档永远落空。
+    B.13 曾出现「4～6」与「≥6」在 6 分处重叠，6 分被错判为「可能存在」。
+    """
+    levels_spec = _load(code)["scoring"].get("levels") or {}
+    if levels_spec.get("rule_type") != "level_map":
+        return
+    spans = sorted(
+        (int(item["min"]), int(item["max"]), item.get("level", ""))
+        for item in (levels_spec.get("config") or {}).get("levels", [])
+    )
+    for low, high, name in spans:
+        assert low <= high, f"{code} 区间 {low}~{high}（{name}）上下界颠倒"
+    for (a_low, a_high, a_name), (b_low, b_high, b_name) in zip(spans, spans[1:]):
+        assert a_high < b_low, (
+            f"{code} 区间 {a_low}~{a_high}（{a_name}）与 {b_low}~{b_high}（{b_name}）重叠"
+        )
+
+
+def test_b2_partial_help_still_scores_one():
+    """表B.2 原文：第 2、4、5、6、8 项「需部分协助」仍记 1 分，不能按「能否独立」二分。"""
+    scale = _load("B.2")
+    questions = {item["code"]: item for item in _questions(scale)}
+
+    assert [o["score"] for o in questions["B2-02"]["options"]] == [1, 1, 1, 0, 0]
+    assert [o["score"] for o in questions["B2-04"]["options"]] == [1, 1, 1, 1, 0]
+    assert [o["score"] for o in questions["B2-05"]["options"]] == [1, 1, 0]
+    assert [o["score"] for o in questions["B2-06"]["options"]] == [1, 1, 1, 0]
+    assert [o["score"] for o in questions["B2-08"]["options"]] == [1, 1, 0]
+
+    # 五项「需部分协助」档位各得 1 分，合计 5 分 → 中度依赖（旧实现会全判 0 分）
+    picks = {
+        "B2-01": "3",
+        "B2-02": "3",
+        "B2-03": "3",
+        "B2-04": "4",
+        "B2-05": "2",
+        "B2-06": "2",
+        "B2-07": "2",
+        "B2-08": "2",
+    }
+    result = evaluate_scale(scale, _answers(scale, picks))
+    assert result.total == 5
+    assert result.level == "中度受损"
+
+
+def test_b18_three_part_scoring_includes_age_bonus():
+    """表B.18-2：营养状态受损 + 疾病严重 + 年龄≥70 加 1 分，满分 7 分。"""
+    scale = _load("B.18")
+    picks = {"B18-S1": "yes", "B18-T1": "2", "B18-T2": "0", "B18-T3": "ge70"}
+    result = evaluate_scale(scale, _answers(scale, picks))
+    assert result.total == 3
+    assert result.level == "存在营养风险"
+
+    # 同为营养 2 分，70 岁以下不加分 → 2 分，未达风险阈值
+    young = evaluate_scale(scale, _answers(scale, {"B18-S1": "yes", "B18-T1": "2", "B18-T2": "0", "B18-T3": "lt70"}))
+    assert young.total == 2
+    assert young.level == "未达营养风险"
+
+
+def test_b18_screening_gate_skips_final_section():
+    """初筛全为「否」时终筛不出现，按标准应每周复评，不进入计分。"""
+    scale = _load("B.18")
+    picks = {"B18-S1": "no", "B18-S2": "no", "B18-S3": "no", "B18-S4": "no", "B18-T1": "3"}
+    result = evaluate_scale(scale, _answers(scale, picks))
+    assert result.total == 0
+    assert result.level == "未达营养风险"
+
+
+def test_b13_overlap_removed_without_changing_ruling():
+    """表B.13 注2「4～6」与「≥6」在 6 分处重叠。
+
+    本表保留既有判读口径（6 分归「可能存在」，7 分及以上归「存在」），
+    但把区间写成互不重叠的 4～6 与 7～24，避免 level_map 首个命中造成隐性吞档。
+    """
+    scale = _load("B.13")
+    six = evaluate_scale(scale, _answers(scale, {"B13-01": "3", "B13-02": "3"}))
+    assert six.total == 6
+    assert six.level == "可能存在睡眠障碍"
+
+    seven = evaluate_scale(scale, _answers(scale, {"B13-01": "3", "B13-02": "3", "B13-03": "1"}))
+    assert seven.total == 7
+    assert seven.level == "存在睡眠障碍"

@@ -15,98 +15,106 @@
       "questions": [
         {
           "code": "B2-01",
-          "text": "购物",
-          "plain_text": "自己拿钱去商店买东西，这事您能自己办吗？",
+          "text": "上街购物",
+          "plain_text": "上街买东西这件事，您能自己办吗？",
           "input_type": "single",
           "required": true,
           "options": [
-            { "value": "1", "label": "可独立完成", "score": 1 },
-            { "value": "2", "label": "需部分帮助", "score": 0 },
-            { "value": "3", "label": "不能完成", "score": 0 }
+            { "value": "1", "label": "独立完成所有购物需求", "score": 1 },
+            { "value": "2", "label": "独立购买日常生活用品", "score": 0 },
+            { "value": "3", "label": "每次上街购物都需要人陪伴", "score": 0 },
+            { "value": "4", "label": "完全不上街购物", "score": 0 }
           ]
         },
         {
           "code": "B2-02",
-          "text": "做饭",
-          "plain_text": "自己动手做饭给自己吃，能行吗？",
+          "text": "使用交通工具",
+          "plain_text": "出门坐车、打车，您能自己安排吗？",
           "input_type": "single",
           "required": true,
           "options": [
-            { "value": "1", "label": "可独立完成", "score": 1 },
-            { "value": "2", "label": "需部分帮助", "score": 0 },
-            { "value": "3", "label": "不能完成", "score": 0 }
+            { "value": "1", "label": "能够独立乘坐公共交通工具或独自驾车", "score": 1 },
+            { "value": "2", "label": "能够独立乘坐出租车并安排自己的行车路线，但不能乘坐公交车", "score": 1 },
+            { "value": "3", "label": "在他人帮助或陪伴下能乘坐公共交通工具", "score": 1 },
+            { "value": "4", "label": "仅能在他人陪伴下乘坐出租车或汽车", "score": 0 },
+            { "value": "5", "label": "不能外出", "score": 0 }
           ]
         },
         {
           "code": "B2-03",
-          "text": "洗衣",
-          "plain_text": "自己的衣服自己洗，能行吗？",
+          "text": "食物烹调",
+          "plain_text": "做饭这件事，您能自己张罗吗？",
           "input_type": "single",
           "required": true,
           "options": [
-            { "value": "1", "label": "可独立完成", "score": 1 },
-            { "value": "2", "label": "需部分帮助", "score": 0 },
-            { "value": "3", "label": "不能完成", "score": 0 }
+            { "value": "1", "label": "能独立计划、烹煮和摆设一顿适当的饭菜", "score": 1 },
+            { "value": "2", "label": "如果备好一切佐料，会做一顿适当的饭菜", "score": 0 },
+            { "value": "3", "label": "会将已做好的饭菜加热", "score": 0 },
+            { "value": "4", "label": "需要别人把饭菜煮好、摆好", "score": 0 }
           ]
         },
         {
           "code": "B2-04",
-          "text": "打扫卫生",
-          "plain_text": "家里扫地、擦桌子这些活儿，能自己干吗？",
+          "text": "家务维持",
+          "plain_text": "收拾屋子、做家务，您能做到什么程度？",
           "input_type": "single",
           "required": true,
           "options": [
-            { "value": "1", "label": "可独立完成", "score": 1 },
-            { "value": "2", "label": "需部分帮助", "score": 0 },
-            { "value": "3", "label": "不能完成", "score": 0 }
+            { "value": "1", "label": "能做较繁重的家务或需偶尔协助（如搬动沙发、擦地板、擦窗户）", "score": 1 },
+            { "value": "2", "label": "能做比较简单的家务，如洗碗、铺床、叠被", "score": 1 },
+            { "value": "3", "label": "能做比较简单的家务，但不能达到可被接受的整洁程度", "score": 1 },
+            { "value": "4", "label": "所有的家务都需要别人协助", "score": 1 },
+            { "value": "5", "label": "完全不能做家务", "score": 0 }
           ]
         },
         {
           "code": "B2-05",
-          "text": "服药",
-          "plain_text": "按时吃药，能自己完成吗？",
+          "text": "洗衣服",
+          "plain_text": "洗衣服这件事，您能自己做吗？",
           "input_type": "single",
           "required": true,
           "options": [
-            { "value": "1", "label": "可独立完成", "score": 1 },
-            { "value": "2", "label": "需部分帮助", "score": 0 },
-            { "value": "3", "label": "不能完成", "score": 0 }
+            { "value": "1", "label": "自己清洗所有衣物", "score": 1 },
+            { "value": "2", "label": "只清洗小件衣物或部分衣物需协助", "score": 1 },
+            { "value": "3", "label": "所有衣物必须由别人洗及晾晒", "score": 0 }
           ]
         },
         {
           "code": "B2-06",
-          "text": "管理钱财",
-          "plain_text": "管钱、记账这些事，能自己办吗？",
+          "text": "使用电话",
+          "plain_text": "打电话、接电话，您能自己来吗？",
           "input_type": "single",
           "required": true,
           "options": [
-            { "value": "1", "label": "可独立完成", "score": 1 },
-            { "value": "2", "label": "需部分帮助", "score": 0 },
-            { "value": "3", "label": "不能完成", "score": 0 }
+            { "value": "1", "label": "独立使用电话，含查电话簿、拨号等", "score": 1 },
+            { "value": "2", "label": "仅可拨熟悉的电话号码", "score": 1 },
+            { "value": "3", "label": "仅会接电话，不会拨电话", "score": 1 },
+            { "value": "4", "label": "完全不会使用电话或不适用", "score": 0 }
           ]
         },
         {
           "code": "B2-07",
-          "text": "使用电话",
-          "plain_text": "打电话（接打手机、电视电话），能自己完成吗？",
+          "text": "服用药物",
+          "plain_text": "按时按量吃药，您能自己管吗？",
           "input_type": "single",
           "required": true,
           "options": [
-            { "value": "1", "label": "可独立完成", "score": 1 },
-            { "value": "2", "label": "需部分帮助", "score": 0 },
-            { "value": "3", "label": "不能完成", "score": 0 }
+            { "value": "1", "label": "能自己负责在正确的时间用正确的药物", "score": 1 },
+            { "value": "2", "label": "需要提醒或少许协助", "score": 0 },
+            { "value": "3", "label": "如果药品事先按时间和剂量摆好，能自己服用", "score": 0 },
+            { "value": "4", "label": "不能自己服用药物", "score": 0 }
           ]
         },
         {
           "code": "B2-08",
-          "text": "独自出行",
-          "plain_text": "自己坐车出门办事，能做到吗？",
+          "text": "处理财务",
+          "plain_text": "管钱的事，比如去银行、买东西付账，您能自己办吗？",
           "input_type": "single",
           "required": true,
           "options": [
-            { "value": "1", "label": "可独立完成", "score": 1 },
-            { "value": "2", "label": "需部分帮助", "score": 0 },
-            { "value": "3", "label": "不能完成", "score": 0 }
+            { "value": "1", "label": "可以独立处理财务", "score": 1 },
+            { "value": "2", "label": "可以处理日常的购买，但需要别人协助与银行的往来或大宗买卖", "score": 1 },
+            { "value": "3", "label": "不能处理财务", "score": 0 }
           ]
         }
       ]
@@ -179,5 +187,5 @@
       "reason": "钱财管理不能独立完成，建议加做简易智力评估量表筛查认知功能。"
     }
   ],
-  "notes": "条目按通用 Lawton-Brody 工具性日常生活活动能力量表预置草稿（各题按「可独立完成」计 1 项，需部分帮助与不能完成均不计入），发布前须以 WS/T 888—2026 附录 B 原文逐项核对题目表述、选项与判读阈值。"
+  "notes": "选项与分值逐项取自 WS/T 888—2026 附录 B 表B.2 原文，8 个项目各满分 1 分。注意原文第 2、4、5、6、8 项存在「需部分协助仍记 1 分」的档位：使用交通工具前三档、家务维持前四档、洗衣服前两档、使用电话前三档、处理财务前两档均为 1 分，仅最差一档记 0 分，不可按「能否独立完成」二分为 1/0（旧版按模板化三档录入，会把上述情形错记为 0 分，系统性低估工具性日常生活能力）。判读取自注2：8 分正常、6～7 分轻度依赖、3～5 分中度依赖、≤2 分严重依赖。另：B2-07 选项描述的是老人「服药」这项能力，属原文评估内容，不构成用药建议。"
 }

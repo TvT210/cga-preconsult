@@ -7,65 +7,271 @@
   "version": "0.1.0-draft",
   "review_status": "draft_pending_medical_review",
   "summary": "由体重下降、进食量减少与疾病严重程度三部分构成的营养风险筛查，总分 0~7 分。",
-  "collection": { "support": ["patient", "staff"], "proxy_allowed": true, "measured": true },
+  "collection": {
+    "support": [
+      "patient",
+      "staff"
+    ],
+    "proxy_allowed": true,
+    "measured": true
+  },
   "sections": [
     {
-      "code": "B18-S1",
-      "title": "营养风险筛查与测量",
+      "code": "screen",
+      "title": "第一步：初筛",
       "questions": [
         {
-          "code": "B18-01",
-          "text": "体重下降（近 1 个月内）",
-          "plain_text": "最近一个月，您的体重有没有下降？大概掉了多少？",
+          "code": "B18-S1",
+          "text": "体质指数＜20.5 kg/m²",
+          "plain_text": "按身高体重算出来的体质指数，是不是低于 20.5？",
           "input_type": "single",
           "required": true,
           "options": [
-            { "value": "0", "label": "没有下降", "score": 0 },
-            { "value": "1", "label": "下降 1~5 kg", "score": 1 },
-            { "value": "2", "label": "下降超过 5 kg 或说不清", "score": 2 }
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 0
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
           ]
         },
         {
-          "code": "B18-02",
-          "text": "进食量减少（近 1 个月内食欲下降或摄入量减少）",
-          "plain_text": "最近一个月，您吃饭的量是不是比平时少了？",
+          "code": "B18-S2",
+          "text": "最近 3 个月有无体质量减轻",
+          "plain_text": "最近 3 个月，体重有没有往下掉？",
           "input_type": "single",
           "required": true,
           "options": [
-            { "value": "0", "label": "没有减少", "score": 0 },
-            { "value": "1", "label": "有减少", "score": 2 }
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 0
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
           ]
         },
         {
-          "code": "B18-03",
-          "text": "疾病严重程度评分",
-          "plain_text": "您现在的病情有多重？（由医护人员按病情判断）",
+          "code": "B18-S3",
+          "text": "最近 1 周有无膳食摄入量减少",
+          "plain_text": "最近 1 周，饭量是不是比以前少了？",
           "input_type": "single",
           "required": true,
           "options": [
-            { "value": "0", "label": "无影响营养的疾病", "score": 0 },
-            { "value": "1", "label": "轻度", "score": 1 },
-            { "value": "2", "label": "中度", "score": 2 },
-            { "value": "3", "label": "重度", "score": 3 }
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 0
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
           ]
         },
         {
-          "code": "B18-04",
-          "text": "体重实测值",
-          "plain_text": "现在给您称一下体重，记下来。",
-          "input_type": "number",
-          "required": false,
-          "unit": "kg",
-          "options": []
+          "code": "B18-S4",
+          "text": "疾病是否严重（如重症监护室、大手术后）",
+          "plain_text": "现在有没有很重的病，比如刚做完大手术、在重症监护？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "是",
+              "score": 0
+            },
+            {
+              "value": "no",
+              "label": "否",
+              "score": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "final",
+      "title": "第二步：终筛（初筛任一项为「是」时填写）",
+      "questions": [
+        {
+          "code": "B18-T1",
+          "text": "营养状态受损程度",
+          "plain_text": "按体重下降、吃饭量和体质指数，营养状态受损到什么程度？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "0",
+              "label": "正常营养状态",
+              "score": 0
+            },
+            {
+              "value": "1",
+              "label": "3 个月体质量丢失＞5%，或进食量为平时的 50%～75%",
+              "score": 1
+            },
+            {
+              "value": "2",
+              "label": "2 个月体质量丢失＞5%，或进食量为平时的 25%～50%，或体质指数 18.5～20.5",
+              "score": 2
+            },
+            {
+              "value": "3",
+              "label": "1 个月体质量丢失＞5%（或 3 个月丢失＞15%），或进食量为平时的 25% 以下，或体质指数＜18.5",
+              "score": 3
+            }
+          ],
+          "when": {
+            "any": [
+              {
+                "question": "B18-S1",
+                "op": "eq",
+                "value": "yes"
+              },
+              {
+                "question": "B18-S2",
+                "op": "eq",
+                "value": "yes"
+              },
+              {
+                "question": "B18-S3",
+                "op": "eq",
+                "value": "yes"
+              },
+              {
+                "question": "B18-S4",
+                "op": "eq",
+                "value": "yes"
+              }
+            ]
+          }
         },
         {
-          "code": "B18-05",
-          "text": "身高实测值",
+          "code": "B18-T2",
+          "text": "疾病严重程度",
+          "plain_text": "现在的病情对营养需求的影响有多大？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "0",
+              "label": "正常能量需求",
+              "score": 0
+            },
+            {
+              "value": "1",
+              "label": "髋骨骨折，或慢性疾病如肝硬化、慢性阻塞性肺疾病、长期血液透析、糖尿病、肿瘤",
+              "score": 1
+            },
+            {
+              "value": "2",
+              "label": "腹部大手术、脑卒中、重症肺炎、血液系统恶性肿瘤",
+              "score": 2
+            },
+            {
+              "value": "3",
+              "label": "颅脑损伤、骨髓移植、重症监护（APACHE＞10 分）",
+              "score": 3
+            }
+          ],
+          "when": {
+            "any": [
+              {
+                "question": "B18-S1",
+                "op": "eq",
+                "value": "yes"
+              },
+              {
+                "question": "B18-S2",
+                "op": "eq",
+                "value": "yes"
+              },
+              {
+                "question": "B18-S3",
+                "op": "eq",
+                "value": "yes"
+              },
+              {
+                "question": "B18-S4",
+                "op": "eq",
+                "value": "yes"
+              }
+            ]
+          }
+        },
+        {
+          "code": "B18-T3",
+          "text": "年龄",
+          "plain_text": "老人现在多大年纪？",
+          "input_type": "single",
+          "required": true,
+          "options": [
+            {
+              "value": "lt70",
+              "label": "70 岁以下",
+              "score": 0
+            },
+            {
+              "value": "ge70",
+              "label": "70 岁及以上（加 1 分）",
+              "score": 1
+            }
+          ],
+          "when": {
+            "any": [
+              {
+                "question": "B18-S1",
+                "op": "eq",
+                "value": "yes"
+              },
+              {
+                "question": "B18-S2",
+                "op": "eq",
+                "value": "yes"
+              },
+              {
+                "question": "B18-S3",
+                "op": "eq",
+                "value": "yes"
+              },
+              {
+                "question": "B18-S4",
+                "op": "eq",
+                "value": "yes"
+              }
+            ]
+          }
+        },
+        {
+          "code": "B18-M1",
+          "text": "身高",
           "plain_text": "现在给您量一下身高，记下来。",
           "input_type": "number",
-          "required": false,
-          "unit": "cm",
-          "options": []
+          "required": true,
+          "measure": {
+            "unit": "cm",
+            "hint": "记录实测值，仅作 BMI 计算与复核用，不参与计分"
+          }
+        },
+        {
+          "code": "B18-M2",
+          "text": "体重",
+          "plain_text": "现在给您称一下体重，记下来。",
+          "input_type": "number",
+          "required": true,
+          "measure": {
+            "unit": "kg",
+            "hint": "记录实测值，仅作 BMI 计算与复核用，不参与计分"
+          }
         }
       ]
     }
@@ -75,42 +281,172 @@
       "rule_type": "sum",
       "config": {
         "items": [
-          { "code": "B18-01", "label": "体重下降", "max_score": 2 },
-          { "code": "B18-02", "label": "进食量减少", "max_score": 2 },
-          { "code": "B18-03", "label": "疾病严重程度", "max_score": 3 }
-        ]
-      },
-      "explanation": "体重下降（0~2 分）、进食量减少（0~2 分）与疾病严重程度（0~3 分）三项相加，满分 7 分；体重、身高实测值仅用于记录与随访对比，不参与计分。"
+          {
+            "code": "B18-T1",
+            "label": "营养状态受损程度",
+            "max_score": 3,
+            "when": {
+              "any": [
+                {
+                  "question": "B18-S1",
+                  "op": "eq",
+                  "value": "yes"
+                },
+                {
+                  "question": "B18-S2",
+                  "op": "eq",
+                  "value": "yes"
+                },
+                {
+                  "question": "B18-S3",
+                  "op": "eq",
+                  "value": "yes"
+                },
+                {
+                  "question": "B18-S4",
+                  "op": "eq",
+                  "value": "yes"
+                }
+              ]
+            }
+          },
+          {
+            "code": "B18-T2",
+            "label": "疾病严重程度",
+            "max_score": 3,
+            "when": {
+              "any": [
+                {
+                  "question": "B18-S1",
+                  "op": "eq",
+                  "value": "yes"
+                },
+                {
+                  "question": "B18-S2",
+                  "op": "eq",
+                  "value": "yes"
+                },
+                {
+                  "question": "B18-S3",
+                  "op": "eq",
+                  "value": "yes"
+                },
+                {
+                  "question": "B18-S4",
+                  "op": "eq",
+                  "value": "yes"
+                }
+              ]
+            }
+          },
+          {
+            "code": "B18-T3",
+            "label": "年龄≥70 岁加分",
+            "max_score": 1,
+            "when": {
+              "any": [
+                {
+                  "question": "B18-S1",
+                  "op": "eq",
+                  "value": "yes"
+                },
+                {
+                  "question": "B18-S2",
+                  "op": "eq",
+                  "value": "yes"
+                },
+                {
+                  "question": "B18-S3",
+                  "op": "eq",
+                  "value": "yes"
+                },
+                {
+                  "question": "B18-S4",
+                  "op": "eq",
+                  "value": "yes"
+                }
+              ]
+            }
+          }
+        ],
+        "explanation": "最终得分为营养状态受损程度、疾病严重程度、年龄 3 项得分之和（表B.18 注1），满分 7 分。"
+      }
     },
     "levels": {
       "rule_type": "level_map",
       "config": {
         "levels": [
-          { "min": 0, "max": 2, "level": "未达营养风险", "interpretation": "建议每周复评，持续监测体重与进食量。", "abnormal": false, "severity": "none" },
-          { "min": 3, "max": 7, "level": "存在营养风险", "interpretation": "提示存在营养风险，建议尽快完成营养评估并启动营养干预。", "abnormal": true, "severity": "medium" }
+          {
+            "min": 0,
+            "max": 2,
+            "level": "未达营养风险",
+            "interpretation": "建议每周复评，持续监测体重与进食量。",
+            "abnormal": false,
+            "severity": "none"
+          },
+          {
+            "min": 3,
+            "max": 7,
+            "level": "存在营养风险",
+            "interpretation": "提示存在营养风险，建议尽快完成营养评估并启动营养干预。",
+            "abnormal": true,
+            "severity": "medium"
+          }
         ]
       }
     },
     "flags": [
       {
         "rule_type": "condition",
-        "config": { "any": [{ "question": "B18-01", "op": "gt", "value": 0 }] },
+        "config": {
+          "any": [
+            {
+              "question": "B18-01",
+              "op": "gt",
+              "value": 0
+            }
+          ]
+        },
         "flag": "近 1 个月内体重下降",
-        "symptom_codes": ["weight_loss", "low_bmi"],
+        "symptom_codes": [
+          "weight_loss",
+          "low_bmi"
+        ],
         "severity": "medium"
       },
       {
         "rule_type": "condition",
-        "config": { "any": [{ "question": "B18-02", "op": "eq", "value": "1" }] },
+        "config": {
+          "any": [
+            {
+              "question": "B18-02",
+              "op": "eq",
+              "value": "1"
+            }
+          ]
+        },
         "flag": "进食量减少",
-        "symptom_codes": ["poor_appetite"],
+        "symptom_codes": [
+          "poor_appetite"
+        ],
         "severity": "medium"
       },
       {
         "rule_type": "condition",
-        "config": { "any": [{ "question": "B18-03", "op": "gte", "value": 2 }] },
+        "config": {
+          "any": [
+            {
+              "question": "B18-03",
+              "op": "gte",
+              "value": 2
+            }
+          ]
+        },
         "flag": "基础疾病程度较重",
-        "symptom_codes": ["fatigue", "cachexia"],
+        "symptom_codes": [
+          "fatigue",
+          "cachexia"
+        ],
         "severity": "medium"
       }
     ]
@@ -120,13 +456,21 @@
       "code": "B18-B1",
       "when": {
         "any": [
-          { "question": "B18-01", "op": "gt", "value": 0 },
-          { "question": "B18-02", "op": "eq", "value": "1" }
+          {
+            "question": "B18-01",
+            "op": "gt",
+            "value": 0
+          },
+          {
+            "question": "B18-02",
+            "op": "eq",
+            "value": "1"
+          }
         ]
       },
       "target_scale": "B.19",
       "reason": "存在体重下降或进食量减少，建议加做微营养评定（MNA-SF）确认营养不良风险。"
     }
   ],
-  "notes": "条目按通用 NRS-2002 营养风险筛查预置草稿，发布前须以 WS/T 888—2026 附录 B 原文逐项核对。需求文档 §5.2 判读要点为「0~2 分每周复评，3~7 分存在营养风险」，本表据此将总分取值范围设为 0~7 分（体重下降 0~2 + 进食量减少 0~2 + 疾病严重程度 0~3）；具体条目数与各档取值待原文核对。"
+  "notes": "结构与计分逐项取自表B.18 原文：先做表B.18-1 初筛 4 项，任一项为「是」再填表B.18-2 终筛；终筛由营养状态受损程度（0～3）、疾病严重程度（0～3）、年龄≥70 岁加 1 分三部分构成，总分 0～7 分。初筛全为「否」时终筛题目不出现，按标准应每周复评。身高体重仅用于计算体质指数与复核，不参与计分。判读取自注2：0～2 分每周复评（计划行腹部大手术者行预防性营养干预）；3～7 分存在营养风险，启动营养干预计划。"
 }

@@ -290,9 +290,12 @@ def evaluate_scale(scale: dict, answers: dict[str, AnswerRecord]) -> Evaluation:
     # 条目级 when：条件不成立的条目不参与求和，也不计为缺项（如 B.15 插管/非插管二选一）
     items = [item for item in items if _item_applies(item, answers)]
     if not items:
-        result.notices.append("计分条目均未满足适用条件（如插管状态未选择），需人工确认")
+        # 计分条目全部被适用条件过滤，分两种情形处理：
+        # 1) 本身就是合法阴性结论（如 B.18 初筛全为「否」）——仍应按 0 分走分级；
+        # 2) 漏填关键分流项（如 B.15 未选插管状态）——下方分级因区间不匹配而另给提示。
+        # 因此不再提前 return，否则前一种情形会丢掉等级。
+        result.notices.append("计分条目均未满足适用条件，需人工确认")
         result.needs_manual_review = True
-        return result
 
     detail_refs: list[dict] = []
     total = 0.0
