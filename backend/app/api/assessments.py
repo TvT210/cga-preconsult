@@ -10,14 +10,25 @@ from sqlalchemy.orm import Session
 from app.api import new_router, paginate
 
 router = new_router()
-from app.core.deps import ROLE_ELDER, ensure_patient_access, get_current_user
+from app.core.deps import ROLE_ELDER, ensure_patient_access, get_current_user, require_staff
 from app.db.base import get_db
 from app.db.models import AssessmentAnswer, AssessmentScore, AssessmentSession, Patient, User
 from app.services import audit
-from app.services.branch_dispatch import dispatch_branches
+from app.services.branch_dispatch import (
+    STATUS_SKIPPED,
+    dispatch_branches,
+    dispatch_overview,
+    dispatch_source,
+    dispatch_task,
+)
 from app.services.scale_presenter import present_questions, present_sections
 from app.services.scales_store import get_scale
-from app.services.scoring import AnswerRecord, branch_recommendations, evaluate_scale
+from app.services.scoring import (
+    AnswerRecord,
+    branch_recommendations,
+    evaluate_scale,
+    question_applies,
+)
 
 
 def _questions(scale: dict) -> list[dict]:
@@ -30,6 +41,23 @@ def _questions(scale: dict) -> list[dict]:
 
 def _question_table(scale: dict) -> dict[str, dict]:
     return {question.get("code", ""): question for question in _questions(scale)}
+
+
+def _next_question(scale: dict, answers: dict[str, AnswerRecord]) -> str:
+    """下一道需要作答的题：跳过已作答的，也跳过当前条件下不适用的。
+
+    不适用的判定与计分侧同源（`question_applies`），题目顺序保证分流题在前，
+    因此这里按顺序取第一个「未作答且适用」的题即可。
+    """
+    answered = {code for code, record in answers.items() if record.present or record.skipped}
+    for question in _questions(scale):
+        code = question.get("code", "")
+        if code in answered:
+            continue
+        if not question_applies(question, answers):
+            continue
+        return code
+    return ""
 
 
 def _answer_records(db: Session, session_id: int) -> dict[str, AnswerRecord]:
@@ -51,12 +79,7 @@ def _session_payload(db: Session, session: AssessmentSession, include_questions:
     scale = get_scale(db, session.scale_code) or {}
     questions = _questions(scale)
     answers = _answer_records(db, session.id)
-    answered_codes = {code for code, record in answers.items() if record.present or record.skipped}
-    next_question = ""
-    for question in questions:
-        if question.get("code") not in answered_codes:
-            next_question = question.get("code", "")
-            break
+    next_question = _next_question(scale, answers)
     payload = {
         "id": session.id,
         "patient_id": session.patient_id,
@@ -73,6 +96,10 @@ def _session_payload(db: Session, session: AssessmentSession, include_questions:
         "progress": session.progress,
         "total_questions": len(questions),
         "current_question": next_question,
+        # 派发溯源（A-3）：本任务由哪次评估的哪条分支触发，以及本次评估又派生了哪些任务。
+        # 老人端结果页与医护复核页共用这两个字段，避免两处各算一遍。
+        "dispatched_from": dispatch_source(db, session),
+        "dispatched": dispatch_overview(db, session.id),
         "scale_version": session.scale_version,
         "rule_version": session.rule_version,
         "started_at": session.started_at.isoformat() if session.started_at else "",
@@ -152,6 +179,70 @@ def create_assessment(
     audit.record(db, user, "create", "assessment", session.id, {"patient_id": patient_id, "scale_code": scale_code})
     db.commit()
     return _session_payload(db, session)
+
+
+@router.post("/assessments/dispatch")
+def manual_dispatch(
+    payload: dict,
+    user: User = Depends(require_staff),
+    db: Session = Depends(get_db),
+):
+    """医护手动派发一张量表给患者（A-3 遗留项：staff 端派发入口）。
+
+    与自动派发只建同一种空壳任务：不代填、不下结论，患者仍需自己进入作答。
+    与自动派发的差别是**不做环形防护**——医护明确要求补测/复测是合法决策，
+    系统的环防护只用于约束机器自行派生。派发人、理由与来源评估都会落库以便追溯。
+    """
+    patient_id = int(payload.get("patient_id") or 0)
+    scale_code = (payload.get("scale_code") or "").strip()
+    if not patient_id or not scale_code:
+        raise HTTPException(status_code=400, detail="缺少 patient_id 或 scale_code")
+
+    patient = db.get(Patient, patient_id)
+    if patient is None:
+        raise HTTPException(status_code=404, detail="患者不存在")
+
+    source: AssessmentSession | None = None
+    source_id = payload.get("source_session_id")
+    if source_id not in (None, ""):
+        source = db.get(AssessmentSession, int(source_id))
+        if source is None:
+            raise HTTPException(status_code=404, detail="来源评估不存在")
+        if source.patient_id != patient_id:
+            raise HTTPException(status_code=400, detail="来源评估与该患者不一致")
+
+    entry = dispatch_task(
+        db,
+        user,
+        patient_id,
+        scale_code,
+        reason=(payload.get("reason") or "").strip(),
+        source=source,
+        branch_code=(payload.get("branch_code") or "").strip(),
+    )
+    db.commit()
+    audit.record(
+        db,
+        user,
+        "dispatch",
+        "assessment",
+        entry["session_id"] or "",
+        {
+            "patient_id": patient_id,
+            "scale_code": scale_code,
+            "status": entry["status"],
+            "skip_reason": entry["skip_reason"],
+            "source_session_id": source.id if source is not None else None,
+        },
+    )
+    db.commit()
+    if entry["status"] == STATUS_SKIPPED:
+        # 不抛 4xx：前端需要按 skip_reason 给出「该量表条目待补录」这类具体解释
+        entry["message"] = {
+            "scale_missing": "题库中没有这张量表",
+            "no_questions": "该量表条目待以标准原文补录，暂不可采集",
+        }.get(entry["skip_reason"], "暂无法派发该量表")
+    return entry
 
 
 @router.get("/assessments")
@@ -390,15 +481,7 @@ def submit_answer(
 
     scale = get_scale(db, session.scale_code) or {}
     questions = _questions(scale)
-    answered_codes = {
-        row.question_code
-        for row in db.query(AssessmentAnswer).filter(AssessmentAnswer.session_id == session.id).all()
-    }
-    next_question = ""
-    for question in questions:
-        if question.get("code") not in answered_codes:
-            next_question = question.get("code", "")
-            break
+    next_question = _next_question(scale, _answer_records(db, session.id))
     session.current_question = next_question
     db.commit()
     return {

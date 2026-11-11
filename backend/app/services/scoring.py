@@ -234,6 +234,16 @@ def _item_applies(item: dict, answers: dict[str, AnswerRecord]) -> bool:
     return evaluate_conditions(when, answers)
 
 
+def question_applies(question: dict, answers: dict[str, AnswerRecord]) -> bool:
+    """题目级适用条件。
+
+    与计分条目的 `when` 同一套语义，但用途不同：题目层面用于**跳过不适用的题**，
+    避免患者看到与自身路径无关的问题（如 B.15 未插管却要回答插管项、
+    B.18 初筛全阴却要做终筛）。计分侧仍由 `_item_applies` 独立把关，两者互不替代。
+    """
+    return _item_applies(question, answers)
+
+
 def _measured_mismatch(scale: dict, answers: dict[str, AnswerRecord]) -> list[str]:
     """实测值与所选分档是否落在同一区间；不一致时交由人工确认，不静默采信。"""
     notices: list[str] = []

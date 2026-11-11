@@ -10,13 +10,24 @@ import type {
   AssessmentAnswer,
   AssessmentSession,
   Correction,
+  DispatchedTask,
+  DispatchResult,
+  Paged,
   ScaleDetail,
+  ScaleListItem,
   ScaleQuestion,
 } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/components/Toast";
 import {
   ClinEmpty,
@@ -71,6 +82,16 @@ function optionScore(question: ScaleQuestion, value: AnswerValue): number | null
   return scores.reduce((acc, item) => acc + item, 0);
 }
 
+/** 派发任务的进度描述：让医护一眼看出「还没做 / 做完待复核」 */
+function taskStatusText(item: DispatchedTask): string {
+  if (item.status === "in_progress") {
+    return item.progress ? `填写中（已答 ${item.progress} 题）` : "待患者填写";
+  }
+  if (item.status === "finished") return "待复核";
+  if (item.status === "reviewed") return "已复核";
+  return assessmentStatusLabel(item.status);
+}
+
 export default function StaffReviewPage() {
   const params = useParams<{ id: string | string[] }>();
   const assessmentId = Array.isArray(params.id) ? params.id[0] : params.id;
@@ -92,6 +113,29 @@ export default function StaffReviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  /** 可派发的量表（题库中已有条目者） */
+  const [scales, setScales] = useState<ScaleListItem[]>([]);
+  const [manualCode, setManualCode] = useState("");
+  const [manualReason, setManualReason] = useState("");
+  /** 正在派发的量表编码，用于按钮 loading */
+  const [dispatching, setDispatching] = useState("");
+
+  // 量表清单只用于手动派发的下拉，取不到也不应阻塞复核
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      try {
+        const payload = await api.get<ScaleListItem[] | Paged<ScaleListItem>>("/scales");
+        const list = Array.isArray(payload) ? payload : (payload?.items ?? []);
+        if (alive) setScales(list.filter((item) => item.item_count > 0));
+      } catch {
+        /* 忽略：下拉留空即可，主流程不受影响 */
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const load = useCallback(async () => {
     if (!assessmentId) return;
@@ -191,6 +235,43 @@ export default function StaffReviewPage() {
     [session, corrections, comment, load, toast],
   );
 
+  /** 手动派发一张量表：只建待办任务，不代填、不下结论 */
+  const dispatchScale = useCallback(
+    async (scaleCode: string, reason: string) => {
+      if (!session || !scaleCode) return;
+      setDispatching(scaleCode);
+      try {
+        const result = await api.post<DispatchResult>("/assessments/dispatch", {
+          patient_id: session.patient_id,
+          scale_code: scaleCode,
+          reason: reason.trim(),
+          source_session_id: session.id,
+        });
+        if (result.status === "skipped") {
+          toast(result.message || "这张量表暂时无法派发。", "warning");
+        } else if (result.status === "reused") {
+          toast(
+            `患者已有「${result.target_name || scaleCode}」的进行中任务，已复用该任务。`,
+            "info",
+          );
+        } else {
+          toast(
+            `已派发「${result.target_name || scaleCode}」，等待患者填写。`,
+            "success",
+          );
+        }
+        await load();
+        return result.status;
+      } catch {
+        /* 错误提示已由 api 层统一处理 */
+        return "";
+      } finally {
+        setDispatching("");
+      }
+    },
+    [session, load, toast],
+  );
+
   if (loading) {
     return <ClinLoading label="正在加载作答明细…" />;
   }
@@ -211,6 +292,15 @@ export default function StaffReviewPage() {
 
   const activeQuestion =
     questions.find((question) => question.code === activeCode) ?? questions[0] ?? null;
+
+  const dispatched: DispatchedTask[] = session.dispatched ?? [];
+  // 题库里定义了、但本次没有派发成功（被环防护拦下、题库缺条目等）的分支，
+  // 由医护人工判断是否补派 —— 这正是 staff 端需要派发入口的地方。
+  const pendingBranches = (scale?.branches ?? []).filter(
+    (branch) =>
+      branch.target_scale &&
+      !dispatched.some((item) => item.target_scale === branch.target_scale),
+  );
 
   return (
     <div>
@@ -301,6 +391,185 @@ export default function StaffReviewPage() {
             判读说明：{after.interpretation}
           </p>
         ) : null}
+      </ClinSection>
+
+      {/* ------------------------- 后续评估派发 ------------------------- */}
+      <ClinSection title="后续评估派发">
+        <p className="mb-3 text-clin-xs text-clin-fg-muted">
+          筛查阳性或复核改分后，系统会为患者建一条待办任务，只建任务、不代填、不下结论。
+          派发不会拦截「已做过的量表」——医护要求复测或补测时，此处可直接追加。
+        </p>
+
+        {session.dispatched_from ? (
+          <p className="mb-3 rounded-md border border-clin-border bg-clin-bg-subtle px-3 py-2 text-clin-xs text-clin-fg-muted">
+            本任务由「
+            {session.dispatched_from.scale_name || session.dispatched_from.scale_code}
+            」评估的{" "}
+            <span className="text-clin-fg">
+              {session.dispatched_from.branch_code || "人工派发"}
+            </span>{" "}
+            触发
+            {session.dispatched_from.reason
+              ? `（${session.dispatched_from.reason}）`
+              : ""}
+            。
+            <Link
+              href={`/staff/review/${session.dispatched_from.session_id}`}
+              className="ml-1 text-clin-accent hover:underline"
+            >
+              查看来源评估
+            </Link>
+          </p>
+        ) : null}
+
+        {dispatched.length ? (
+          <div className="overflow-hidden rounded-clin border border-clin-border">
+            <table className="w-full text-left">
+              <thead className="border-b border-clin-border bg-clin-muted">
+                <tr>
+                  <th className="px-3 py-1.5 text-clin-xs font-medium text-clin-fg-muted">
+                    后续量表
+                  </th>
+                  <th className="px-3 py-1.5 text-clin-xs font-medium text-clin-fg-muted">
+                    触发来源
+                  </th>
+                  <th className="px-3 py-1.5 text-clin-xs font-medium text-clin-fg-muted">
+                    进度
+                  </th>
+                  <th className="px-3 py-1.5 text-clin-xs font-medium text-clin-fg-muted">
+                    操作
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {dispatched.map((item) => (
+                  <tr
+                    key={String(item.session_id)}
+                    className="border-b border-clin-border transition-colors duration-150 last:border-0 hover:bg-clin-muted"
+                  >
+                    <td className="px-3 py-2 align-top">
+                      <p className="text-clin-sm text-clin-fg">
+                        {item.target_name || item.target_scale}
+                      </p>
+                      {item.reason ? (
+                        <p className="mt-0.5 text-clin-xs text-clin-fg-muted">
+                          {item.reason}
+                        </p>
+                      ) : null}
+                    </td>
+                    <td className="px-3 py-2 align-top text-clin-sm text-clin-fg-muted">
+                      {item.branch_code || "人工派发"}
+                    </td>
+                    <td className="px-3 py-2 align-top">
+                      <Badge
+                        variant={
+                          item.status === "reviewed"
+                            ? "success"
+                            : item.status === "finished"
+                              ? "secondary"
+                              : "warning"
+                        }
+                      >
+                        {taskStatusText(item)}
+                      </Badge>
+                    </td>
+                    <td className="px-3 py-2 align-top">
+                      <Link
+                        href={`/staff/review/${item.session_id}`}
+                        className="text-clin-sm text-clin-accent hover:underline"
+                      >
+                        打开复核
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="rounded-md border border-clin-border bg-clin-bg-subtle px-3 py-2 text-clin-xs text-clin-fg-muted">
+            本次评估未派生后续任务。
+          </p>
+        )}
+
+        {pendingBranches.length ? (
+          <div className="mt-4">
+            <Label>题库建议但尚未派发</Label>
+            <ul className="mt-1.5 space-y-2">
+              {pendingBranches.map((branch) => (
+                <li
+                  key={branch.code ?? branch.target_scale}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-clin-border px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="text-clin-sm text-clin-fg">
+                      {branch.target_scale}
+                      <span className="ml-2 text-clin-xs text-clin-fg-muted">
+                        {branch.code ?? ""}
+                      </span>
+                    </p>
+                    <p className="mt-0.5 text-clin-xs text-clin-fg-muted">
+                      {branch.reason || "题库未给出推荐理由"}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    loading={dispatching === branch.target_scale}
+                    onClick={() =>
+                      void dispatchScale(
+                        branch.target_scale ?? "",
+                        branch.reason || "",
+                      )
+                    }
+                  >
+                    派发
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        <div className="mt-4 border-t border-clin-border pt-4">
+          <Label>手动派发其他量表</Label>
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            <Select value={manualCode} onValueChange={setManualCode}>
+              <SelectTrigger className="w-[240px]" aria-label="选择要派发的量表">
+                <SelectValue placeholder="选择量表" />
+              </SelectTrigger>
+              <SelectContent>
+                {scales.map((item) => (
+                  <SelectItem key={item.code} value={item.code}>
+                    {item.name}（{item.code}）
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              className="max-w-[280px]"
+              value={manualReason}
+              onChange={(event) => setManualReason(event.target.value)}
+              placeholder="派发理由（选填，会记入追溯）"
+              aria-label="派发理由"
+            />
+            <Button
+              size="sm"
+              disabled={!manualCode}
+              loading={dispatching === manualCode}
+              onClick={() => {
+                void dispatchScale(manualCode, manualReason).then((status) => {
+                  if (status === "dispatched" || status === "reused") {
+                    setManualCode("");
+                    setManualReason("");
+                  }
+                });
+              }}
+            >
+              建立待办任务
+            </Button>
+          </div>
+        </div>
       </ClinSection>
 
       {/* ------------------------- 左题右答对照 ------------------------- */}

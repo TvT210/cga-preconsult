@@ -468,3 +468,26 @@ def test_b13_overlap_removed_without_changing_ruling():
     seven = evaluate_scale(scale, _answers(scale, {"B13-01": "3", "B13-02": "3", "B13-03": "1"}))
     assert seven.total == 7
     assert seven.level == "存在睡眠障碍"
+
+
+def test_gate_question_unanswered_is_not_counted_as_missing():
+    """被 `when` 排除的题即使没答也不算缺项。
+
+    这是前端按 `when` 隐藏题目的前提：老人根本没机会回答分流后不适用的题，
+    如果后端仍把它记为缺项，每份 B.15 / B.18 都会挂上「需人工复核」。
+    """
+    b15 = _load("B.15")
+    for pick in ("vent", "non_vent"):
+        answers = {"B15-00": pick, "B15-01": "1", "B15-02": "1"}
+        answers["B15-03" if pick == "vent" else "B15-04"] = "1"
+        result = evaluate_scale(b15, _answers(b15, answers))
+        assert result.missing_items == [], f"{pick} 路径下不适用的条目不应记缺项"
+
+    b18 = _load("B.18")
+    negative = evaluate_scale(
+        b18,
+        _answers(b18, {"B18-S1": "no", "B18-S2": "no", "B18-S3": "no", "B18-S4": "no"}),
+    )
+    assert negative.missing_items == [], "初筛全阴时终筛三题不应记缺项"
+    assert negative.total == 0
+    assert negative.level == "未达营养风险", "初筛全阴是合法阴性结论，等级不能为空"

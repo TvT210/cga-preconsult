@@ -161,6 +161,9 @@ class AssessmentSession(Base):
         ForeignKey("assessment_sessions.id"), nullable=True, index=True
     )
     dispatch_branch_code: Mapped[str] = mapped_column(String(32), default="")
+    # 派发原因：自动派发取自题库分支的 reason，人工派发取医护填写的理由。
+    # 落库而非临时查题库，是为了复核页/患者档案能直接展示「为什么多这一份」。
+    dispatch_reason: Mapped[str] = mapped_column(String(255), default="")
 
 
 class AssessmentAnswer(Base):

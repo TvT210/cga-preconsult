@@ -21,6 +21,7 @@ from app.core.deps import require_staff
 from app.db.base import get_db
 from app.db.models import AssessmentScore, AssessmentSession, User
 from app.services import audit
+from app.services.branch_dispatch import dispatch_branches
 
 router = new_router()
 
@@ -69,13 +70,23 @@ def review_assessment(
     session.review_comment = payload.get("comment", "")
     session.reviewed_at = dt.datetime.now(dt.timezone.utc)
     db.commit()
+    # 改分可能让分支结论翻转（原本阴性改判阳性，或反之）：复核后按新作答重跑一次派发。
+    # `dispatch_branches` 自带幂等（按 branch_code 查既有子任务）与去重（同量表进行中复用），
+    # 因此这里重复调用不会重复建任务，只是把「新变阳性的分支」补上。
+    dispatched = dispatch_branches(db, user, session, branches)
+    db.commit()
     audit.record(
         db,
         user,
         "review",
         "assessment",
         session.id,
-        {"action": action, "corrections": len(corrections), "comment": payload.get("comment", "")},
+        {
+            "action": action,
+            "corrections": len(corrections),
+            "comment": payload.get("comment", ""),
+            "dispatched": sum(1 for item in dispatched if item["status"] == "dispatched"),
+        },
     )
     db.commit()
     return {
@@ -91,4 +102,5 @@ def review_assessment(
             "needs_manual_review": score.needs_manual_review,
         },
         "branches": branches,
+        "dispatched": dispatched,
     }

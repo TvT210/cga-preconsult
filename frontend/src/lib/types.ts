@@ -328,6 +328,10 @@ export interface AssessmentSession {
   answers?: AssessmentAnswer[];
   mode?: "patient" | "staff" | string;
   proxy?: ProxyInfo;
+  /** 本任务由哪次评估的哪条分支派发而来；患者自己新建的任务为 null */
+  dispatched_from?: DispatchedFrom | null;
+  /** 本次评估已派生出的后续任务，医护复核页与老人结果页共用 */
+  dispatched?: DispatchedTask[];
   scale_version?: string;
   rule_version?: string;
   started_at?: string;
@@ -394,6 +398,34 @@ export interface AssessmentFinishResult {
   branches?: { branch_code?: string; target_scale: string; reason?: string }[];
   dispatched?: DispatchedBranch[];
   needs_manual_review?: boolean;
+}
+
+/** 一次评估已派生出的后续任务（`GET /assessments/{id}` 的 `dispatched` 字段） */
+export interface DispatchedTask {
+  session_id: number | string;
+  branch_code: string;
+  target_scale: string;
+  target_name?: string;
+  /** 派发原因：自动派发取自题库分支说明，人工派发取医护填写的理由 */
+  reason?: string;
+  status: string;
+  progress?: number;
+  created_at?: string;
+  finished_at?: string;
+}
+
+/** 本任务由哪次评估的哪条分支派发而来（`dispatched_from` 字段） */
+export interface DispatchedFrom {
+  session_id: number | string;
+  scale_code: string;
+  scale_name?: string;
+  branch_code: string;
+  reason?: string;
+}
+
+/** 医护手动派发的回执：比自动派发多一个 `message` 用于解释未派发原因 */
+export interface DispatchResult extends DispatchedBranch {
+  message?: string;
 }
 
 /** 复核时的单题修正 */

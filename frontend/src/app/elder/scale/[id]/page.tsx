@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { assessmentStatusLabel } from "@/lib/format";
+import { applicableQuestions, buildFacts } from "@/lib/conditions";
 import type {
   AnswerValue,
   AssessmentAnswer,
@@ -189,7 +190,8 @@ export default function ElderScalePage() {
         sessionDetail.questions && sessionDetail.questions.length
           ? sessionDetail.questions
           : flatQuestions;
-      setQuestions(sessionQuestions.length ? sessionQuestions : flatQuestions);
+      const allQuestions = sessionQuestions.length ? sessionQuestions : flatQuestions;
+      setQuestions(allQuestions);
 
       const restored: Record<string, AnswerEntry> = {};
       (sessionDetail.answers ?? []).forEach((answer: AssessmentAnswer) => {
@@ -201,7 +203,9 @@ export default function ElderScalePage() {
       });
       setAnswers(restored);
 
-      // 恢复到服务端记录的当前题目
+      // 恢复到服务端记录的当前题目。
+      // 注意必须在「已按 when 过滤」的可见题目里找位置：服务端记录的下一题可能是
+      // 分流后不适用的题（如未插管的 B15-03），按全量列表定位会错位。
       const current = sessionDetail.current_question;
       const currentCode =
         typeof current === "string"
@@ -210,7 +214,8 @@ export default function ElderScalePage() {
             ? (current as ScaleQuestion).code
             : undefined;
       if (currentCode) {
-        const position = sessionQuestions.findIndex(
+        const visible = applicableQuestions(allQuestions, buildFacts(allQuestions, restored));
+        const position = visible.findIndex(
           (question) => question.code === currentCode,
         );
         if (position >= 0) setIndex(position);
@@ -237,9 +242,24 @@ export default function ElderScalePage() {
     void bootstrap();
   }, [bootstrap]);
 
-  const currentQuestion = questions[index];
+  // 按题库 `when` 过滤：只保留当前作答路径下适用的题目（分流题不适用时整题隐藏）。
+  // 计分仍由后端按同一套 `when` 把关，这里只影响「问哪些题」。
+  const facts = useMemo(() => buildFacts(questions, answers), [questions, answers]);
+  const visibleQuestions = useMemo(
+    () => applicableQuestions(questions, facts),
+    [questions, facts],
+  );
+
+  // 作答改变后可见题数可能变少（如把「插管」改成「未插管」），把停留位置收回范围内
+  useEffect(() => {
+    setIndex((prev) => Math.min(prev, Math.max(0, visibleQuestions.length - 1)));
+  }, [visibleQuestions.length]);
+
+  const currentQuestion = visibleQuestions[index];
   const currentEntry = currentQuestion ? answers[currentQuestion.code] : undefined;
-  const answeredCount = Object.keys(answers).length;
+  const answeredCount = visibleQuestions.filter((question) =>
+    isAnswered(answers[question.code]),
+  ).length;
 
   /** 朗读内容：题目 + 白话解释 + 选项 + 实测施测提示 */
   const speechText = useMemo(() => {
@@ -314,6 +334,30 @@ export default function ElderScalePage() {
     }
   }, [session]);
 
+  /**
+   * 推进到下一道可见题。
+   *
+   * 不能用 `index + 1` 直接推进：答完分流题后可见题目集合会变（B.15 选「未插管」
+   * 后插管项消失，B.18 初筛出现阳性后终筛项才出现），此时下标会错位。
+   * 这里先用「作答后的答案」重算可见列表，再按题目编码定位下一题。
+   *
+   * @returns false 表示当前已是最后一题，调用方应结束评估
+   */
+  const advanceToNext = useCallback(
+    (code: string, nextAnswers: Record<string, AnswerEntry>): boolean => {
+      const nextVisible = applicableQuestions(questions, buildFacts(questions, nextAnswers));
+      const position = nextVisible.findIndex((question) => question.code === code);
+      if (position < 0) {
+        setIndex(0);
+        return true;
+      }
+      if (position >= nextVisible.length - 1) return false;
+      setIndex(position + 1);
+      return true;
+    },
+    [questions],
+  );
+
   const handleNext = useCallback(async () => {
     if (!currentQuestion || !session) return;
     const entry = answers[currentQuestion.code];
@@ -325,19 +369,17 @@ export default function ElderScalePage() {
     const saved = await saveAnswer(currentQuestion, entry);
     if (!saved) return;
 
-    if (index >= questions.length - 1) {
+    const nextAnswers = { ...answers, [currentQuestion.code]: entry };
+    if (!advanceToNext(currentQuestion.code, nextAnswers)) {
       await finishAssessment();
-    } else {
-      setIndex((prev) => Math.min(questions.length - 1, prev + 1));
     }
   }, [
     currentQuestion,
     session,
     answers,
-    index,
-    questions.length,
     saveAnswer,
     finishAssessment,
+    advanceToNext,
     toast,
   ]);
 
@@ -351,10 +393,9 @@ export default function ElderScalePage() {
           reason,
         });
         setSkipOpen(false);
-        if (index >= questions.length - 1) {
+        // 跳过的题目没有取值，适用条件不变，可见集合与当前一致
+        if (!advanceToNext(currentQuestion.code, answers)) {
           await finishAssessment();
-        } else {
-          setIndex((prev) => Math.min(questions.length - 1, prev + 1));
         }
       } catch {
         /* 错误提示已由 api 层统一处理 */
@@ -362,7 +403,7 @@ export default function ElderScalePage() {
         setBusy(false);
       }
     },
-    [currentQuestion, session, index, questions.length, finishAssessment],
+    [currentQuestion, session, answers, advanceToNext, finishAssessment],
   );
 
   const handlePause = useCallback(async () => {
@@ -400,7 +441,7 @@ export default function ElderScalePage() {
           result={result}
           scale={scale}
           answers={answers}
-          questions={questions}
+          questions={visibleQuestions}
         />
         <div className="flex flex-wrap gap-3">
           <Link href="/elder">
@@ -417,11 +458,13 @@ export default function ElderScalePage() {
   }
 
   if (!scale || !session || !currentQuestion) {
-    return <EmptyState message="该量表暂无可填写的题目。" />;
+    return (
+      <EmptyState message="该量表暂无可填写的题目，或本次评估没有需要您回答的项目。" />
+    );
   }
 
-  const percent = questions.length
-    ? Math.round((index / questions.length) * 100)
+  const percent = visibleQuestions.length
+    ? Math.round((index / visibleQuestions.length) * 100)
     : 0;
 
   return (
@@ -429,8 +472,8 @@ export default function ElderScalePage() {
       <header className="card card-pad">
         <h1 className="text-elder-2xl font-bold text-ink">{scale.name}</h1>
         <p className="mt-2 text-elder text-ink-soft">
-          所属维度：{scale.dimension} · 采集方式：{scale.method} · 题目总数{" "}
-          {questions.length} 题
+          所属维度：{scale.dimension} · 采集方式：{scale.method} · 本次需回答{" "}
+          {visibleQuestions.length} 题
         </p>
         {scale.standard_ref ? (
           <p className="mt-1 text-elder text-ink-mute">标准依据：{scale.standard_ref}</p>
@@ -439,7 +482,7 @@ export default function ElderScalePage() {
         <div className="mt-4">
           <div className="flex items-center justify-between text-elder text-ink-soft">
             <span>
-              进度：第 {index + 1} 题 / 共 {questions.length} 题
+              进度：第 {index + 1} 题 / 共 {visibleQuestions.length} 题
             </span>
             <span>已作答 {answeredCount} 题</span>
           </div>
@@ -494,7 +537,7 @@ export default function ElderScalePage() {
       <QuestionCard
         question={currentQuestion}
         index={index + 1}
-        total={questions.length}
+        total={visibleQuestions.length}
         value={currentEntry?.value ?? null}
         measured={currentEntry?.measured}
         isProxy={proxyMode}
@@ -561,10 +604,10 @@ export default function ElderScalePage() {
           <BigButton
             size="lg"
             disabled={busy}
-            loading={busy && index === questions.length - 1}
+            loading={busy && index === visibleQuestions.length - 1}
             onClick={() => void handleNext()}
           >
-            {index >= questions.length - 1 ? "完成评估" : "下一题"}
+            {index >= visibleQuestions.length - 1 ? "完成评估" : "下一题"}
           </BigButton>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -664,9 +707,9 @@ function ResultPanel({
   answers: Record<string, AnswerEntry>;
   questions: ScaleQuestion[];
 }) {
-  const scaleQuestions =
-    (scale?.sections ?? []).flatMap((section) => section.questions ?? []);
-  const list = scaleQuestions.length ? scaleQuestions : questions;
+  // 逐题回溯只列本次路径上实际问过的题：分流后不适用的题（未插管时的通气项、
+  // 初筛全阴时的终筛项）没有作答也不是缺项，列出来只会让老人误以为漏填。
+  const list = questions;
 
   // 分支派发回执优先；旧数据没有 dispatched 时回退成纯建议列表
   const followups: DispatchedBranch[] = result.dispatched?.length

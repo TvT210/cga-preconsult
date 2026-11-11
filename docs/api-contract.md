@@ -268,7 +268,7 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
 | `fallback_options` | string[] | 无 `min`/`max` 的兜底选项 value（如「不能完成」），与数值输入互斥 |
 | `measure` | object | 题库原始字段，保留未删 |
 | `record_only` | boolean | 仅记录、不参与计分 |
-| `when` | object | 条目级生效条件（如 B.15 仅在插管时启用第 3 项） |
+| `when` | object | 题目级生效条件（`{any|all:[…]}`），条件原子为 `{question, op, value}`，`op` 取 `eq`/`ne`/`in`（比较选项 value）或 `lt`/`lte`/`gt`/`gte`（比较分值）。**前端应据此隐藏不适用的题**：B.15 未插管时隐藏机械通气项、B.18 初筛全阴时隐藏终筛三项。服务端计分与 `current_question` 已按同一条件排除，**被排除的题不答不算缺项** |
 
 `options[]` 增补：
 
@@ -409,6 +409,39 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
 `skip_reason` 取值：`cycle`（目标量表已在本次评估链上，环形防护）/ `duplicate`（同一批重复推荐）/ `no_questions`（条目未补录）/ `scale_missing`（题库无此量表）。
 
 > **约束**：派发只建任务，不代填答案、不产出结论，也不改变任何量表的分级；是否加做由患者与医护决定。题库 21 张量表共 28 条分支边且存在回指（B.1↔B.3、B.4↔B.5、B.6↔B.7、B.14↔B.15、B.8↔B.21、B.19↔B.18），服务端沿 `dispatched_from_id` 回溯评估链做环形防护，同一会话重复 `finish` 也不会重复派生（幂等）。
+
+**派发溯源与医护手动派发** ｜ CA-20261111-03
+
+`GET /assessments/{session_id}` 的响应（以及创建会话的响应）新增两个字段，老人端与医护端共用同一份数据，不必各算一遍：
+
+```json
+{
+  "dispatched_from": { "session_id": 87, "scale_code": "B.1", "scale_name": "基本日常生活活动能力评估量表",
+                       "branch_code": "B1-B1", "reason": "平地行走不能独立，建议实测体能。" },
+  "dispatched": [ { "session_id": 88, "target_scale": "B.3", "target_name": "简易体能状况量表（SPPB）",
+                    "branch_code": "B1-B1", "reason": "平地行走不能独立，建议实测体能。",
+                    "status": "in_progress", "progress": 0,
+                    "created_at": "2026-11-11T06:00:00", "finished_at": "" } ]
+}
+```
+
+| 字段 | 含义 |
+| --- | --- |
+| `dispatched_from` | 本任务由哪次评估的哪条分支派发而来；患者自建任务为 `null` |
+| `dispatched` | 本次评估已派生出的后续任务（含已完成），`status` 用会话状态枚举而非派发枚举 |
+
+`POST /assessments/dispatch` ✅（staff+）—— 医护手动派发一张量表：
+
+```json
+{ "patient_id": 12, "scale_code": "B.4", "reason": "家属反映近期视物模糊", "source_session_id": 87 }
+```
+- `source_session_id` 选填，填了就把这次派发记到该评估名下（复核页的派发入口会带）；
+- 复用同一套建任务逻辑，返回与 `dispatched[]` 同形的条目，另含 `message` 用于解释未派发原因；
+- 已有该量表进行中任务时返回 `status: "reused"`，不重复建壳；
+- **不做环形防护**：环防护只约束机器自派生，医护要求补测/复测是合法决策，系统只记录派发人与理由以便追溯。
+
+`POST /assessments/{session_id}/review` 的响应同时新增 `dispatched`。原因是改分可能让分支结论翻转（原判阴性改判阳性），复核后服务端会按新作答重跑一次派发，把新变阳性的分支补上；`dispatch_branches` 本身幂等，重复复核不会重复建任务。
+
 
 ### POST `/assessments/{session_id}/review` ✅（staff+）
 ```json

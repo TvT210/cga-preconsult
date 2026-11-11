@@ -246,3 +246,152 @@ def test_chain_walk_is_bounded(db_session):
 
     codes = chain_scale_codes(db_session, latest)
     assert len(codes) <= MAX_CHAIN_DEPTH + 1
+
+
+# --------------------------------------------------------------------- #
+# A-3 遗留项：staff 端派发入口、派发溯源展示、复核改分后重新派发
+# --------------------------------------------------------------------- #
+
+
+def _dispatch(token: str, **payload) -> dict:
+    response = client.post(
+        "/api/v1/assessments/dispatch", headers=_headers(token), json=payload
+    )
+    assert response.status_code == 200, response.text
+    return response.json()["data"]
+
+
+def test_staff_can_manually_dispatch_a_scale(db_session):
+    """医护手动派发：建的是同一种待办空壳，理由与派发人可追溯。"""
+    token = _token()
+    patient_id = _new_patient(token, "派发老人己")
+
+    data = _dispatch(
+        token, patient_id=patient_id, scale_code="B.4", reason="家属反映近期视物模糊"
+    )
+
+    assert data["status"] == "dispatched"
+    assert data["target_scale"] == "B.4"
+    assert data["target_name"], "派发回执要带量表名，前端才能直接展示"
+    child = db_session.get(AssessmentSession, data["session_id"])
+    assert child.patient_id == patient_id
+    assert child.status == "in_progress"
+    assert child.dispatch_reason == "家属反映近期视物模糊"
+    assert child.dispatched_from_id is None, "无来源评估的人工派发不应伪造溯源"
+
+
+def test_manual_dispatch_reuses_ongoing_task(db_session):
+    """重复点派发不应给患者堆一串同样的空壳。"""
+    token = _token()
+    patient_id = _new_patient(token, "派发老人庚")
+
+    first = _dispatch(token, patient_id=patient_id, scale_code="B.6")
+    second = _dispatch(token, patient_id=patient_id, scale_code="B.6")
+
+    assert first["status"] == "dispatched"
+    assert second["status"] == "reused"
+    assert second["session_id"] == first["session_id"]
+    same_scale = (
+        db_session.query(AssessmentSession)
+        .filter(
+            AssessmentSession.patient_id == patient_id,
+            AssessmentSession.scale_code == "B.6",
+        )
+        .count()
+    )
+    assert same_scale == 1
+
+
+def test_manual_dispatch_bypasses_cycle_guard(db_session):
+    """环防护只约束机器自派生。医护要求补测链上已有的量表是合法决策。"""
+    token = _token()
+    patient_id = _new_patient(token, "派发老人辛")
+    root_id = _new_session(token, patient_id, "B.1")
+    _answer_all(token, root_id, BARTHEL_FULL)
+    sppb_id = _by_branch(_finish(token, root_id)["dispatched"])["B1-B1"]["session_id"]
+
+    data = _dispatch(
+        token,
+        patient_id=patient_id,
+        scale_code="B.1",
+        reason="复测 ADL，上次为家属代答",
+        source_session_id=sppb_id,
+    )
+
+    assert data["status"] == "dispatched", "人工派发不应被环防护拦下"
+    child = db_session.get(AssessmentSession, data["session_id"])
+    assert child.dispatched_from_id == sppb_id
+    assert child.dispatch_reason == "复测 ADL，上次为家属代答"
+
+
+def test_session_payload_exposes_dispatch_trace(db_session):
+    """老人端与医护端共用同一份派发溯源，不用各算一遍。"""
+    token = _token()
+    patient_id = _new_patient(token, "派发老人壬")
+    root_id = _new_session(token, patient_id, "B.1")
+    _answer_all(token, root_id, BARTHEL_FULL)
+    child_id = _by_branch(_finish(token, root_id)["dispatched"])["B1-B1"]["session_id"]
+
+    parent = client.get(f"/api/v1/assessments/{root_id}", headers=_headers(token)).json()["data"]
+    assert {item["target_scale"] for item in parent["dispatched"]} == {"B.3", "B.11"}
+    trace = {item["target_scale"]: item for item in parent["dispatched"]}["B.3"]
+    assert trace["reason"], "派发原因要落库，否则医护看不出为什么多这一份"
+    assert trace["status"] == "in_progress"
+    assert trace["target_name"]
+
+    child = client.get(f"/api/v1/assessments/{child_id}", headers=_headers(token)).json()["data"]
+    assert child["dispatched_from"]["session_id"] == root_id
+    assert child["dispatched_from"]["branch_code"] == "B1-B1"
+    assert child["dispatched"] == [], "新建的待办任务还没有自己的后续任务"
+
+
+def test_review_correction_triggers_dispatch(db_session):
+    """改分让分支翻转成阳性时，复核必须补派任务，否则阳性结论落不到待办上。"""
+    token = _token()
+    patient_id = _new_patient(token, "派发老人癸")
+    session_id = _new_session(token, patient_id, "B.1")
+
+    # 先答成不触发任何分支：B1-09 满分 15、B1-07 满分 10
+    negative = dict(BARTHEL_FULL)
+    negative["B1-09"] = "15"
+    negative["B1-07"] = "10"
+    _answer_all(token, session_id, negative)
+    assert _finish(token, session_id)["dispatched"] == []
+
+    response = client.post(
+        f"/api/v1/assessments/{session_id}/review",
+        headers=_headers(token),
+        json={
+            "action": "correct",
+            "corrections": [{"question_code": "B1-09", "value": "10"}],
+            "comment": "当面复核，上下楼梯确需部分帮助",
+        },
+    )
+    assert response.status_code == 200, response.text
+    dispatched = _by_branch(response.json()["data"]["dispatched"])
+
+    assert dispatched["B1-B1"]["status"] == "dispatched"
+    assert dispatched["B1-B1"]["target_scale"] == "B.3"
+    child = db_session.get(AssessmentSession, dispatched["B1-B1"]["session_id"])
+    assert child.dispatched_from_id == session_id
+
+
+def test_next_question_skips_inapplicable_gate(db_session):
+    """不适用的题目不再作为「下一题」返回，患者不会被带到无关问题上。"""
+    token = _token()
+    patient_id = _new_patient(token, "派发老人子")
+    session_id = _new_session(token, patient_id, "B.15")
+
+    def next_code() -> str:
+        payload = client.get(
+            f"/api/v1/assessments/{session_id}", headers=_headers(token)
+        ).json()["data"]
+        return payload["current_question"]
+
+    assert next_code() == "B15-00"
+    _answer_all(token, session_id, {"B15-00": "non_vent"})
+    assert next_code() == "B15-01"
+
+    _answer_all(token, session_id, {"B15-01": "1", "B15-02": "1"})
+    # 未插管 → B15-03（机械通气顺应性）不适用，应直接跳到 B15-04（发声）
+    assert next_code() == "B15-04"
