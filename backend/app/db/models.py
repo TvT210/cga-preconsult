@@ -155,6 +155,12 @@ class AssessmentSession(Base):
     started_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)
     finished_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
     reviewed_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
+    # 分支跳转派发溯源：本任务由哪次评估的哪条分支触发（A-3）
+    # 沿该字段回溯即得本次评估链，用于环形防护，避免互相推荐造成无限派发。
+    dispatched_from_id: Mapped[int | None] = mapped_column(
+        ForeignKey("assessment_sessions.id"), nullable=True, index=True
+    )
+    dispatch_branch_code: Mapped[str] = mapped_column(String(32), default="")
 
 
 class AssessmentAnswer(Base):

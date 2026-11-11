@@ -11,6 +11,7 @@ import type {
   AssessmentAnswer,
   AssessmentFinishResult,
   AssessmentSession,
+  DispatchedBranch,
   Paged,
   ScaleDetail,
   ScaleQuestion,
@@ -626,6 +627,30 @@ export default function ElderScalePage() {
 }
 
 /** 判读结果面板：总分、等级、结论、阳性项与逐题依据 */
+/** 派发条目的一句话状态说明：让老人清楚「为什么多了这份量表」 */
+function followupStatusText(item: DispatchedBranch): string {
+  if (item.status === "skipped") {
+    switch (item.skip_reason) {
+      case "cycle":
+        return "这次评估里已经包含这项内容，不用再重复做。";
+      case "no_questions":
+        return "这份量表的题目还在补录，暂时做不了。";
+      case "scale_missing":
+        return "题库里暂时没有这份量表。";
+      case "duplicate":
+        return "和其他推荐重复，已经合并。";
+      default:
+        return "这次先不安排。";
+    }
+  }
+  if (item.status === "reused") {
+    return item.session_status === "finished"
+      ? "这份量表你已经做完了，可以随时回看结果。"
+      : "你之前开始填过这份量表，还没填完。";
+  }
+  return "已为你备好这份量表，想做的时候点下面就能开始。";
+}
+
 function ResultPanel({
   score,
   result,
@@ -642,6 +667,20 @@ function ResultPanel({
   const scaleQuestions =
     (scale?.sections ?? []).flatMap((section) => section.questions ?? []);
   const list = scaleQuestions.length ? scaleQuestions : questions;
+
+  // 分支派发回执优先；旧数据没有 dispatched 时回退成纯建议列表
+  const followups: DispatchedBranch[] = result.dispatched?.length
+    ? result.dispatched
+    : (result.branches ?? []).map((branch) => ({
+        branch_code: branch.branch_code ?? branch.target_scale,
+        source_scale: scale?.code ?? "",
+        target_scale: branch.target_scale,
+        reason: branch.reason,
+        status: "dispatched" as const,
+        skip_reason: "" as const,
+        session_id: null,
+        session_status: "",
+      }));
 
   return (
     <div className="space-y-5">
@@ -694,19 +733,45 @@ function ResultPanel({
         </section>
       ) : null}
 
-      {result.branches && result.branches.length ? (
+      {followups.length ? (
         <section className="card card-pad">
           <h2 className="text-elder-xl font-semibold text-ink">建议追加的评估</h2>
-          <ul className="mt-3 space-y-2">
-            {result.branches.map((branch) => (
-              <li
-                key={branch.target_scale}
-                className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-elder text-ink"
-              >
-                <span className="font-semibold">{branch.target_scale}</span>
-                {branch.reason ? ` · ${branch.reason}` : ""}
-              </li>
-            ))}
+          <p className="mt-1 text-elder text-ink-soft">
+            筛查发现还有些方面需要进一步了解。加不加做、什么时候做，由你和医生商量决定。
+          </p>
+          <ul className="mt-3 space-y-3">
+            {followups.map((item) => {
+              const href = `/elder/scale/${encodeURIComponent(item.target_scale)}`;
+              const finishedBefore =
+                item.status === "reused" && item.session_status === "finished";
+              return (
+                <li
+                  key={item.branch_code || item.target_scale}
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+                >
+                  <p className="text-elder font-semibold text-ink">
+                    {item.target_name || item.target_scale}
+                  </p>
+                  {item.reason ? (
+                    <p className="mt-1 text-elder text-ink-soft">{item.reason}</p>
+                  ) : null}
+                  <p className="mt-1 text-elder text-ink-soft">
+                    {followupStatusText(item)}
+                  </p>
+                  {item.status === "skipped" ? null : (
+                    <Link href={href} className="mt-3 block">
+                      <BigButton size="lg" fullWidth>
+                        {finishedBefore
+                          ? "查看结果"
+                          : item.status === "reused"
+                            ? "继续填写"
+                            : "开始评估"}
+                      </BigButton>
+                    </Link>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </section>
       ) : null}

@@ -373,9 +373,26 @@ export interface ScaleScore {
   rule_refs?: string[];
 }
 
+/** 分支跳转派发结果：筛查阳性后系统为患者派生的待办任务 */
+export interface DispatchedBranch {
+  branch_code: string;
+  source_scale: string;
+  target_scale: string;
+  /** 目标量表中文名，用于结果页展示 */
+  target_name?: string;
+  reason?: string;
+  /** dispatched 本次新建；reused 复用已有进行中任务；skipped 未派发 */
+  status: "dispatched" | "reused" | "skipped";
+  /** skipped 时说明原因：cycle 链上已做过 / duplicate 同批重复 / no_questions 条目未补录 / scale_missing 题库无此量表 */
+  skip_reason?: "" | "cycle" | "duplicate" | "no_questions" | "scale_missing";
+  session_id?: number | null;
+  session_status?: string;
+}
+
 export interface AssessmentFinishResult {
   scores: ScaleScore[];
-  branches?: { target_scale: string; reason?: string }[];
+  branches?: { branch_code?: string; target_scale: string; reason?: string }[];
+  dispatched?: DispatchedBranch[];
   needs_manual_review?: boolean;
 }
 
