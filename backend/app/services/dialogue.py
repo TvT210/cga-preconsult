@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import datetime as dt
 import re
+from dataclasses import dataclass
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -170,78 +171,142 @@ def _latest_scale_results(db: Session, patient_id: int) -> list[dict]:
     return results
 
 
-def run_dialogue_turn(
+# 模型没给出可用正文时的兜底（推理模型预算耗尽等）——不能编，也不能静默空回复。
+# 退化为「请再说一遍」，既符合适老化，也符合「不臆断」红线。
+FALLBACK_REPEAT = "抱歉，我没太听清您刚才说的，方便再说一遍吗？"
+FALLBACK_NETWORK = "不好意思，这边网络不太顺，您稍后再试，或者先跟我再说一遍刚才的情况。"
+
+
+@dataclass
+class TurnContext:
+    """一轮对话里「与模型无关」的那部分准备结果。
+
+    拆出来的目的是让非流式与流式共用同一套准备与落库逻辑：两条路径只有
+    「文本怎么产生」不同，抽取、安全提示、冲突标记、画像更新与留痕必须
+    完全一致——否则同一句话走不同接口会得到不同结论。
+    """
+
+    session: DialogueSession
+    user_text: str
+    proxy: dict[str, Any]
+    provider: Any
+    messages: list[dict[str, str]]
+    prompt_version: str
+    model: str
+
+
+def prepare_turn(
     db: Session,
     session: DialogueSession,
     user_text: str,
     proxy: dict | None = None,
-) -> dict[str, Any]:
-    """执行一轮对话：模型回复 + 抽取 + 安全提示 + 冲突标记 + 画像更新。"""
+) -> TurnContext:
+    """组装历史、提示词与 Provider，供流式/非流式共用。"""
     history = [
         {"role": turn.role, "content": turn.content}
         for turn in db.query(DialogueTurn).filter(DialogueTurn.session_id == session.id).all()
     ]
     provider = get_provider()
     messages, prompt_version = build_messages(db, "老人", history, user_text)
-    try:
-        reply, latency = timed_chat(provider, messages)
-        model_error = ""
-    except LLMEmptyResponse as exc:
-        # 模型没给出可用正文（推理模型预算耗尽等）——不能编，也不能静默空回复。
-        # 退化为「请再说一遍」，既符合适老化，也符合「不臆断」红线。
-        reply = "抱歉，我没太听清您刚才说的，方便再说一遍吗？"
-        latency = 0
-        model_error = str(exc)
-    except Exception as exc:  # 网络异常、鉴权失败等
-        reply = "不好意思，这边网络不太顺，您稍后再试，或者先跟我再说一遍刚才的情况。"
-        latency = 0
-        model_error = f"{type(exc).__name__}: {exc}"
+    return TurnContext(
+        session=session,
+        user_text=user_text,
+        proxy=proxy or {},
+        provider=provider,
+        messages=messages,
+        prompt_version=prompt_version,
+        model=getattr(provider, "model", "mock"),
+    )
 
-    extracted_symptoms = extract_symptoms(user_text)
-    safety_note = check_safety(user_text) or check_safety(reply)
-    conflict_flags = detect_conflicts(extracted_symptoms, _latest_scale_results(db, session.patient_id))
+
+def finalize_turn(
+    db: Session,
+    ctx: TurnContext,
+    reply: str,
+    latency_ms: int,
+    model_error: str = "",
+    interrupted: bool = False,
+) -> dict[str, Any]:
+    """落库并组装响应体，流式与非流式共用，保证两边字段完全一致。
+
+    :param interrupted: 回复没有走完（老人中途关掉页面、连接断开）。
+        此时 ``reply`` 是**已经生成的那部分**，不补全、不润色，
+        前端据此显示中断状态，医护也能看出这条不是完整回复。
+    """
+    extracted_symptoms = extract_symptoms(ctx.user_text)
+    safety_note = check_safety(ctx.user_text) or check_safety(reply)
+    conflict_flags = detect_conflicts(
+        extracted_symptoms, _latest_scale_results(db, ctx.session.patient_id)
+    )
 
     db.add(
         DialogueTurn(
-            session_id=session.id,
+            session_id=ctx.session.id,
             role="user",
-            content=user_text,
-            extracted={"symptoms": extracted_symptoms, "proxy": proxy or {}},
+            content=ctx.user_text,
+            extracted={"symptoms": extracted_symptoms, "proxy": ctx.proxy},
             safety_note=safety_note,
             conflict_flags=conflict_flags,
         )
     )
     db.add(
         DialogueTurn(
-            session_id=session.id,
+            session_id=ctx.session.id,
             role="assistant",
             content=reply,
-            extracted={},
+            extracted={"interrupted": True} if interrupted else {},
             safety_note=safety_note,
         )
     )
     db.add(
         ModelRun(
             task="dialogue",
-            model=getattr(provider, "model", "mock"),
-            prompt_version=prompt_version,
-            latency_ms=latency,
-            input_snapshot={"user_text": user_text},
-            output_snapshot={"reply": reply, **({"model_error": model_error} if model_error else {})},
+            model=ctx.model,
+            prompt_version=ctx.prompt_version,
+            latency_ms=latency_ms,
+            input_snapshot={"user_text": ctx.user_text},
+            output_snapshot={
+                "reply": reply,
+                **({"model_error": model_error} if model_error else {}),
+                **({"interrupted": True} if interrupted else {}),
+            },
         )
     )
-    _update_profile(db, session.patient_id, extracted_symptoms)
+    _update_profile(db, ctx.session.patient_id, extracted_symptoms)
     db.commit()
 
     return {
         "reply": reply,
-        "extracted": {"symptoms": extracted_symptoms, "proxy": proxy or {}},
+        "extracted": {"symptoms": extracted_symptoms, "proxy": ctx.proxy},
         "safety_note": safety_note,
         "conflict_flags": conflict_flags,
         "disclaimer": SAFETY_DISCLAIMER,
-        "model": getattr(provider, "model", "mock"),
-        "prompt_version": DIALOGUE_PROMPT_VERSION,
+        "model": ctx.model,
+        "prompt_version": ctx.prompt_version,
+        "interrupted": interrupted,
     }
+
+
+def run_dialogue_turn(
+    db: Session,
+    session: DialogueSession,
+    user_text: str,
+    proxy: dict | None = None,
+) -> dict[str, Any]:
+    """执行一轮对话（非流式）：模型回复 + 抽取 + 安全提示 + 冲突标记 + 画像更新。"""
+    ctx = prepare_turn(db, session, user_text, proxy)
+    try:
+        reply, latency = timed_chat(ctx.provider, ctx.messages)
+        model_error = ""
+    except LLMEmptyResponse as exc:
+        reply = FALLBACK_REPEAT
+        latency = 0
+        model_error = str(exc)
+    except Exception as exc:  # 网络异常、鉴权失败等
+        reply = FALLBACK_NETWORK
+        latency = 0
+        model_error = f"{type(exc).__name__}: {exc}"
+    return finalize_turn(db, ctx, reply, latency, model_error)
 
 
 def _update_profile(db: Session, patient_id: int, symptoms: list[dict]) -> None:

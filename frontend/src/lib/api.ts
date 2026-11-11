@@ -3,6 +3,7 @@ import { clearSession, getToken, setToken } from "./session";
 import type {
   AlertItem,
   AssessmentListItem,
+  DialogueReply,
   DiseaseListResponse,
   KnowledgeGraph,
   KnowledgeOverview,
@@ -153,6 +154,144 @@ export const api = {
 /** 登录接口使用：保存 token */
 export function persistToken(token: string): void {
   setToken(token);
+}
+
+/* ------------------------------------------------------------------ */
+/* 对话流式（A-7）                                                     */
+/* ------------------------------------------------------------------ */
+
+export interface DialogueStreamHandlers {
+  /** 正文增量；调用方自行拼接，不要当完整句子用 */
+  onDelta?: (text: string) => void;
+  /** 急症安全提示。它可能早于任何正文到达，调用方应立即醒目展示 */
+  onSafety?: (note: string) => void;
+  /** 收尾：字段与非流式接口一致 */
+  onDone?: (payload: DialogueReply) => void;
+}
+
+/** SSE 事件分隔：一个空行。兼容 CRLF（有些代理会插入 \r） */
+const SSE_SEPARATOR = /\r?\n\r?\n/;
+
+/** 取出一个 SSE 事件块里所有 `data:` 行并拼成 JSON 文本 */
+function readSseData(block: string): string {
+  return block
+    .split(/\r?\n/)
+    .filter((line) => line.startsWith("data:"))
+    .map((line) => line.slice(5).trimStart())
+    .join("\n");
+}
+
+/**
+ * 流式发送一轮对话。
+ *
+ * - 收尾事件返回的字段与非流式 `POST /messages` 完全一致，前端可直接复用同一套处理；
+ * - **主动中断返回 `null`**，不抛错——「老人点了停止」是正常操作，不该弹错误提示；
+ * - 流断开但没收到收尾事件时报错，绝不把半截回复当成完整结果。
+ *
+ * 没有在这里做「打字机」节流：真实模型的 chunk 本身就带间隔，按到达即渲染最自然；
+ * 再叠一层定时器只会在网络抖动时让文字落后于服务端。
+ */
+export async function streamDialogueMessage(
+  sessionId: string | number,
+  content: string,
+  handlers: DialogueStreamHandlers = {},
+  signal?: AbortSignal,
+): Promise<DialogueReply | null> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "text/event-stream",
+  };
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  let response: Response;
+  try {
+    response = await fetch(
+      buildUrl(`/dialogue/sessions/${sessionId}/messages/stream`),
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ content }),
+        cache: "no-store",
+        signal,
+      },
+    );
+  } catch (err) {
+    if (signal?.aborted) return null;
+    const error = new ApiError("网络连接失败，请检查网络后重试。", -1, 0);
+    toast(error.message, "error");
+    throw error;
+  }
+
+  if (response.status === 401) {
+    clearSession();
+    if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+      window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+    }
+    throw new ApiError("登录状态已失效，请重新登录。", 401, 401);
+  }
+
+  if (!response.ok || !response.body) {
+    const raw = await response.text().catch(() => "");
+    let message = `请求失败（HTTP ${response.status}）。`;
+    try {
+      const payload = JSON.parse(raw) as { message?: string };
+      if (payload?.message) message = payload.message;
+    } catch {
+      /* 错误体不是 JSON，用状态码兜底 */
+    }
+    const error = new ApiError(message, response.status, response.status);
+    toast(error.message, "error");
+    throw error;
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let final: DialogueReply | null = null;
+
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      for (;;) {
+        const match = SSE_SEPARATOR.exec(buffer);
+        if (!match || match.index === undefined) break;
+        const block = buffer.slice(0, match.index);
+        buffer = buffer.slice(match.index + match[0].length);
+
+        const data = readSseData(block);
+        if (!data) continue;
+        let event: (DialogueReply & { done?: boolean }) | null = null;
+        try {
+          event = JSON.parse(data) as DialogueReply & { done?: boolean };
+        } catch {
+          continue; // 心跳或注释行
+        }
+        if (event?.done) {
+          final = event;
+          handlers.onDone?.(event);
+        } else if (typeof event?.reply === "string" && event.reply) {
+          handlers.onDelta?.(event.reply);
+        } else if (event?.safety_note) {
+          handlers.onSafety?.(event.safety_note);
+        }
+      }
+    }
+  } catch (err) {
+    if (signal?.aborted) return null;
+    throw err;
+  }
+
+  if (!final) {
+    if (signal?.aborted) return null;
+    const error = new ApiError("对话中断，请稍后重试。", -1, 0);
+    toast(error.message, "error");
+    throw error;
+  }
+  return final;
 }
 
 /* ------------------------------------------------------------------ */

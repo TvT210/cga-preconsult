@@ -688,6 +688,8 @@ export interface DialogueExtracted {
   medications?: string[];
   lifestyle?: Record<string, unknown>;
   chief_complaint?: Record<string, unknown>;
+  /** 这条助手回复没走完（老人中途停止 / 连接断开），内容不是完整回复 */
+  interrupted?: boolean;
 }
 
 export interface DialogueConflict {
@@ -710,6 +712,10 @@ export interface DialogueReply {
   safety_note?: string;
   conflict_flags?: DialogueConflict[];
   disclaimer?: string;
+  model?: string;
+  prompt_version?: string;
+  /** 回复没走完；true 时 reply 只是已经生成的那部分，不补全 */
+  interrupted?: boolean;
 }
 
 /* ------------------------------------------------------------------ */

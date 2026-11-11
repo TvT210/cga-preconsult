@@ -666,10 +666,12 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
   "conflict_flags": [ { "field": "symptoms", "dialogue_value": ["difficulty_walking"],
                         "scale_value": "B.1 未提示异常", "note": "对话提到…请医护复核。" } ],
   "disclaimer": "本系统不提供诊断与用药建议，结果仅供参考，不构成诊断，请及时咨询医生。",
-  "model": "mock-deterministic-v1", "prompt_version": "0.1.0-draft" }
+  "model": "mock-deterministic-v1", "prompt_version": "0.1.0-draft",
+  "interrupted": false }
 ```
 - `safety_note` 非空 = 命中急症安全规则，**前端必须醒目标红展示**。
 - `conflict_flags` 非空 = 对话与量表不一致，**只提示不修改**。
+- `interrupted` = 回复没走完；非流式接口正常返回时恒为 `false`，与流式收尾帧保持同构。
 
 ### GET `/dialogue/sessions/{id}/profile` ✅
 ```json
@@ -677,8 +679,28 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
   "conditions": [], "medications": [], "lifestyle": {}, "chief_complaint": {}, "updated_at": "…" }
 ```
 
-### POST `/dialogue/sessions/{id}/messages/stream` 🟡
-契约：SSE，`data: {"reply":"…","done":false}` 逐段，`data: {"done":true,"extracted":{…},"safety_note":"…"}` 收尾。与非流式字段完全一致。
+### POST `/dialogue/sessions/{id}/messages/stream` ✅（A-7 / **CA-20261111-04**）
+
+请求体与非流式相同：`{ "content": "我这几天头晕，走路发飘", "proxy": null }`。
+响应 `Content-Type: text/event-stream`，每帧一行 `data: {json}` 加一个空行。事件序列：
+
+```
+data: {"safety_note":"胸口不适可能是急症信号…","done":false}   ← 仅命中急症规则时，且必定早于正文
+data: {"reply":"您说的头晕大","done":false}                      ← 增量片段，若干帧
+data: {"reply":"概持续多久了","done":false}
+…
+data: {"reply":"完整全文","extracted":{…},"safety_note":"","conflict_flags":[…],
+       "disclaimer":"…","model":"…","prompt_version":"…","interrupted":false,"done":true}
+```
+
+- **收尾帧的字段与非流式 `POST /messages` 完全一致**，只多一个 `done: true`。两条路径共用同一套落库与组装逻辑，所以同一条输入走哪个接口，除了「分几次到」之外结果相同。
+- `safety_note` 前置发送是有意为之：急症警告不该等模型把话说完才出现。
+- 增量帧里的 `reply` 是**片段**，不是全文；拼接起来应等于收尾帧的 `reply`。前端应以收尾帧的全文为准，避免漏帧累积误差。
+- `interrupted: true` = 回复没走完（模型中途失败，或老人点了停止）。此时 `reply` 只是已经生成的那部分，**不补全、不润色**；会话里对应 assistant turn 的 `extracted.interrupted` 同样为 `true`，前端要明确标注「没说完」，不能让它看起来像完整回答。
+- 客户端断开时，服务端把已经说出的部分落库并标记中断，**同时保留这条用户消息**——老人说过什么不能因为断线就丢。
+- **没收尾帧 = 不是完整结果**，前端必须按失败处理。
+- 参数错误（会话不存在 404、无权访问 403、内容为空 400）在推流前就返回 4xx，不会以 200 开流。
+- 响应头固定带 `Cache-Control: no-cache, no-transform` 与 `X-Accel-Buffering: no`，防止反向代理缓冲把逐字效果变成「等半天再整段蹦出」。
 
 ### POST `/periodic/run` ✅（staff+）
 ```json
@@ -858,7 +880,6 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
 
 | 接口 | 状态 | 说明 |
 | --- | --- | --- |
-| `POST /dialogue/sessions/{id}/messages/stream` | 🟡 | SSE 流式，字段与非流式一致 |
 | `GET /matching/thresholds` 的审批流形态 | 🟡 | 将改为提案/审批/生效三态 |
 | `GET /patients/{id}/assessments` 分页 | 🟡 | v1.2 统一为形态 A |
 | 其余列表接口分页 | 🟡 | v1.2 统一为形态 A |

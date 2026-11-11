@@ -146,3 +146,88 @@ def test_dialogue_degrades_when_model_fails(monkeypatch):
     finally:
         db.rollback()
         db.close()
+
+
+def test_stream_chat_parses_openai_sse(monkeypatch):
+    """OpenAI 兼容流式：逐行解析 `data:`，只取 delta.content，遇 [DONE] 停。"""
+
+    lines = [
+        'data: {"choices":[{"delta":{"content":"您好"}}]}',
+        "",
+        ": ping",  # 网关心跳/注释行，必须跳过
+        'data: {"choices":[{"delta":{"content":"，我是"}}]}',
+        'data: {"choices":[{"delta":{}}]}',  # 只有 role 没有正文的帧
+        "data: [DONE]",
+        'data: {"choices":[{"delta":{"content":"不该出现"}}]}',  # [DONE] 之后一律忽略
+    ]
+
+    class FakeResponse:
+        def raise_for_status(self) -> None:
+            return None
+
+        def iter_lines(self):
+            return iter(lines)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args) -> None:
+            return None
+
+    class FakeClient:
+        def __init__(self, *args, **kwargs) -> None:
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args) -> None:
+            return None
+
+        def stream(self, *args, **kwargs):
+            return FakeResponse()
+
+    monkeypatch.setattr("packages.medagent.llm.httpx.Client", FakeClient)
+    provider = OpenAICompatibleProvider()
+    pieces = list(provider.stream_chat([{"role": "user", "content": "你好"}]))
+    assert "".join(pieces) == "您好，我是"
+
+
+def test_stream_chat_skips_non_json_lines(monkeypatch):
+    """网关偶尔混入非 JSON 行时不能炸掉整条流。"""
+
+    lines = [
+        "event: message",
+        "data: not-json",
+        'data: {"choices":[{"delta":{"content":"还在"}}]}',
+        "data: [DONE]",
+    ]
+
+    class FakeResponse:
+        def raise_for_status(self) -> None:
+            return None
+
+        def iter_lines(self):
+            return iter(lines)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args) -> None:
+            return None
+
+    class FakeClient:
+        def __init__(self, *args, **kwargs) -> None:
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args) -> None:
+            return None
+
+        def stream(self, *args, **kwargs):
+            return FakeResponse()
+
+    monkeypatch.setattr("packages.medagent.llm.httpx.Client", FakeClient)
+    assert "".join(OpenAICompatibleProvider().stream_chat([{"role": "user", "content": "hi"}])) == "还在"
