@@ -25,6 +25,7 @@ import type {
 } from "@/lib/types";
 import { BigButton } from "@/components/BigButton";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ErrorState";
+import { useAssistContext } from "@/components/ElderDock";
 import { QuestionCard } from "@/components/QuestionCard";
 import { useToast } from "@/components/Toast";
 import { VoiceBar } from "@/components/VoiceBar";
@@ -124,6 +125,7 @@ export default function ElderScalePage() {
   const router = useRouter();
   const toast = useToast();
   const { user } = useCurrentUser();
+  const { setAssistContext } = useAssistContext();
 
   // 路由参数为量表编码，服务端按「患者 + 量表」恢复进度实现断点续填
   const scaleCode = Array.isArray(params.id) ? params.id[0] : params.id;
@@ -140,8 +142,9 @@ export default function ElderScalePage() {
   const [proxyMode, setProxyMode] = useState(false);
   const [proxyName, setProxyName] = useState("");
   const [proxyRelation, setProxyRelation] = useState("");
-  const [rate, setRate] = useState(0.9);
   const [skipOpen, setSkipOpen] = useState(false);
+  // 一步一屏：跳过/暂停/代答设置默认收起，减少同屏元素
+  const [moreOpen, setMoreOpen] = useState(false);
 
   // patient_id 保持后端原样（整数主键）：请求体按原类型发送
   const patientId = user?.patient_id ?? null;
@@ -229,6 +232,8 @@ export default function ElderScalePage() {
         setProxyMode(true);
         setProxyName(sessionDetail.proxy?.proxy_name ?? "");
         setProxyRelation(sessionDetail.proxy?.proxy_relation ?? "");
+        // 续填代答会话时把「其他操作」展开，让代答人看到自己是谁在答
+        setMoreOpen(true);
       }
     } catch (err) {
       setError(
@@ -265,6 +270,18 @@ export default function ElderScalePage() {
   const answeredCount = visibleQuestions.filter((question) =>
     isAnswered(answers[question.code]),
   ).length;
+
+  // 吸底条「呼叫工作人员」需要知道卡在哪一题，医护到床边才不用重新找
+  useEffect(() => {
+    if (!session || !currentQuestion) return;
+    const sessionId = Number(session.id);
+    setAssistContext(
+      Number.isFinite(sessionId)
+        ? { sessionId, questionCode: currentQuestion.code }
+        : { questionCode: currentQuestion.code },
+    );
+  }, [session, currentQuestion, setAssistContext]);
+  useEffect(() => () => setAssistContext(null), [setAssistContext]);
 
   /** 朗读内容：题目 + 白话解释 + 选项 + 实测施测提示 */
   const speechText = useMemo(() => {
@@ -547,53 +564,47 @@ export default function ElderScalePage() {
     : 0;
 
   return (
-    <div className="space-y-6">
-      <header className="card card-pad">
-        <h1 className="text-elder-2xl font-bold text-ink">{scale.name}</h1>
-        <p className="mt-2 text-elder text-ink-soft">
-          所属维度：{scale.dimension} · 采集方式：{scale.method} · 本次需回答{" "}
-          {visibleQuestions.length} 题
-        </p>
-        {scale.standard_ref ? (
-          <p className="mt-1 text-elder text-ink-mute">标准依据：{scale.standard_ref}</p>
-        ) : null}
-
-        <div className="mt-4">
-          <div className="flex items-center justify-between text-elder text-ink-soft">
-            <span>
-              进度：第 {index + 1} 题 / 共 {visibleQuestions.length} 题
-            </span>
-            <span>已作答 {answeredCount} 题</span>
-          </div>
-          <div className="mt-2 h-4 w-full overflow-hidden rounded-full bg-slate-200">
-            <div
-              className="h-full rounded-full bg-medical-700 transition-all"
-              style={{ width: `${percent}%` }}
-              role="progressbar"
-              aria-valuenow={percent}
-              aria-valuemin={0}
-              aria-valuemax={100}
-            />
-          </div>
-          {session.status && session.status !== "in_progress" ? (
-            <p className="mt-2 text-elder text-ink-soft">
-              当前会话状态：{assessmentStatusLabel(session.status)}
-            </p>
-          ) : null}
-          {proxyMode && proxyName.trim() ? (
-            <p className="mt-2 rounded-xl border-2 border-amber-300 bg-amber-50 px-4 py-3 text-elder text-amber-900">
-              本次由 {proxyName.trim()}
-              {proxyRelation.trim() ? `（${proxyRelation.trim()}）` : ""} 代答，
-              工作人员复核时会看到这个标记。
-            </p>
-          ) : null}
+    <div className="space-y-4">
+      {/* 顶部只留身份与进度：量表说明与标准依据移入「其他操作」，一屏一题 */}
+      <header className="card card-pad space-y-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h1 className="text-elder-xl font-bold text-ink">{scale.name}</h1>
+          <span className="text-elder font-semibold text-ink-soft">
+            第 {index + 1} 题 / 共 {visibleQuestions.length} 题
+          </span>
         </div>
+        <div className="h-4 w-full overflow-hidden rounded-full bg-slate-200">
+          <div
+            className="h-full rounded-full bg-medical-700 transition-all"
+            style={{ width: `${percent}%` }}
+            role="progressbar"
+            aria-valuenow={percent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="答题进度"
+          />
+        </div>
+        <p className="text-elder text-ink-soft">
+          已作答 {answeredCount} 题
+          {scale.standard_ref ? ` · 依据 ${scale.standard_ref}` : ""}
+        </p>
+        {session.status && session.status !== "in_progress" ? (
+          <p className="text-elder text-ink-soft">
+            当前会话状态：{assessmentStatusLabel(session.status)}
+          </p>
+        ) : null}
+        {proxyMode && proxyName.trim() ? (
+          <p className="rounded-xl border-2 border-amber-300 bg-amber-50 px-4 py-3 text-elder font-semibold text-amber-900">
+            本次由 {proxyName.trim()}
+            {proxyRelation.trim() ? `（${proxyRelation.trim()}）` : ""} 代答，
+            工作人员复核时会看到这个标记。
+          </p>
+        ) : null}
       </header>
 
       <VoiceBar
         speechText={speechText}
-        rate={rate}
-        onRateChange={setRate}
+        sticky
         allowInput={
           currentQuestion.input_type === "number" || Boolean(currentQuestion.banded_input)
         }
@@ -635,55 +646,8 @@ export default function ElderScalePage() {
         }}
       />
 
-      {/* 家属代答 */}
-      <section className="card card-pad space-y-4">
-        <label className="flex min-h-btn items-center gap-3 text-elder font-semibold text-ink">
-          <input
-            type="checkbox"
-            className="h-7 w-7"
-            checked={proxyMode}
-            onChange={(event) => handleProxyToggle(event.target.checked)}
-          />
-          由家属代答
-        </label>
-        <p className="text-elder text-ink-mute">
-          只有之后填写的题目会标记为代答，之前自己答的保持不变。
-        </p>
-        {proxyMode ? (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="field-label" htmlFor="proxy-name">
-                代答人姓名
-              </label>
-              <input
-                id="proxy-name"
-                className="field-input"
-                value={proxyName}
-                onChange={(event) => setProxyName(event.target.value)}
-                // 姓名填完才同步：服务端不接受「代答但不知道谁答的」
-                onBlur={() => void syncResponder("proxy", proxyName, proxyRelation)}
-                placeholder="请填写代答人姓名"
-              />
-            </div>
-            <div>
-              <label className="field-label" htmlFor="proxy-relation">
-                与老人关系
-              </label>
-              <input
-                id="proxy-relation"
-                className="field-input"
-                value={proxyRelation}
-                onChange={(event) => setProxyRelation(event.target.value)}
-                onBlur={() => void syncResponder("proxy", proxyName, proxyRelation)}
-                placeholder="如：女儿、儿子、护工"
-              />
-            </div>
-          </div>
-        ) : null}
-      </section>
-
-      {/* 操作区 */}
-      <section className="card card-pad space-y-4">
+      {/* 主操作：一屏只留两个动作，其余收进「其他操作」 */}
+      <section className="card card-pad no-print">
         <div className="grid gap-3 sm:grid-cols-2">
           <BigButton
             variant="secondary"
@@ -702,27 +666,106 @@ export default function ElderScalePage() {
             {index >= visibleQuestions.length - 1 ? "完成评估" : "下一题"}
           </BigButton>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <BigButton
-            variant="warning"
-            size="lg"
-            disabled={busy}
-            onClick={() => setSkipOpen(true)}
-          >
-            跳过本题
-          </BigButton>
-          <BigButton variant="ghost" size="lg" disabled={busy} onClick={() => void handlePause()}>
-            暂停并退出
-          </BigButton>
-        </div>
-        <p className="text-elder text-ink-mute">
-          可以随时暂停退出，进度会自动保存，下次进入可继续填写。
-        </p>
       </section>
+
+      <BigButton
+        variant="ghost"
+        size="lg"
+        fullWidth
+        className="no-print"
+        aria-expanded={moreOpen}
+        onClick={() => setMoreOpen((prev) => !prev)}
+      >
+        {moreOpen ? "收起其他操作" : "其他操作：跳过、暂停、家属代答"}
+      </BigButton>
+
+      {moreOpen ? (
+        <section className="card card-pad space-y-5 no-print">
+          <div>
+            <h2 className="text-elder-lg font-semibold text-ink">跳过本题或暂停</h2>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <BigButton
+                variant="warning"
+                size="lg"
+                disabled={busy}
+                onClick={() => setSkipOpen(true)}
+              >
+                跳过本题
+              </BigButton>
+              <BigButton
+                variant="ghost"
+                size="lg"
+                disabled={busy}
+                onClick={() => void handlePause()}
+              >
+                暂停并退出
+              </BigButton>
+            </div>
+            <p className="mt-2 text-elder text-ink-mute">
+              跳过的题会记为缺项，由工作人员复核时补充确认。可以随时暂停退出，
+              进度会自动保存，下次进入可继续填写。
+            </p>
+          </div>
+
+          <div className="space-y-3 border-t border-slate-200 pt-4">
+            <h2 className="text-elder-lg font-semibold text-ink">家属代答</h2>
+            <label className="flex min-h-btn items-center gap-3 text-elder font-semibold text-ink">
+              <input
+                type="checkbox"
+                className="h-7 w-7"
+                checked={proxyMode}
+                onChange={(event) => handleProxyToggle(event.target.checked)}
+              />
+              由家属代答
+            </label>
+            <p className="text-elder text-ink-mute">
+              只有之后填写的题目会标记为代答，之前自己答的保持不变。
+            </p>
+            {proxyMode ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="field-label" htmlFor="proxy-name">
+                    代答人姓名
+                  </label>
+                  <input
+                    id="proxy-name"
+                    className="field-input"
+                    value={proxyName}
+                    onChange={(event) => setProxyName(event.target.value)}
+                    // 姓名填完才同步：服务端不接受「代答但不知道谁答的」
+                    onBlur={() => void syncResponder("proxy", proxyName, proxyRelation)}
+                    placeholder="请填写代答人姓名"
+                  />
+                </div>
+                <div>
+                  <label className="field-label" htmlFor="proxy-relation">
+                    与老人关系
+                  </label>
+                  <input
+                    id="proxy-relation"
+                    className="field-input"
+                    value={proxyRelation}
+                    onChange={(event) => setProxyRelation(event.target.value)}
+                    onBlur={() => void syncResponder("proxy", proxyName, proxyRelation)}
+                    placeholder="如：女儿、儿子、护工"
+                  />
+                </div>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="space-y-1 border-t border-slate-200 pt-4 text-elder text-ink-mute">
+            <p>
+              所属维度：{scale.dimension} · 采集方式：{scale.method}
+            </p>
+            <p>本次需回答 {visibleQuestions.length} 题，题目会随前面的回答自动调整。</p>
+          </div>
+        </section>
+      ) : null}
 
       {skipOpen ? (
         <div
-          className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4"
+          className="no-print fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4"
           role="dialog"
           aria-modal="true"
           aria-label="选择跳过原因"

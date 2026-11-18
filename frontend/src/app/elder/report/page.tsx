@@ -104,7 +104,7 @@ export default function ElderReportPage() {
       />
 
       {reports.length ? (
-        <section className="card card-pad">
+        <section className="card card-pad no-print">
           <h2 className="text-elder-lg font-semibold text-ink">选择报告</h2>
           <ul className="mt-4 space-y-3">
             {reports.map((report) => {
@@ -167,10 +167,17 @@ export default function ElderReportPage() {
         )}
       </section>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="no-print flex flex-wrap items-center gap-3">
         <BigButton variant="secondary" size="lg" onClick={() => void load()}>
           刷新
         </BigButton>
+        {/* 打印走浏览器原生：纸质版按大字排版（见 globals.css 的 @media print） */}
+        <BigButton size="lg" disabled={!detail} onClick={() => window.print()}>
+          打印大字版
+        </BigButton>
+        <span className="text-elder text-ink-soft">
+          打印出来的字会比屏幕更大，方便带到医院给医生看。
+        </span>
       </div>
     </div>
   );

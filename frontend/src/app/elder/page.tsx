@@ -101,6 +101,21 @@ export default function ElderHomePage() {
 
       {error ? <ErrorState message={error} onRetry={() => void load()} /> : null}
 
+      {/* 家属代答独立入口（A-9 / 3.1.6）：家属不必先假装老人来答题 */}
+      <section className="card card-pad flex flex-wrap items-center justify-between gap-4">
+        <div className="min-w-[240px] flex-1">
+          <h2 className="text-elder-lg font-semibold text-ink">家里人帮忙答</h2>
+          <p className="mt-1 text-elder text-ink-soft">
+            老人说不清、听不清时，可以由家属代为回答。代答的题目会被标记，医生复核时看得见。
+          </p>
+        </div>
+        <Link href="/elder/proxy">
+          <BigButton variant="secondary" size="lg">
+            进入家属代答
+          </BigButton>
+        </Link>
+      </section>
+
       {/* 待评估任务 */}
       <section>
         <SectionTitle title="待评估任务" />

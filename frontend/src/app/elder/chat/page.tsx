@@ -33,7 +33,6 @@ export default function ElderChatPage() {
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [rate, setRate] = useState(0.9);
   const [lastReply, setLastReply] = useState("");
   const [conflictNote, setConflictNote] = useState<string[]>([]);
   const listRef = useRef<HTMLOListElement | null>(null);
@@ -309,8 +308,6 @@ export default function ElderChatPage() {
 
       <VoiceBar
         speechText={lastReply}
-        rate={rate}
-        onRateChange={setRate}
         allowInput
         onTranscript={(text) => setInput((prev) => (prev ? `${prev} ${text}` : text))}
       />

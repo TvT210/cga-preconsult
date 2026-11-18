@@ -35,7 +35,8 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-elderbg">
-      <header className="border-b border-slate-200 bg-white">
+      {/* app-shell-header：老人端打印时只藏这条顶栏，页面自己的 PageHeader（也是 header 标签）必须保留 */}
+      <header className="app-shell-header border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <Link href={homeHref} className="text-elder-lg font-bold text-medical-800">
             {title}

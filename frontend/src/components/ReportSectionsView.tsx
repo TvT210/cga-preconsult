@@ -34,6 +34,27 @@ const KEY_LABEL: Record<string, string> = {
   notice: "说明",
   trend: "趋势",
   dimension_conclusions: "维度结论",
+  // 报告抬头字段（A-9 打印大字版时暴露过英文键）
+  patient_id: "患者编号",
+  gender: "性别",
+  age: "年龄",
+  birth_date: "出生日期",
+  phone: "联系电话",
+  assessment_time: "评估时间",
+  assessment_reason: "评估原因",
+  assessment_place: "评估地点",
+  department: "科室",
+  organization: "评估机构",
+  confidentiality: "保密级别",
+  report_code: "报告编号",
+  report_version: "报告版本",
+  assessor: "评估人",
+  reviewer: "复核人",
+  proxy_name: "代答人",
+  scale_count: "量表数量",
+  scale_versions: "量表版本",
+  rule_versions: "规则版本",
+  recent_sessions: "近期会话",
 };
 
 function labelFor(key: string): string {
@@ -66,9 +87,11 @@ function ObjectCard({ data }: { data: Record<string, unknown> }) {
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
       <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
         {Object.entries(data).map(([key, value]) => (
-          <div key={key} className="flex flex-wrap gap-2">
+          <div key={key} className="flex min-w-0 flex-wrap gap-2">
             <dt className="text-elder font-medium text-ink-soft">{labelFor(key)}</dt>
-            <dd className="text-elder text-ink">{renderScalar(value)}</dd>
+            {/* 有些值是 JSON 串（近期会话等），没有空格可断行，必须允许任意处折行，
+                否则 360px 窄屏会被撑到 600px 以上 */}
+            <dd className="min-w-0 break-all text-elder text-ink">{renderScalar(value)}</dd>
           </div>
         ))}
       </dl>

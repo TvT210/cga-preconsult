@@ -2,10 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Search, UserPlus } from "lucide-react";
+import { BellRing, Search, UserPlus } from "lucide-react";
 import { api } from "@/lib/api";
-import { ageFromBirthDate, formatDate } from "@/lib/format";
-import type { Paged, Patient, PatientCreateBody } from "@/lib/types";
+import { ageFromBirthDate, formatDate, formatDateTime } from "@/lib/format";
+import type {
+  AssistanceRequest,
+  Paged,
+  Patient,
+  PatientCreateBody,
+} from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,6 +57,42 @@ export default function StaffPatientsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState<PatientCreateBody>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  // A-9：老人端的「呼叫工作人员」在这里排队，处理完即从列表消失
+  const [assists, setAssists] = useState<AssistanceRequest[]>([]);
+  const [handlingId, setHandlingId] = useState<number | null>(null);
+
+  const loadAssists = useCallback(async () => {
+    try {
+      const rows = await api.get<AssistanceRequest[]>(
+        "/assistance",
+        { status: "pending", limit: 20 },
+        { silent: true },
+      );
+      setAssists(Array.isArray(rows) ? rows : []);
+    } catch {
+      // 求助列表拉取失败不应挡住患者检索，静默即可
+      setAssists([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadAssists();
+  }, [loadAssists]);
+
+  const handleAssist = useCallback(
+    async (id: number) => {
+      setHandlingId(id);
+      try {
+        await api.post(`/assistance/${id}/handle`, {});
+        setAssists((prev) => prev.filter((row) => row.id !== id));
+      } catch {
+        /* 错误提示已由 api 层统一处理 */
+      } finally {
+        setHandlingId(null);
+      }
+    },
+    [],
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -111,6 +152,48 @@ export default function StaffPatientsPage() {
           </Button>
         }
       />
+
+      {/* 老人端求助：谁在等着人来 */}
+      {assists.length ? (
+        <ClinSection title={`待处理协助请求（${assists.length}）`}>
+          <ul className="divide-y divide-clin-border">
+            {assists.map((row) => (
+              <li key={row.id} className="flex flex-wrap items-center gap-3 py-2">
+                <BellRing className="h-4 w-4 shrink-0 text-clin-warning" aria-hidden="true" />
+                <span className="min-w-[120px] text-clin-sm font-medium text-clin-fg">
+                  {row.patient_name || `患者 #${row.patient_id}`}
+                </span>
+                <span className="text-clin-sm tabular-nums text-clin-fg-muted">
+                  {formatDateTime(row.created_at)}
+                </span>
+                <span className="text-clin-sm text-clin-fg-muted">
+                  {row.question_code ? `卡在 ${row.question_code}` : "从首页呼叫"}
+                  {row.note ? ` · ${row.note}` : ""}
+                </span>
+                <span className="ml-auto flex items-center gap-2">
+                  <Link
+                    href={`/staff/patients/${row.patient_id}`}
+                    className="text-clin-sm text-clin-accent hover:underline"
+                  >
+                    进入档案
+                  </Link>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    loading={handlingId === row.id}
+                    onClick={() => void handleAssist(row.id)}
+                  >
+                    已处理
+                  </Button>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-clin-xs text-clin-fg-subtle">
+            协助请求只表示「有人需要帮忙」，不含医学判断；处理后会记下处理人与时间。
+          </p>
+        </ClinSection>
+      ) : null}
 
       <ClinSection title="检索">
         <div className="flex flex-wrap items-end gap-3">

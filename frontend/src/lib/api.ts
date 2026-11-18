@@ -137,8 +137,13 @@ export async function request<T = unknown>(
 }
 
 export const api = {
-  get<T = unknown>(path: string, query?: Record<string, QueryValue>): Promise<T> {
-    return request<T>(path, { method: "GET", query });
+  get<T = unknown>(
+    path: string,
+    query?: Record<string, QueryValue>,
+    // 第三个参数用于「读失败不该弹红条」的场景（吸底条拉求助方式等）
+    options?: Pick<RequestOptions, "silent" | "redirectOn401">,
+  ): Promise<T> {
+    return request<T>(path, { method: "GET", query, ...options });
   },
   post<T = unknown>(path: string, body?: unknown): Promise<T> {
     return request<T>(path, { method: "POST", body });

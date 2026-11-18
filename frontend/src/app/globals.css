@@ -78,6 +78,235 @@
 }
 
 /* ================================================================== */
+/* 老人端主题作用域（线 A，A-9）                                       */
+/* ------------------------------------------------------------------ */
+/* 只在 .elder-theme 容器（老人端 layout 根元素）内生效，医护端不受影响。*/
+/* 内容分三层：                                                       */
+/*   1. token：字号三档 / 按钮高度 / 医疗青 + 暖橙；                   */
+/*   2. 重映射：把页面里既有的语义类名（text-elder / bg-medical-*）   */
+/*      指向 token，组件源码不用改，医护端的同名类也不受影响；        */
+/*   3. 打印：纸质大字版的版式。                                      */
+/* 配色对比度由 tools/check_elder_contrast.py 实测，全部 ≥ WCAG AA。   */
+/* ================================================================== */
+.elder-theme {
+  /* 字号阶：标准档取值与改造前完全一致，不切档时版式不变 */
+  --e-fs-base: 18px;
+  --e-fs-lg: 20px;
+  --e-fs-xl: 22px;
+  --e-fs-2xl: 26px;
+  --e-lh-base: 1.8;
+  --e-lh-lg: 1.7;
+  --e-lh-xl: 1.6;
+  --e-lh-2xl: 1.5;
+  /* 触控高度：三档同步放大，避免「字大了但按钮还是小的」 */
+  --e-btn: 48px;
+  --e-btn-lg: 56px;
+  /* 主色：柔和医疗青（替代冷蓝），降低医院压迫感 */
+  --e-primary: #0f766e;
+  --e-primary-hover: #115e59;
+  --e-primary-strong: #134e4a;
+  --e-primary-soft: #ccfbf1;
+  --e-primary-tint: #f0fdfa;
+  /* 强调色：暖橙。只用于求助与提醒，不做大面积铺色 */
+  --e-accent: #c2410c;
+  --e-accent-hover: #9a3412;
+  --e-accent-soft: #ffedd5;
+  --e-accent-ink: #7c2d12;
+
+  background-color: #f5f7fa;
+  color: #1a1a1a;
+  font-size: var(--e-fs-base);
+}
+
+.elder-theme[data-elder-scale="large"] {
+  --e-fs-base: 22px;
+  --e-fs-lg: 24px;
+  --e-fs-xl: 27px;
+  --e-fs-2xl: 32px;
+  --e-btn: 56px;
+  --e-btn-lg: 64px;
+}
+
+.elder-theme[data-elder-scale="xlarge"] {
+  --e-fs-base: 26px;
+  --e-fs-lg: 29px;
+  --e-fs-xl: 32px;
+  --e-fs-2xl: 38px;
+  --e-btn: 64px;
+  --e-btn-lg: 72px;
+}
+
+/* --- 字号与触控高度 --- */
+.elder-theme .text-elder {
+  font-size: var(--e-fs-base);
+  line-height: var(--e-lh-base);
+}
+.elder-theme .text-elder-lg {
+  font-size: var(--e-fs-lg);
+  line-height: var(--e-lh-lg);
+}
+.elder-theme .text-elder-xl {
+  font-size: var(--e-fs-xl);
+  line-height: var(--e-lh-xl);
+}
+.elder-theme .text-elder-2xl {
+  font-size: var(--e-fs-2xl);
+  line-height: var(--e-lh-2xl);
+}
+.elder-theme .min-h-btn {
+  min-height: var(--e-btn);
+}
+.elder-theme .min-h-btn-lg {
+  min-height: var(--e-btn-lg);
+}
+.elder-theme .field-input,
+.elder-theme .field-select {
+  min-height: var(--e-btn);
+  font-size: var(--e-fs-base);
+}
+
+/* 吸底条会盖住正文，主区域留出等量空间 */
+.elder-theme main {
+  padding-bottom: 7rem;
+}
+
+/* --- 焦点环跟随主色 --- */
+.elder-theme :focus-visible {
+  outline-color: var(--e-primary);
+}
+
+/* --- 医疗蓝 → 医疗青 --- */
+.elder-theme .bg-medical-700 {
+  background-color: var(--e-primary);
+}
+.elder-theme .bg-medical-800 {
+  background-color: var(--e-primary-hover);
+}
+.elder-theme .bg-medical-900 {
+  background-color: var(--e-primary-strong);
+}
+.elder-theme .hover\:bg-medical-800:hover,
+.elder-theme .hover\:bg-medical-900:hover {
+  background-color: var(--e-primary-hover);
+}
+.elder-theme .bg-medical-50,
+.elder-theme .bg-medical-100 {
+  background-color: var(--e-primary-tint);
+}
+.elder-theme .text-medical-700 {
+  color: var(--e-primary);
+}
+.elder-theme .text-medical-800,
+.elder-theme .text-medical-900 {
+  color: var(--e-primary-hover);
+}
+.elder-theme .border-medical-200,
+.elder-theme .border-medical-300 {
+  border-color: var(--e-primary-soft);
+}
+.elder-theme .border-medical-400 {
+  border-color: #5eead4;
+}
+.elder-theme .border-medical-700,
+.elder-theme .focus\:border-medical-700:focus {
+  border-color: var(--e-primary);
+}
+.elder-theme .hover\:border-medical-400:hover {
+  border-color: #5eead4;
+}
+
+/* --- 橙系 → 暖橙（求助与提醒） --- */
+.elder-theme .bg-amber-600 {
+  background-color: var(--e-accent);
+}
+.elder-theme .hover\:bg-amber-700:hover {
+  background-color: var(--e-accent-hover);
+}
+.elder-theme .bg-amber-50,
+.elder-theme .bg-amber-100 {
+  background-color: var(--e-accent-soft);
+}
+.elder-theme .border-amber-300 {
+  border-color: #fdba74;
+}
+.elder-theme .text-amber-900 {
+  color: var(--e-accent-ink);
+}
+
+/* ================================================================== */
+/* 老人端打印样式：纸质大字版（3.1.5）                                 */
+/* ------------------------------------------------------------------ */
+/* 打印版不跟随屏幕字号档，固定一档「大字」（20px），保证纸面可读又不溢出 */
+/* 只在 .elder-theme 内生效，医护端直接按浏览器默认打印。              */
+/* ================================================================== */
+@media print {
+  /* 页边距交给浏览器，正文不再自己留白 */
+  @page {
+    margin: 12mm;
+  }
+
+  .elder-theme {
+    --e-fs-base: 20px;
+    --e-fs-lg: 22px;
+    --e-fs-xl: 24px;
+    --e-fs-2xl: 26px;
+    --e-lh-base: 1.7;
+    --e-lh-lg: 1.6;
+    --e-lh-xl: 1.5;
+    --e-lh-2xl: 1.4;
+    background: #ffffff;
+    color: #000000;
+  }
+
+  /* 吸底条、顶栏、导航、操作区一律不打印。
+     注意只藏 `.app-shell-header`：页面标题（PageHeader）同样是 <header>，
+     一刀切藏掉 header 会把「我的报告」标题也删了。 */
+  .elder-theme .elder-dock,
+  .elder-theme .no-print,
+  .elder-theme .app-shell-header,
+  .elder-theme nav {
+    display: none !important;
+  }
+
+  .elder-theme main {
+    padding: 0 !important;
+    max-width: none;
+  }
+
+  /* 卡片改成浅边框，去掉阴影与圆角，省墨且不糊字 */
+  .elder-theme .card {
+    border: 1px solid #999999 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* 一段一段断开，不让一道题被切到两页 */
+  .elder-theme section,
+  .elder-theme li {
+    break-inside: avoid;
+  }
+
+  .elder-theme h1,
+  .elder-theme h2,
+  .elder-theme h3 {
+    break-after: avoid;
+  }
+
+  /* 链接按正文打印，不留下划线 */
+  .elder-theme a {
+    color: #000000;
+    text-decoration: none;
+  }
+
+  /* 底色块保留（提示条要能被看见），并强制打印背景 */
+  .elder-theme {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+
+/* ================================================================== */
 /* 医护端主题作用域（线 B）                                           */
 /* ------------------------------------------------------------------ */
 /* 只在 .theme-clinical 容器（医护端 layout 根元素）内生效，          */
