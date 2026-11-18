@@ -1019,3 +1019,29 @@ export interface PlainTextDraftList {
   count: number;
   items: PlainTextDraft[];
 }
+
+/* ------------------------------------------------------------------ */
+/* A-9 老人端求助通道                                                   */
+/* ------------------------------------------------------------------ */
+
+/** 协助请求：老人点「呼叫工作人员」落一条，医护处理后变 handled */
+export interface AssistanceRequest {
+  id: number;
+  patient_id: number;
+  patient_name: string;
+  session_id: number | null;
+  question_code: string;
+  note: string;
+  status: "pending" | "handled";
+  handled_by: string;
+  handled_at: string;
+  handle_comment: string;
+  created_at: string;
+}
+
+/** 求助方式：phone 为空表示机构没配电话，应提示现场求助 */
+export interface ElderSupport {
+  phone: string;
+  hours: string;
+  note: string;
+}

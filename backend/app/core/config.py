@@ -49,6 +49,11 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://127.0.0.1:3000,http://localhost:3000"
 
+    # 老人端「一键呼叫人工协助」：机构现场联系电话与服务时段。
+    # 留空时接口返回空串，前端显示「请找身边的工作人员」，**不编造号码**。
+    elder_help_phone: str = ""
+    elder_help_hours: str = ""
+
     @property
     def data_path(self) -> Path:
         path = Path(self.data_dir) if self.data_dir else BASE_DIR / "data"

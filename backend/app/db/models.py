@@ -377,6 +377,32 @@ class Alert(Base):
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)
 
 
+class AssistanceRequest(Base):
+    """老人端「呼叫工作人员」请求（A-9）。
+
+    为什么不复用 `alerts`：就医提醒是**医学结论**的产物，混进「这道题不会填」
+    会污染提醒量与误报率口径。协助请求记录的是**操作层面**的求助，
+    处理动作只有「已处理」一种，不做医学判断。
+    """
+
+    __tablename__ = "assistance_requests"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    patient_id: Mapped[int] = mapped_column(ForeignKey("patients.id"), index=True)
+    # 求助发生在哪次评估的哪道题上；两者都可能为空（如首页直接求助）
+    session_id: Mapped[int | None] = mapped_column(
+        ForeignKey("assessment_sessions.id"), nullable=True
+    )
+    question_code: Mapped[str] = mapped_column(String(64), default="")
+    note: Mapped[str] = mapped_column(Text, default="")
+    status: Mapped[str] = mapped_column(String(16), default="pending", index=True)
+    created_by: Mapped[int] = mapped_column(Integer, default=0)
+    handled_by: Mapped[str] = mapped_column(String(64), default="")
+    handled_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
+    handle_comment: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)
+
+
 class CgaReport(Base):
     """老年综合评估报告（含版本锁定）。"""
 
