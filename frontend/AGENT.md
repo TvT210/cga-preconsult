@@ -106,6 +106,14 @@ frontend/
     后端 `_responder_of` 与它同一套回推规则（`responder` 为空 → 看代答人姓名），
     改任一侧都要同步另一侧。来源只用于展示与复核，**不得接进计分或条件求值**；
     老人端提交答案/跳过时一律带 `answer_source`，代答未填姓名前后端都拦。
+16. **冲突标记只提示不修改**：`conflict_flags` 四类（`symptoms` / `complaint` /
+    `medication` / `history`），文案一律走 `lib/conflicts.ts`：
+    - 老人端用 `elderConflictLine()`——**不得把 `kind` 的英文键透给老人**
+      （旧实现直接拼 `field`，界面上出现过「symptoms：…」），也不要写「不一致／冲突」
+      这类判断词，要传达的是「记下来了，医生会看」；
+    - 医护端用 `groupConflicts()`——它按类别去重，因为同一处矛盾**每轮对话都会重新检出**，
+    不去重会让复核页堆出十几条一样的待办。
+    冲突项的 `severity` 只影响排序，**任何情况下都不得据此自动改量表、画像或计分**。
 
 ## 常用命令
 

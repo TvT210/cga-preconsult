@@ -692,6 +692,8 @@ export interface DialogueTurn {
   content: string;
   extracted?: DialogueExtracted;
   safety_note?: string;
+  /** 本轮对话与量表／画像不一致的地方（A-8 扩展为四类） */
+  conflict_flags?: DialogueConflict[];
   created_at?: string;
 }
 
@@ -706,9 +708,20 @@ export interface DialogueExtracted {
 }
 
 export interface DialogueConflict {
+  /** 冲突类别（A-8 新增）：symptoms / complaint / medication / history */
+  kind?: "symptoms" | "complaint" | "medication" | "history" | string;
+  /** 兼容旧结构，取值与 kind 相同；新代码请用 kind */
   field: string;
+  /** warn = 医护优先核对；info = 多为叙述差异 */
+  severity?: "info" | "warn" | string;
+  /** 中文短名，直接展示用，老人端也用这个 */
+  title?: string;
   dialogue_value?: unknown;
   scale_value?: unknown;
+  /** 与画像（主诉／用药／既往史）冲突时的记录侧描述 */
+  profile_value?: unknown;
+  /** 命中的原句片段 */
+  evidence?: string;
   note?: string;
 }
 

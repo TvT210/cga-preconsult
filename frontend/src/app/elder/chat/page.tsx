@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, api, streamDialogueMessage } from "@/lib/api";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { formatDateTime } from "@/lib/format";
+import { elderConflictLine } from "@/lib/conflicts";
 import type {
   DialogueReply,
   DialogueSession,
@@ -136,14 +137,7 @@ export default function ElderChatPage() {
 
     const applyReply = (reply: DialogueReply) => {
       setLastReply(reply.reply ?? "");
-      setConflictNote(
-        (reply.conflict_flags ?? []).map(
-          (flag) =>
-            `${flag.field}：对话信息「${String(flag.dialogue_value ?? "")}」，量表结果「${String(
-              flag.scale_value ?? "",
-            )}」${flag.note ? `（${flag.note}）` : ""}`,
-        ),
-      );
+      setConflictNote((reply.conflict_flags ?? []).map(elderConflictLine));
     };
 
     try {
@@ -303,7 +297,7 @@ export default function ElderChatPage() {
       {conflictNote.length ? (
         <div className="rounded-xl2 border-2 border-amber-300 bg-amber-50 p-4">
           <p className="text-elder font-semibold text-amber-900">
-            以下信息与量表结果不一致，已交由医护人员复核
+            有几处信息需要医生核对，已经替您记下来了
           </p>
           <ul className="mt-2 list-disc pl-6 text-elder text-amber-900">
             {conflictNote.map((note, position) => (

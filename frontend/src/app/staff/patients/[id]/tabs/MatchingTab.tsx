@@ -13,6 +13,7 @@ import { AiReviewPanel } from "@/components/AiReviewPanel";
 import { AlertCard, type AlertAction } from "@/components/AlertCard";
 import { MatchCandidateCard } from "@/components/MatchCandidateCard";
 import { Button } from "@/components/ui/button";
+import { groupConflicts } from "@/lib/conflicts";
 import { ClinEmpty, ClinSection } from "@/app/staff/_components/clinical";
 
 /** 匹配与提醒 tab：候选依据、规则/AI 双排序、提醒处理与对话回放 */
@@ -55,6 +56,19 @@ export function MatchingTab({
     });
     return map;
   }, [aiReview]);
+
+  /**
+   * 冲突标记是逐轮检出的，同一处矛盾会在多轮里重复出现。
+   * 先摊平再按类别去重，复核时看到的是「有几件事要核对」，不是「检出过几次」。
+   */
+  const conflictGroups = useMemo(
+    () => groupConflicts(dialogueTurns.flatMap((turn) => turn.conflict_flags ?? [])),
+    [dialogueTurns],
+  );
+  const conflictCount = useMemo(
+    () => conflictGroups.reduce((total, group) => total + group.items.length, 0),
+    [conflictGroups],
+  );
 
   return (
     <div>
@@ -178,6 +192,56 @@ export function MatchingTab({
                 }
               />
             ))}
+          </div>
+        )}
+      </ClinSection>
+
+      <ClinSection
+        title="信息冲突"
+        extra={
+          conflictGroups.length ? (
+            <span className="text-clin-xs text-clin-fg-muted">
+              共 {conflictCount} 条 · 只提示不修改
+            </span>
+          ) : null
+        }
+      >
+        {conflictGroups.length === 0 ? (
+          <ClinEmpty message="未发现对话与量表／画像记录不一致的地方。" />
+        ) : (
+          <div className="space-y-3">
+            {conflictGroups.map((group) => (
+              <div
+                key={group.kind}
+                className={[
+                  "rounded-clin border px-4 py-3",
+                  group.warn ? "border-clin-warning" : "border-clin-border",
+                ].join(" ")}
+              >
+                <p className="text-clin-sm font-medium text-clin-fg">
+                  {group.label}
+                  <span className="ml-2 text-clin-xs text-clin-fg-muted">
+                    {group.items.length} 条
+                  </span>
+                </p>
+                <ul className="mt-1.5 space-y-1.5">
+                  {group.items.map((flag, index) => (
+                    <li
+                      key={`${group.kind}-${index}`}
+                      className="text-clin-xs text-clin-fg-muted"
+                    >
+                      <span className="text-clin-fg">{flag.note || group.label}</span>
+                      {flag.evidence ? (
+                        <span className="ml-1">原句：「{flag.evidence}」</span>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+            <p className="text-clin-xs text-clin-fg-muted">
+              冲突只标记不覆盖：量表结果、画像记录与计分均未被改动，请按原记录核对后人工更正。
+            </p>
           </div>
         )}
       </ClinSection>
