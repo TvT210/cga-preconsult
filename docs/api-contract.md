@@ -663,21 +663,51 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
   "extracted": { "symptoms": [ { "code": "dizziness", "term": "头晕", "confidence": 0.85, "source": "dialogue" } ],
                  "proxy": null },
   "safety_note": "胸口不适可能是急症信号，请立即前往急诊或拨打 120，不要自行服药。",
-  "conflict_flags": [ { "field": "symptoms", "dialogue_value": ["difficulty_walking"],
-                        "scale_value": "B.1 未提示异常", "note": "对话提到…请医护复核。" } ],
+  "conflict_flags": [ { "kind": "symptoms", "field": "symptoms", "severity": "warn",
+                        "title": "症状与量表结果不一致",
+                        "dialogue_value": ["difficulty_walking"],
+                        "scale_value": "B.1 未提示异常", "profile_value": "",
+                        "evidence": "", "note": "对话提到…请医护复核。" } ],
   "disclaimer": "本系统不提供诊断与用药建议，结果仅供参考，不构成诊断，请及时咨询医生。",
   "model": "mock-deterministic-v1", "prompt_version": "0.1.0-draft",
   "interrupted": false }
 ```
 - `safety_note` 非空 = 命中急症安全规则，**前端必须醒目标红展示**。
-- `conflict_flags` 非空 = 对话与量表不一致，**只提示不修改**。
+- `conflict_flags` 非空 = 对话与既有记录不一致，**只提示不修改**。
 - `interrupted` = 回复没走完；非流式接口正常返回时恒为 `false`，与流式收尾帧保持同构。
+
+#### `conflict_flags[]` 结构（**CA-20261118-01**，A-8 扩展）
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `kind` | `symptoms` \| `complaint` \| `medication` \| `history` | 冲突类别，新增 |
+| `field` | string | **仅兼容旧前端**，取值与 `kind` 相同；新代码请用 `kind` |
+| `severity` | `info` \| `warn` | `warn` 需医护优先核对；`info` 多为叙述差异 |
+| `title` | string | 中文短名，供直接展示（老人端也用这个，不要暴露英文键） |
+| `dialogue_value` | any | 对话里说了什么（数组或字符串） |
+| `scale_value` | string | 与量表结果冲突时的量表侧描述；非量表类为空串 |
+| `profile_value` | string | 与画像（主诉／用药／既往史）冲突时的记录侧描述；非画像类为空串 |
+| `evidence` | string | 命中的原句片段，供医护核对「读到的是哪句话」 |
+| `note` | string | 面向医护的完整说明 |
+
+四类判定口径：
+
+1. `symptoms`：对话提到的症状落在某张量表关注面上，而该量表结果为正常（A-8 之前已有，行为不变）；
+2. `complaint`：主诉里说过的症状，在后续对话中被明确否认；
+3. `medication`：画像记录在用的药，对话里说明已停用；
+4. `history`：画像里的既往史，对话里被明确否认。
+
+> **只标记不修改**：四类命中都不改动量表结果、画像与计分，仅产出待复核项。
+> 否定识别是规则近似，**宁可多报交医护看一眼，也不静默漏报**；因此误报由人工复核消解，
+> 系统不得据此自动改结论。
 
 ### GET `/dialogue/sessions/{id}/profile` ✅
 ```json
 { "symptoms": [ { "code": "dizziness", "term": "头晕", "source": "dialogue" } ],
   "conditions": [], "medications": [], "lifestyle": {}, "chief_complaint": {}, "updated_at": "…" }
 ```
+> `chief_complaint` 由第一轮抽到症状的发言写入一次（`{text, symptom_codes, onset, site, source}`），
+> 后续轮次**不改写**；被老人明确否认的症状**不写入** `symptoms`。
 
 ### POST `/dialogue/sessions/{id}/messages/stream` ✅（A-7 / **CA-20261111-04**）
 

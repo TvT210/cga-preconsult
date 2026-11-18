@@ -196,13 +196,32 @@ python -c "from packages.medagent.llm import get_provider; print(get_provider().
 3. 对外文案只用「匹配度」「参考概率」，禁止「确诊概率」「患病概率」，提醒必须附「仅供参考，不构成诊断」；
 4. 老人仅可访问本人数据（`deps.ensure_patient_access` 强制）；
 5. 每次评估与匹配都要落题库版本、规则版本、模型与提示词版本；
-6. 对话与量表冲突只标记（`dialogue.detect_conflicts`），不自动覆盖任一方结果。
+6. 对话与量表/画像冲突只标记（`dialogue.detect_conflicts`），不自动覆盖任一方结果。
+
+## 6.1 冲突检测与否定识别（A-8）
+
+`services/dialogue.py` 里四类冲突：`symptoms`（对话症状 vs 量表结果）、`complaint`
+（主诉 vs 后续否认）、`medication`（画像记录在用 vs 对话称已停）、`history`
+（画像既往史 vs 对话否认）。四条硬约定：
+
+1. **只对已知候选判否定**：症状走受控词表，病史与用药走该患者已有记录。
+   不给候选就不猜——自由抽取病名药名会引入大量错位匹配，冲突标记的可信度比覆盖面更重要。
+2. **否定不跨分句、不越转折词、不隔实词**（`NEGATION_GAP`）。「不想吃饭还腹泻」
+   不能把腹泻算成否认，「氨氯地平不能停」不是停用声明。放宽这三处换来的召回，
+   抵不过医护看两次误报之后就不再相信这个区块。
+3. **被否认的症状不写进画像**。`extract_symptoms` 只看词表命中，「我没有头晕」
+   照样抽出 `dizziness`；不排除就会让画像记下老人否认过的事。
+4. `conflict_flags[].field` 保留为类别英文键，仅作旧前端兼容；新代码用 `kind`。
+   `severity` 只用于排序，**不得据此自动改任何数据**。
+
+改判定规则请同步 `tests/test_conflict_expand.py`——里面有 6 条是「不该报」的用例，
+它们比「该报」的更能防止误报蔓延。
 
 ## 7. 测试
 
 ```powershell
 cd backend
-python -m pytest tests -q          # 27 项：计分 / 匹配 / API 端到端
+.\.venv\Scripts\python.exe -m pytest -q   # 276 项：计分 / 匹配 / 对话 / 量表 / API 端到端
 ```
 
 `tests/conftest.py` 使用独立 SQLite（系统临时目录），不污染开发库。
