@@ -317,6 +317,14 @@ export default function ElderScalePage() {
     async (responder: AnswerSource, name: string, relation: string) => {
       if (!session) return;
       if (responder === "proxy" && !name.trim()) return;
+      // 没变化就不发请求：姓名输入框每次失焦都会触发一次，
+      // 无谓的 PATCH 会在审计日志里堆出一串重复记录。
+      const unchanged =
+        (session.responder ?? "self") === responder &&
+        (responder !== "proxy" ||
+          ((session.proxy?.proxy_name ?? "") === name.trim() &&
+            (session.proxy?.proxy_relation ?? "") === relation.trim()));
+      if (unchanged) return;
       try {
         const updated = await api.patch<AssessmentSession>(
           `/assessments/${session.id}/responder`,
