@@ -84,11 +84,221 @@ def check_safety(text: str) -> str:
     return ""
 
 
-def detect_conflicts(dialogue_symptoms: list[dict], scale_results: list[dict]) -> list[dict]:
-    """对话信息与量表结果冲突时标记，交医护复核，不自动覆盖。
+# ---------------------------------------------------------------------------
+# 否定 / 停用表述
+#
+# 冲突检测要判断「对话说的」与「已记录的不一致」，就必须先听懂否定：
+# 「我没有高血压」不是「我有高血压」，「氨氯地平已经停了」也不是「还在吃」。
+#
+# 这里刻意只做规则匹配，不引入模型判断：冲突标记要能解释「凭什么标」，
+# 也要能写成断言。规则会误报（宁可多报交医护复核，不可漏报），但不会把
+# 一句正常描述静默当成反面证据。
+# ---------------------------------------------------------------------------
 
-    判定规则：对话提到的症状若能对应到某张已施测量表的关注症状，而该量表结果为
-    「未见异常」，即认为两者不一致，标记为待复核（不修改任何一方结果）。
+# 否定词。按长度倒序匹配，长词优先（「从来没有」不会被「没有」抢先截断）。
+NEGATION_CUES = ("从来没有", "从来没", "不曾", "否认", "没有", "没", "不", "未", "无")
+
+# 否定词与目标词之间允许出现的虚词长度（如「没有**明显**头晕」）。
+# 放太宽会把「不想吃饭还腹泻」里的腹泻也当成被否定。
+NEGATION_GAP = 3
+
+# 停用表述。只收足够特异的说法，「不吃药」这类整体陈述不在其列。
+STOP_CUES = ("已经停", "停药", "停用", "停了", "不吃了", "没吃了", "没在吃", "不再吃", "断药")
+
+# 停用词的否定前置：这些出现时说明是「不能停」，不是「已经停」。
+STOP_VETO = ("不能", "不敢", "不可", "别", "不要")
+
+# 转折词：否定只作用于本分句，越过转折就要重新计。
+PIVOT_CUES = ("但是", "可是", "不过", "然而", "但", "却")
+
+# 分句切分。中文逗号在口语里也可能只是停顿，所以转折词另算一层。
+CLAUSE_SEP = re.compile(r"[，,。；;！!？?\n\r]")
+
+
+def _clauses(text: str) -> list[str]:
+    """按标点切分句，用于把否定限定在本分句内。"""
+    return [part.strip() for part in CLAUSE_SEP.split(text or "") if part.strip()]
+
+
+def _snippet(clause: str, term: str, span: int = 6) -> str:
+    """截出目标词前后的原文，供医护核对「模型到底读到了哪句话」。"""
+    pos = clause.find(term)
+    if pos < 0:
+        return clause[: span * 2]
+    start = max(0, pos - span)
+    end = min(len(clause), pos + len(term) + span)
+    prefix = "…" if start > 0 else ""
+    suffix = "…" if end < len(clause) else ""
+    return f"{prefix}{clause[start:end]}{suffix}"
+
+
+def _negation_hit(clause: str, term: str) -> str | None:
+    """该词在本分句内被否定时，返回命中原句；否则 None。
+
+    判定要点：否定词必须落在目标词之前，且两者之间只隔虚词（≤ ``NEGATION_GAP``），
+    中间若出现转折词则否定范围到此为止。
+    """
+    start = 0
+    while True:
+        pos = clause.find(term, start)
+        if pos < 0:
+            return None
+        head = clause[:pos]
+        # 转折词之后的否定才算数：「没有高血压，但头晕」里「头晕」不能被否定
+        pivot_end = 0
+        for cue in PIVOT_CUES:
+            cue_pos = head.rfind(cue)
+            if cue_pos >= 0:
+                pivot_end = max(pivot_end, cue_pos + len(cue))
+        if pivot_end > 0:
+            head = head[pivot_end:]
+        for cue in NEGATION_CUES:
+            cue_pos = head.rfind(cue)
+            if cue_pos < 0:
+                continue
+            gap = len(head) - (cue_pos + len(cue))
+            if 0 <= gap <= NEGATION_GAP:
+                return _snippet(clause, term)
+        start = pos + len(term)
+
+
+def _stop_hit(clause: str, name: str) -> str | None:
+    """药名在本分句内被说明为已停用时，返回命中原句。
+
+    「氨氯地平不能停」不算停用——把停用词的否定前置单独挡掉，
+    否则一句叮嘱会被记成一次用药冲突。
+    """
+    if not name or name not in clause:
+        return None
+    for cue in STOP_CUES:
+        pos = clause.find(cue)
+        if pos < 0:
+            continue
+        before = clause[max(0, pos - 2) : pos]
+        if any(veto in before for veto in STOP_VETO):
+            continue
+        return _snippet(clause, name)
+    return None
+
+
+def _name_variants(name: str) -> list[str]:
+    """病名的可匹配写法。
+
+    画像记「2 型糖尿病」，老人开口只说「糖尿病」——只按全名找会整类漏判。
+    去掉型别前缀后长度仍够（≥2 字）才作为变体，避免「1 型」这类短词误匹配。
+    """
+    variants = [name]
+    core = re.sub(r"^[0-9一二三四五六七八九十]+\s*型", "", name).strip()
+    if core and core != name and len(core) >= 2:
+        variants.append(core)
+    return variants
+
+
+def extract_negations(
+    text: str,
+    *,
+    condition_names: list[str] | None = None,
+    medication_names: list[str] | None = None,
+) -> list[dict[str, Any]]:
+    """抽取「被明确否认 / 已停用」的陈述。
+
+    只针对**已知候选**判否定：症状走受控词表，病史与用药走该患者已有记录。
+    不给候选就不猜——自由抽取病名药名会引入大量错位匹配，冲突标记的
+    可信度比覆盖面更重要。
+
+    :return: ``[{"kind": "symptom|condition|medication", "ref": 编码或名称,
+                 "term": 命中词, "evidence": 原句}, ...]``
+    """
+    found: dict[tuple[str, str], dict[str, Any]] = {}
+    conditions = [term.strip() for term in (condition_names or []) if term and term.strip()]
+    medications = [name.strip() for name in (medication_names or []) if name and name.strip()]
+
+    for clause in _clauses(text):
+        for term, code in _symptom_index():
+            if term and term in clause:
+                evidence = _negation_hit(clause, term)
+                if evidence:
+                    found.setdefault(
+                        ("symptom", code),
+                        {"kind": "symptom", "ref": code, "term": term, "evidence": evidence},
+                    )
+        for name in conditions:
+            evidence = next(
+                (hit for variant in _name_variants(name) if (hit := _negation_hit(clause, variant))),
+                None,
+            )
+            if evidence:
+                found.setdefault(
+                    ("condition", name),
+                    {"kind": "condition", "ref": name, "term": name, "evidence": evidence},
+                )
+        for name in medications:
+            evidence = _stop_hit(clause, name)
+            if evidence:
+                found.setdefault(
+                    ("medication", name),
+                    {"kind": "medication", "ref": name, "term": name, "evidence": evidence},
+                )
+    return list(found.values())
+
+
+# 冲突类别的中文名与严重度。老人端只该看到人话，医护端需要能按类分流。
+CONFLICT_META: dict[str, dict[str, str]] = {
+    "symptoms": {"title": "症状与量表结果不一致", "severity": "warn"},
+    "complaint": {"title": "主诉与后续描述不一致", "severity": "info"},
+    "medication": {"title": "用药记录与对话描述不一致", "severity": "warn"},
+    "history": {"title": "既往史与对话描述不一致", "severity": "warn"},
+}
+
+
+def _flag(
+    kind: str,
+    *,
+    dialogue_value,
+    note: str,
+    scale_value: str = "",
+    profile_value="",
+    evidence: str = "",
+) -> dict[str, Any]:
+    """构造一条冲突标记。
+
+    ``field`` 保留为类别英文键：旧前端按它拼提示，改结构不能把老页面打空。
+    ``kind`` 与 ``field`` 同值，单独留一个语义明确的名字给新调用方。
+    """
+    meta = CONFLICT_META.get(kind, {"title": "信息不一致", "severity": "info"})
+    return {
+        "kind": kind,
+        "field": kind,
+        "severity": meta["severity"],
+        "title": meta["title"],
+        "dialogue_value": dialogue_value,
+        "scale_value": scale_value,
+        "profile_value": profile_value,
+        "evidence": evidence,
+        "note": note,
+    }
+
+
+def detect_conflicts(
+    dialogue_symptoms: list[dict],
+    scale_results: list[dict],
+    *,
+    negations: list[dict] | None = None,
+    profile_conditions: list[str] | None = None,
+    profile_medications: list[str] | None = None,
+    chief_complaint: dict | None = None,
+) -> list[dict]:
+    """对话信息与既有记录冲突时标记，交医护复核，不自动覆盖。
+
+    四类判定：
+
+    1. ``symptoms``：对话提到的症状落到某张量表关注面上，而该量表结果正常；
+    2. ``complaint``：主诉里说过的症状，在后续对话里被明确否认；
+    3. ``medication``：画像记录在用的药，对话里说已经停了；
+    4. ``history``：画像里的既往史，对话里被明确否认。
+
+    命中任意一类都只产出一条标记，**不修改任何一方的数据**，也不影响计分。
+    宁可多报让医护看一眼，不可漏报让它静默过去。
     """
     flags: list[dict] = []
     dialogue_codes = {item.get("code") for item in dialogue_symptoms if item.get("code")}
@@ -99,16 +309,73 @@ def detect_conflicts(dialogue_symptoms: list[dict], scale_results: list[dict]) -
         overlap = sorted(dialogue_codes & linked)
         if overlap:
             flags.append(
-                {
-                    "field": "symptoms",
-                    "dialogue_value": overlap,
-                    "scale_value": f"{scale.get('scale_code')} 未提示异常",
-                    "note": (
+                _flag(
+                    "symptoms",
+                    dialogue_value=overlap,
+                    scale_value=f"{scale.get('scale_code')} 未提示异常",
+                    note=(
                         f"对话提到「{'、'.join(overlap)}」，但 {scale.get('scale_code')} "
                         f"{scale.get('scale_name', '')} 结果为「{scale.get('level', '')}」，请医护复核。"
                     ),
-                }
+                )
             )
+
+    negated = {(item.get("kind"), item.get("ref")): item for item in (negations or []) if item.get("ref")}
+
+    # 主诉与后续描述打架：一开始说的困扰，后面又说没有。
+    complaint_codes = [code for code in (chief_complaint or {}).get("symptom_codes", []) or [] if code]
+    for code in complaint_codes:
+        hit = negated.get(("symptom", code))
+        if not hit:
+            continue
+        flags.append(
+            _flag(
+                "complaint",
+                dialogue_value=f"否认「{hit.get('term', code)}」",
+                profile_value=f"主诉「{(chief_complaint or {}).get('text', '')}」",
+                evidence=hit.get("evidence", ""),
+                note=(
+                    f"主诉是「{(chief_complaint or {}).get('text', '')}」，"
+                    f"但后续对话说「{hit.get('evidence', '')}」，前后不一致，请医护复核。"
+                ),
+            )
+        )
+
+    # 用药：记录在吃，对话说停了。
+    for name in profile_medications or []:
+        hit = negated.get(("medication", name))
+        if not hit:
+            continue
+        flags.append(
+            _flag(
+                "medication",
+                dialogue_value=f"称已停用「{name}」",
+                profile_value=f"用药记录：{name}",
+                evidence=hit.get("evidence", ""),
+                note=(
+                    f"画像记录在服用「{name}」，但对话说「{hit.get('evidence', '')}」。"
+                    f"停药与否必须由医生确认，请复核。"
+                ),
+            )
+        )
+
+    # 既往史：记录有病，对话否认。
+    for name in profile_conditions or []:
+        hit = negated.get(("condition", name))
+        if not hit:
+            continue
+        flags.append(
+            _flag(
+                "history",
+                dialogue_value=f"否认「{name}」",
+                profile_value=f"既往史：{name}",
+                evidence=hit.get("evidence", ""),
+                note=(
+                    f"既往史记录「{name}」，但对话说「{hit.get('evidence', '')}」，"
+                    f"请医护核对是哪一方需要更正。"
+                ),
+            )
+        )
     return flags
 
 
@@ -235,8 +502,23 @@ def finalize_turn(
     """
     extracted_symptoms = extract_symptoms(ctx.user_text)
     safety_note = check_safety(ctx.user_text) or check_safety(reply)
+
+    # 冲突检测要拿「已有记录」比对，所以先读画像再更新画像，顺序不能倒。
+    profile = _profile_of(db, ctx.session.patient_id)
+    condition_names = _condition_names(profile)
+    medication_names = _medication_names(profile)
+    negations = extract_negations(
+        ctx.user_text,
+        condition_names=condition_names,
+        medication_names=medication_names,
+    )
     conflict_flags = detect_conflicts(
-        extracted_symptoms, _latest_scale_results(db, ctx.session.patient_id)
+        extracted_symptoms,
+        _latest_scale_results(db, ctx.session.patient_id),
+        negations=negations,
+        profile_conditions=condition_names,
+        profile_medications=medication_names,
+        chief_complaint=(profile.chief_complaint if profile else {}) or {},
     )
 
     db.add(
@@ -272,7 +554,14 @@ def finalize_turn(
             },
         )
     )
-    _update_profile(db, ctx.session.patient_id, extracted_symptoms)
+    _update_profile(
+        db,
+        ctx.session.patient_id,
+        extracted_symptoms,
+        negated_codes={item["ref"] for item in negations if item.get("kind") == "symptom"},
+        # 只有抽到症状的那句才配当主诉，「你好」不该成为「为什么来」
+        chief_complaint_text=ctx.user_text if extracted_symptoms else "",
+    )
     db.commit()
 
     return {
@@ -309,7 +598,52 @@ def run_dialogue_turn(
     return finalize_turn(db, ctx, reply, latency, model_error)
 
 
-def _update_profile(db: Session, patient_id: int, symptoms: list[dict]) -> None:
+def _profile_of(db: Session, patient_id: int) -> PatientMedicalProfile | None:
+    return (
+        db.query(PatientMedicalProfile)
+        .filter(PatientMedicalProfile.patient_id == patient_id)
+        .first()
+    )
+
+
+def _as_name(item) -> str:
+    """画像里的病史 / 用药既可能是字符串，也可能是 ``{"name": ...}``。
+
+    契约写的是对象数组，但早期种子数据与部分导入脚本直接存字符串，
+    两种都要读得出来，否则冲突检测会在历史数据上静默失效。
+    """
+    if isinstance(item, str):
+        return item.strip()
+    if isinstance(item, dict):
+        return str(item.get("name") or "").strip()
+    return ""
+
+
+def _condition_names(profile: PatientMedicalProfile | None) -> list[str]:
+    return [name for name in (_as_name(item) for item in (profile.conditions if profile else []) or []) if name]
+
+
+def _medication_names(profile: PatientMedicalProfile | None) -> list[str]:
+    return [name for name in (_as_name(item) for item in (profile.medications if profile else []) or []) if name]
+
+
+def _update_profile(
+    db: Session,
+    patient_id: int,
+    symptoms: list[dict],
+    *,
+    negated_codes: set[str] | None = None,
+    chief_complaint_text: str = "",
+) -> None:
+    """把本轮抽到的症状并入专属画像。
+
+    两处刻意的取舍：
+
+    - **被明确否认的症状不入画像**。``extract_symptoms`` 只看词表命中，
+      「我没有头晕」也会抽出 ``dizziness``；直接累积会让画像记下老人否认过的事，
+      后续匹配与报告都跟着错。
+    - **主诉只在首次写入**。主诉是「一开始为什么来」，被后续轮次改写就失去意义。
+    """
     profile = (
         db.query(PatientMedicalProfile)
         .filter(PatientMedicalProfile.patient_id == patient_id)
@@ -318,11 +652,22 @@ def _update_profile(db: Session, patient_id: int, symptoms: list[dict]) -> None:
     if profile is None:
         profile = PatientMedicalProfile(patient_id=patient_id, symptoms=[], conditions=[], medications=[], lifestyle={}, chief_complaint={})
         db.add(profile)
+    denied = negated_codes or set()
     existing = {item.get("code") for item in (profile.symptoms or [])}
     for symptom in symptoms:
-        if symptom.get("code") not in existing:
-            profile.symptoms = list(profile.symptoms or []) + [symptom]
-            existing.add(symptom.get("code"))
+        code = symptom.get("code")
+        if not code or code in existing or code in denied:
+            continue
+        profile.symptoms = list(profile.symptoms or []) + [symptom]
+        existing.add(code)
+    if chief_complaint_text and not (profile.chief_complaint or {}):
+        profile.chief_complaint = {
+            "text": chief_complaint_text,
+            "symptom_codes": [item.get("code") for item in symptoms if item.get("code")],
+            "onset": "",
+            "site": "",
+            "source": "dialogue",
+        }
     profile.source = "dialogue"
     profile.updated_at = dt.datetime.now(dt.timezone.utc)
 
