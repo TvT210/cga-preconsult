@@ -845,6 +845,33 @@ data: {"reply":"完整全文","extracted":{…},"safety_note":"","conflict_flags
 ```
 `action`：`ack` | `escalate` | `close`
 
+### 老人端求助通道 `/elder`（**CA-20261118-04**，A-9）
+
+| 方法 | 路径 | 角色 | 说明 |
+| --- | --- | --- | --- |
+| GET | `/elder/support` | 登录用户 | 求助方式 `{phone, hours, note}` |
+| POST | `/elder/assistance` | 登录用户（老人限本人） | 建协助请求 |
+| GET | `/elder/assistance?status=&limit=` | 登录用户（老人限本人） | 自己的请求，倒序 |
+| GET | `/assistance?status=pending&patient_id=` | staff+ | 待处理列表，带 `patient_name` |
+| POST | `/assistance/{id}/handle` | staff+ | 标记已处理 |
+
+`AssistanceRequest`：
+
+```json
+{ "id": 3, "patient_id": 1, "patient_name": "张桂芳", "session_id": 7,
+  "question_code": "B1-03", "note": "这道题听不懂", "status": "pending",
+  "handled_by": "", "handled_at": "", "handle_comment": "", "created_at": "2026-11-18T06:20:00" }
+```
+
+**约束（前端可直接依赖）**：
+
+- 这是**操作层面**的求助，**不进 `alerts`**：就医提醒是医学结论的产物，混入会污染提醒量与误报率口径；
+- 老人只能为本人发起与查看：请求体里的 `patient_id` 对 elder 角色**被忽略**，`session_id` 必须属于本人（否则 400）；
+- `note` 上限 200 字，`question_code` 上限 64 字；
+- **不做自动派单**：系统无排班与在岗数据，派给谁都是编的；
+- 重复 `handle` 不报错，但**保留首次处理人与时间**（否则「多久有人到」的时长会被第二次点击洗成 0）；
+- `/elder/support` 的 `phone` 未配置时返回**空串**，前端应提示现场求助，不得自编号码。
+
 ---
 
 ## 10. 医护知识库可视化 `/knowledge`（staff+）
