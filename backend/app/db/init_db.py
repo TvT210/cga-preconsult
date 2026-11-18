@@ -28,6 +28,7 @@ from app.db.models import (
     ReportTemplate,
     ScaleTemplate,
     ScaleVersion,
+    TemplateApproval,
     User,
 )
 from app.services.disease_library import load_disease_file
@@ -399,6 +400,80 @@ def seed_prompts(db: Session) -> None:
     db.commit()
 
 
+def seed_scale_approvals(db: Session) -> None:
+    """按 `docs/structured/scale-approvals.json` 应用量表评审结论（A-1）。
+
+    评审状态原本只存在数据库里，换一台机器部署就没了——A-1 的结论必须
+    和题库一样可版本化，所以单独存一份审批台账，启动时应用。
+
+    两条保护：
+    1. 只对**仍为草稿**的量表应用；已有结论（包括后续改为 deprecated）一律不覆盖，
+       否则每次重启都会把人工的后续决定改回台账里的旧值；
+    2. 审批记录按「量表 + 结论 + 签字人 + 凭据」去重，重复启动不会堆记录。
+    """
+    path = REPO_ROOT / "docs" / "structured" / "scale-approvals.json"
+    if not path.exists():
+        return
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:  # pragma: no cover - 台账损坏时不让服务起不来
+        return
+    for item in data.get("approvals") or []:
+        code = (item.get("code") or "").strip()
+        if not code:
+            continue
+        reviewer = (item.get("reviewer") or "").strip()
+        if not reviewer:
+            # 签字人没填的条目跳过：宁可不应用，也不写一条查不到责任人的审批记录
+            continue
+        row = db.query(ScaleTemplate).filter(ScaleTemplate.code == code).first()
+        if row is None:
+            continue
+        if row.review_status != "draft_pending_medical_review":
+            continue
+        status = item.get("review_status", "approved")
+        evidence = (item.get("evidence_type") or "").strip()
+        signed_at = None
+        raw_date = (item.get("reviewed_at") or "").strip()
+        if raw_date:
+            try:
+                signed_at = dt.datetime.strptime(raw_date, "%Y-%m-%d")
+            except ValueError:
+                signed_at = None
+        row.review_status = status
+        row.reviewer_name = reviewer
+        row.reviewer_title = (item.get("reviewer_title") or "").strip()
+        row.review_evidence = evidence
+        row.reviewed_at = signed_at
+
+        exists = (
+            db.query(TemplateApproval)
+            .filter(
+                TemplateApproval.target_type == "scale",
+                TemplateApproval.target_id == code,
+                TemplateApproval.action == status,
+                TemplateApproval.reviewer == reviewer,
+                TemplateApproval.evidence_type == evidence,
+            )
+            .first()
+        )
+        if exists is None:
+            db.add(
+                TemplateApproval(
+                    target_type="scale",
+                    target_id=code,
+                    action=status,
+                    reviewer=reviewer,
+                    reviewer_title=row.reviewer_title,
+                    evidence_type=evidence,
+                    operator="系统导入（评审台账）",
+                    reviewed_at=signed_at,
+                    comment=(item.get("comment") or "").strip(),
+                )
+            )
+    db.commit()
+
+
 def init_db(seed: bool = True) -> None:
     create_tables()
     if not seed:
@@ -408,6 +483,7 @@ def init_db(seed: bool = True) -> None:
         seed_patient(db)
         seed_users(db)
         seed_scales(db)
+        seed_scale_approvals(db)
         seed_diseases(db)
         seed_thresholds(db)
         seed_matching_rules(db)

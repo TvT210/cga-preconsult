@@ -113,6 +113,12 @@ class ScaleTemplate(Base):
     standard_ref: Mapped[str] = mapped_column(String(64), default="")
     version: Mapped[str] = mapped_column(String(32), default="0.1.0-draft")
     review_status: Mapped[str] = mapped_column(String(48), default="draft_pending_medical_review")
+    # 评审凭据：签字人（reviewer_name）与录入人（审批记录里的 operator）分开记，
+    # 外部专家无系统账号时也能如实落库，不会把「谁点的按钮」记成「谁签的字」。
+    reviewer_name: Mapped[str] = mapped_column(String(64), default="")
+    reviewer_title: Mapped[str] = mapped_column(String(64), default="")
+    review_evidence: Mapped[str] = mapped_column(String(32), default="")
+    reviewed_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
     payload: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)
     updated_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now, onupdate=_now)
@@ -512,7 +518,12 @@ class AuditLog(Base):
 
 
 class TemplateApproval(Base):
-    """题库、疾病库、阈值、文案审批。"""
+    """题库、疾病库、阈值、文案审批。
+
+    `reviewer` 是**签字人**，`operator` 是**录入人**（系统账号）。
+    只有 in_system 凭据时两者才会是同一人；把两者混为一谈会让
+    「同事代为回写」在记录里变成「本人已签」。
+    """
 
     __tablename__ = "template_approvals"
 
@@ -521,6 +532,11 @@ class TemplateApproval(Base):
     target_id: Mapped[str] = mapped_column(String(48), index=True)
     action: Mapped[str] = mapped_column(String(24))
     reviewer: Mapped[str] = mapped_column(String(64), default="")
+    reviewer_title: Mapped[str] = mapped_column(String(64), default="")
+    # signed_document / verbal_confirmation / in_system
+    evidence_type: Mapped[str] = mapped_column(String(32), default="")
+    operator: Mapped[str] = mapped_column(String(64), default="")
+    reviewed_at: Mapped[dt.datetime | None] = mapped_column(DateTime, nullable=True)
     comment: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)
 

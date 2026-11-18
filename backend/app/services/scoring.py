@@ -15,6 +15,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from app.services.scale_review import evidence_label
 from app.services.scales_store import symptom_term
 
 _POSITIVE_VALUES = {"yes", "y", "true", "1", "是"}
@@ -455,9 +456,18 @@ def evaluate_scale(scale: dict, answers: dict[str, AnswerRecord]) -> Evaluation:
         result.notices.append("本标准明确要求由医务人员判断，系统结论仅作记录，需人工确认")
 
     review_status = scale.get("review_status", "draft_pending_medical_review")
+    review_evidence = (scale.get("review_evidence") or "").strip()
     if review_status != "approved":
         result.needs_manual_review = True
         result.notices.append("题库条目待医护/专家评审，结论仅供演示，不作为正式临床结论")
+    elif review_evidence and review_evidence != "signed_document":
+        # approved ≠ 已有签字件。口头确认足以让题库进入可用状态，
+        # 但不能让结论在纸面上看起来像已由医护签字背书。
+        result.needs_manual_review = True
+        result.notices.append(
+            f"本题库评审凭据为「{evidence_label(review_evidence)}」，签字件待补；"
+            "结论可用于随访参考，正式出具前需医护确认"
+        )
 
     result.explanation = score_rule.get("explanation", "")
     return result

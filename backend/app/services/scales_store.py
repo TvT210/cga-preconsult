@@ -53,53 +53,67 @@ def load_scale_files() -> dict[str, dict]:
 
 
 def get_scale(db: Session, code: str) -> dict | None:
-    """取量表定义：优先数据库（可评审版本），回退到 JSON 基线。"""
+    """取量表定义：优先数据库（可评审版本），回退到 JSON 基线。
+
+    注意评审态**不能用 setdefault**：题库 JSON 里写死的
+    `review_status: draft_pending_medical_review` 会让 setdefault 直接命中，
+    数据库里改成 approved 也读不出来，表现为「评审完判读仍说待评审」。
+    评审态一律以数据库为准。
+    """
     row = db.query(ScaleTemplate).filter(ScaleTemplate.code == code).first()
     if row is not None and row.payload:
         payload = dict(row.payload)
         payload.setdefault("code", row.code)
         payload.setdefault("name", row.name)
         payload.setdefault("dimension", row.dimension)
-        payload.setdefault("review_status", row.review_status)
         payload.setdefault("version", row.version)
+        payload["review_status"] = row.review_status
+        payload["review_evidence"] = (row.review_evidence or "").strip()
+        payload["reviewer_name"] = (row.reviewer_name or "").strip()
+        payload["reviewer_title"] = (row.reviewer_title or "").strip()
+        payload["reviewed_at"] = row.reviewed_at.isoformat() if row.reviewed_at else ""
         return payload
     return load_scale_files().get(code)
 
 
 def list_scales(db: Session) -> list[dict]:
-    """量表清单（数据库版本优先）。"""
+    """量表清单（数据库版本优先）。
+
+    评审凭据一并带出：前端要能显示「谁签的、凭什么签」，
+    只给一个 approved 状态等于让人自己去猜依据。
+    """
     rows = {row.code: row for row in db.query(ScaleTemplate).all()}
     result: list[dict] = []
     for code, payload in load_scale_files().items():
         row = rows.get(code)
-        result.append(
-            {
-                "code": code,
-                "name": payload.get("name", ""),
-                "dimension": payload.get("dimension", ""),
-                "method": payload.get("method", ""),
-                "review_status": (row.review_status if row else payload.get("review_status", "draft_pending_medical_review")),
-                "version": (row.version if row else payload.get("version", "0.1.0-draft")),
-                "item_count": _count_items(payload),
-                "notes": payload.get("notes", ""),
-            }
-        )
+        result.append(_brief(code, payload, row))
     for code, row in rows.items():
         if code not in {item["code"] for item in result}:
-            payload = row.payload or {}
-            result.append(
-                {
-                    "code": code,
-                    "name": row.name,
-                    "dimension": row.dimension,
-                    "method": row.method,
-                    "review_status": row.review_status,
-                    "version": row.version,
-                    "item_count": _count_items(payload),
-                    "notes": payload.get("notes", ""),
-                }
-            )
+            result.append(_brief(code, row.payload or {}, row))
     return sorted(result, key=lambda item: item["code"])
+
+
+def _brief(code: str, payload: dict, row: ScaleTemplate | None) -> dict:
+    """清单单项：`row` 为空时回退到 JSON 基线。"""
+    evidence = (row.review_evidence if row else "") or ""
+    reviewed_at = row.reviewed_at if row else None
+    return {
+        "code": code,
+        "name": payload.get("name", ""),
+        "dimension": payload.get("dimension", ""),
+        "method": payload.get("method", ""),
+        "review_status": (
+            row.review_status if row else payload.get("review_status", "draft_pending_medical_review")
+        ),
+        "reviewer_name": (row.reviewer_name if row else "") or "",
+        "reviewer_title": (row.reviewer_title if row else "") or "",
+        "review_evidence": evidence,
+        "has_signed_document": evidence == "signed_document",
+        "reviewed_at": reviewed_at.isoformat() if reviewed_at else "",
+        "version": (row.version if row else payload.get("version", "0.1.0-draft")),
+        "item_count": _count_items(payload),
+        "notes": payload.get("notes", ""),
+    }
 
 
 def _count_items(payload: dict) -> int:
