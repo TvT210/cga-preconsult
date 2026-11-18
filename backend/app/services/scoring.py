@@ -45,6 +45,8 @@ class AnswerRecord:
     skip_reason: str = ""
     proxy_flag: bool = False
     answered_by: str = ""
+    # 作答来源（A-5）：self / proxy / staff；仅用于展示与质控统计，不参与计分
+    answer_source: str = "self"
 
     @property
     def present(self) -> bool:

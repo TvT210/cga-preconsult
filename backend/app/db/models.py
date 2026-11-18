@@ -144,6 +144,10 @@ class AssessmentSession(Base):
     scale_version: Mapped[str] = mapped_column(String(32), default="0.1.0-draft")
     status: Mapped[str] = mapped_column(String(24), default="in_progress", index=True)
     mode: Mapped[str] = mapped_column(String(16), default="patient")
+    # 主答人（A-5）：self=本人自答，proxy=家属代答。
+    # 单独存一列而不是靠 proxy_name 反推：代答人姓名往往填到一半才补上，
+    # 而「这份问卷是谁答的」从第一题起就必须能判定，否则复核时分不清代答与本人。
+    responder: Mapped[str] = mapped_column(String(16), default="self")
     proxy_name: Mapped[str] = mapped_column(String(64), default="")
     proxy_relation: Mapped[str] = mapped_column(String(32), default="")
     progress: Mapped[int] = mapped_column(Integer, default=0)
@@ -180,6 +184,10 @@ class AssessmentAnswer(Base):
     measured: Mapped[float | None] = mapped_column(Float, nullable=True)
     skipped: Mapped[bool] = mapped_column(Boolean, default=False)
     skip_reason: Mapped[str] = mapped_column(String(255), default="")
+    # 作答来源（A-5）：self / proxy / staff。
+    # 原先只有 proxy_flag 一个布尔值，false 既可能是「本人答的」也可能是「没标注」，
+    # 复核时无法区分。这里显式落来源；proxy_flag 保留，兼容旧数据与既有统计口径。
+    answer_source: Mapped[str] = mapped_column(String(16), default="self")
     proxy_flag: Mapped[bool] = mapped_column(Boolean, default=False)
     answered_by: Mapped[str] = mapped_column(String(64), default="")
     answered_at: Mapped[dt.datetime] = mapped_column(DateTime, default=_now)

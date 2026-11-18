@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime as dt
 
 from fastapi import Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.api import new_router, paginate
@@ -43,6 +44,49 @@ def _question_table(scale: dict) -> dict[str, dict]:
     return {question.get("code", ""): question for question in _questions(scale)}
 
 
+# 主答人 / 作答来源（A-5）。两者共用同一套取值，避免各处分别硬编码字符串。
+RESPONDER_SELF = "self"
+RESPONDER_PROXY = "proxy"
+RESPONDER_STAFF = "staff"
+RESPONDERS = {RESPONDER_SELF, RESPONDER_PROXY, RESPONDER_STAFF}
+
+
+def _responder_of(session: AssessmentSession) -> str:
+    """会话主答人。
+
+    旧库靠轻量迁移补列，`responder` 会是空值；此时按有无代答人姓名回推，
+    让历史会话在复核页上的显示与补列前保持一致。
+    """
+    value = (session.responder or "").strip()
+    if value in RESPONDERS:
+        return value
+    return RESPONDER_PROXY if (session.proxy_name or "").strip() else RESPONDER_SELF
+
+
+def _resolve_source(raw, session: AssessmentSession, proxy_flag: bool) -> str:
+    """本次作答的来源：优先取请求里的显式声明，否则按代答标记推断。
+
+    老前端不发 `answer_source`，只能靠 `proxy_flag` 与会话主答人推断；
+    新前端会显式带上，两者落到同一列，统计口径不因前端版本而变。
+    """
+    value = raw.strip() if isinstance(raw, str) else ""
+    if value in RESPONDERS:
+        return value
+    if proxy_flag or _responder_of(session) == RESPONDER_PROXY:
+        return RESPONDER_PROXY
+    return RESPONDER_SELF
+
+
+def _last_activity_at(db: Session, session: AssessmentSession) -> dt.datetime | None:
+    """最后一次作答时间：用于老人端「上次填到哪」与断点续填排序。"""
+    latest = (
+        db.query(func.max(AssessmentAnswer.answered_at))
+        .filter(AssessmentAnswer.session_id == session.id)
+        .scalar()
+    )
+    return latest or session.started_at
+
+
 def _next_question(scale: dict, answers: dict[str, AnswerRecord]) -> str:
     """下一道需要作答的题：跳过已作答的，也跳过当前条件下不适用的。
 
@@ -71,6 +115,8 @@ def _answer_records(db: Session, session_id: int) -> dict[str, AnswerRecord]:
             skip_reason=row.skip_reason,
             proxy_flag=row.proxy_flag,
             answered_by=row.answered_by,
+            # 旧数据的 answer_source 为空：有 proxy_flag 视为代答，否则视为本人
+            answer_source=(row.answer_source or "") or (RESPONDER_PROXY if row.proxy_flag else RESPONDER_SELF),
         )
     return records
 
@@ -80,6 +126,10 @@ def _session_payload(db: Session, session: AssessmentSession, include_questions:
     questions = _questions(scale)
     answers = _answer_records(db, session.id)
     next_question = _next_question(scale, answers)
+    responder = _responder_of(session)
+    proxy_answered = sum(1 for record in answers.values() if record.answer_source == RESPONDER_PROXY)
+    answered_total = sum(1 for record in answers.values() if record.present or record.skipped)
+    last_activity = _last_activity_at(db, session)
     payload = {
         "id": session.id,
         "patient_id": session.patient_id,
@@ -88,10 +138,15 @@ def _session_payload(db: Session, session: AssessmentSession, include_questions:
         "dimension": scale.get("dimension", ""),
         "status": session.status,
         "mode": session.mode,
+        # 主答人（A-5）：代答信息不再只由姓名是否存在推断，代答中途补姓名也能正确标记
+        "responder": responder,
         "proxy": {
-            "is_proxy": bool(session.proxy_name),
+            "is_proxy": responder == RESPONDER_PROXY,
             "proxy_name": session.proxy_name,
             "proxy_relation": session.proxy_relation,
+            # 代答统计供复核页判断「哪些结论是基于家属转述的」
+            "proxy_answered": proxy_answered,
+            "self_answered": answered_total - proxy_answered,
         },
         "progress": session.progress,
         "total_questions": len(questions),
@@ -103,6 +158,7 @@ def _session_payload(db: Session, session: AssessmentSession, include_questions:
         "scale_version": session.scale_version,
         "rule_version": session.rule_version,
         "started_at": session.started_at.isoformat() if session.started_at else "",
+        "last_activity_at": last_activity.isoformat() if last_activity else "",
         "finished_at": session.finished_at.isoformat() if session.finished_at else "",
         "answers": [
             {
@@ -112,6 +168,7 @@ def _session_payload(db: Session, session: AssessmentSession, include_questions:
                 # 实测原始值：断点续填时前端要能还原秒数/词语数，不能只拿归档档位
                 "measured": record.measured,
                 "skipped": record.skipped,
+                "answer_source": record.answer_source,
                 "proxy_flag": record.proxy_flag,
                 "answered_by": record.answered_by,
             }
@@ -169,6 +226,10 @@ def create_assessment(
         rule_version=scale.get("version", "0.1.0-draft"),
         status="in_progress",
         mode=mode,
+        # 建会话时就定主答人：老人端可能先勾代答再进页面，也可能填到一半才改成代答
+        responder=RESPONDER_PROXY
+        if (payload.get("responder") == RESPONDER_PROXY or (payload.get("proxy_name") or "").strip())
+        else RESPONDER_SELF,
         proxy_name=payload.get("proxy_name", "") or "",
         proxy_relation=payload.get("proxy_relation", "") or "",
         created_by=user.id,
@@ -177,6 +238,52 @@ def create_assessment(
     db.commit()
     db.refresh(session)
     audit.record(db, user, "create", "assessment", session.id, {"patient_id": patient_id, "scale_code": scale_code})
+    db.commit()
+    return _session_payload(db, session)
+
+
+@router.patch("/assessments/{session_id}/responder")
+def update_responder(
+    session_id: int,
+    payload: dict,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """切换会话主答人（A-5）。
+
+    代答开关往往在填到一半时才被打开。若不落库，会话级仍是「本人自答」，
+    复核页只看到逐题零散标记，判断不了整份问卷有多少是家属转述的。
+    已结束的会话不再允许改：那会让质控统计与已出结论对不上。
+    """
+    session = db.get(AssessmentSession, session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="评估任务不存在")
+    ensure_patient_access(user, session.patient_id)
+    if session.status != "in_progress":
+        raise HTTPException(status_code=400, detail="该任务已结束，无法更改代答信息")
+
+    responder = (payload.get("responder") or "").strip()
+    if responder not in RESPONDERS:
+        raise HTTPException(status_code=400, detail="responder 只能是 self 或 proxy")
+    if responder == RESPONDER_PROXY:
+        name = (payload.get("proxy_name") or session.proxy_name or "").strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="家属代答需要填写代答人姓名")
+        session.proxy_name = name
+        relation = (payload.get("proxy_relation") or session.proxy_relation or "").strip()
+        if relation:
+            session.proxy_relation = relation
+    # 切回本人时不清理姓名/关系：历史答案可能已是代答，清空会丢掉溯源
+    session.responder = responder
+    db.commit()
+    audit.record(
+        db,
+        user,
+        "update_responder",
+        "assessment",
+        session.id,
+        {"responder": responder, "proxy_name": session.proxy_name},
+    )
     db.commit()
     return _session_payload(db, session)
 
@@ -267,6 +374,15 @@ def list_assessments(
     if status:
         query = query.filter(AssessmentSession.status == status)
     rows = query.order_by(AssessmentSession.id.desc()).all()
+    # 断点续填（A-5）：老人端要显示「上次填到哪」，一次分组查询算出每个会话的最后作答时间
+    last_activity: dict[int, dt.datetime | None] = {}
+    if rows:
+        last_activity = dict(
+            db.query(AssessmentAnswer.session_id, func.max(AssessmentAnswer.answered_at))
+            .filter(AssessmentAnswer.session_id.in_([row.id for row in rows]))
+            .group_by(AssessmentAnswer.session_id)
+            .all()
+        )
     items = [
         {
             "id": row.id,
@@ -274,8 +390,13 @@ def list_assessments(
             "scale_code": row.scale_code,
             "status": row.status,
             "mode": row.mode,
+            "responder": _responder_of(row),
+            "proxy_name": row.proxy_name,
             "progress": row.progress,
             "started_at": row.started_at.isoformat() if row.started_at else "",
+            "last_activity_at": (last_activity.get(row.id) or row.started_at).isoformat()
+            if (last_activity.get(row.id) or row.started_at)
+            else "",
             "finished_at": row.finished_at.isoformat() if row.finished_at else "",
         }
         for row in rows
@@ -375,6 +496,7 @@ def _apply_answer(
     measured,
     proxy_flag: bool,
     answered_by: str,
+    answer_source: str = "",
 ) -> AssessmentAnswer:
     scale = get_scale(db, session.scale_code) or {}
     table = _question_table(scale)
@@ -435,8 +557,19 @@ def _apply_answer(
     answer.measured = float(measured) if measured is not None else None
     answer.skipped = False
     answer.skip_reason = ""
-    answer.proxy_flag = proxy_flag or bool(session.proxy_name)
-    answer.answered_by = answered_by or session.proxy_name or ""
+    source = _resolve_source(answer_source, session, proxy_flag)
+    if source == RESPONDER_PROXY:
+        name = (answered_by or "").strip() or (session.proxy_name or "").strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="家属代答需要填写代答人姓名")
+        # 会话级信息随第一次代答落库：否则一份家属代答的问卷在复核页上仍标成「本人自答」
+        if not (session.proxy_name or "").strip():
+            session.proxy_name = name
+        session.responder = RESPONDER_PROXY
+    answer.answer_source = source
+    # proxy_flag 保留：既有统计口径（如代答率）仍在读这一列
+    answer.proxy_flag = source == RESPONDER_PROXY
+    answer.answered_by = (answered_by or "").strip() if source == RESPONDER_PROXY else ""
     answer.answered_at = dt.datetime.now(dt.timezone.utc)
 
     total = len(_questions(scale))
@@ -476,6 +609,7 @@ def submit_answer(
         payload.get("measured"),
         bool(payload.get("proxy_flag")),
         payload.get("answered_by", ""),
+        payload.get("answer_source", ""),
     )
     db.commit()
 
@@ -489,6 +623,7 @@ def submit_answer(
             "question_code": answer.question_code,
             "value": answer.value,
             "score": answer.score,
+            "answer_source": answer.answer_source,
             "proxy_flag": answer.proxy_flag,
             "answered_by": answer.answered_by,
         },
@@ -509,6 +644,8 @@ def skip_question(
     if session is None:
         raise HTTPException(status_code=404, detail="评估任务不存在")
     ensure_patient_access(user, session.patient_id)
+    if session.status != "in_progress":
+        raise HTTPException(status_code=400, detail="该任务已结束，无法继续作答")
     question_code = (payload.get("question_code") or "").strip()
     answer = (
         db.query(AssessmentAnswer)
@@ -522,8 +659,27 @@ def skip_question(
     answer.score = None
     answer.skipped = True
     answer.skip_reason = payload.get("reason", "")
+    # 跳过也是作答行为：家属代答时的「记不清了」与老人本人说的不是一回事，
+    # 缺项溯源必须能分开，否则复核会把家属转述的缺项当成老人自己的记忆问题。
+    source = _resolve_source(payload.get("answer_source", ""), session, bool(payload.get("proxy_flag")))
+    if source == RESPONDER_PROXY:
+        name = (payload.get("answered_by") or "").strip() or (session.proxy_name or "").strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="家属代答需要填写代答人姓名")
+        if not (session.proxy_name or "").strip():
+            session.proxy_name = name
+        session.responder = RESPONDER_PROXY
+    answer.answer_source = source
+    answer.proxy_flag = source == RESPONDER_PROXY
+    answer.answered_by = (payload.get("answered_by") or "").strip() if source == RESPONDER_PROXY else ""
+    answer.answered_at = dt.datetime.now(dt.timezone.utc)
     db.commit()
-    return {"question_code": question_code, "skipped": True, "progress": session.progress}
+    return {
+        "question_code": question_code,
+        "skipped": True,
+        "answer_source": answer.answer_source,
+        "progress": session.progress,
+    }
 
 
 def _score_and_store(db: Session, session: AssessmentSession) -> tuple[AssessmentScore, list[dict]]:
