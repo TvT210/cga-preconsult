@@ -144,18 +144,26 @@ async function main() {
         );
         await send("Page.reload");
         await sleep(2600);
-        const metrics = await evaluate(`({
-          doc: document.documentElement.scrollWidth,
-          inner: window.innerWidth,
-          scale: document.querySelector('.elder-theme')?.getAttribute('data-elder-scale') ?? 'missing'
-        })`);
+        const metrics = await evaluate(`(() => {
+          const dock = document.querySelector('.elder-dock');
+          const main = document.querySelector('main');
+          return {
+            doc: document.documentElement.scrollWidth,
+            inner: window.innerWidth,
+            scale: document.querySelector('.elder-theme')?.getAttribute('data-elder-scale') ?? 'missing',
+            dock: dock ? dock.offsetHeight : 0,
+            pad: main ? parseFloat(getComputedStyle(main).paddingBottom) : 0,
+          };
+        })()`);
         // 与**模拟宽度**比较，不用 innerWidth：手机模式下内容超宽时浏览器会把
         // 视口拉大（shrink-to-fit），innerWidth 也跟着变大，用它比会漏报溢出。
         const overflow = (metrics?.doc ?? 0) - width;
-        const ok = overflow <= 1 && metrics?.scale === scale;
+        // 吸底条不得压住正文：main 的留白必须不小于吸底条实测高度
+        const covered = (metrics?.dock ?? 0) > (metrics?.pad ?? 0) + 1;
+        const ok = overflow <= 1 && metrics?.scale === scale && !covered;
         if (!ok) failures += 1;
         console.log(
-          `${ok ? "PASS" : "FAIL"}  ${width}px ${scale.padEnd(8)} ${label}  scrollWidth=${metrics?.doc} inner=${metrics?.inner} 档位=${metrics?.scale}`,
+          `${ok ? "PASS" : "FAIL"}  ${width}px ${scale.padEnd(8)} ${label}  scrollWidth=${metrics?.doc} 档位=${metrics?.scale} 吸底条=${metrics?.dock}px 留白=${metrics?.pad}px`,
         );
       }
     }

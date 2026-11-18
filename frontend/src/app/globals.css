@@ -165,9 +165,10 @@
   font-size: var(--e-fs-base);
 }
 
-/* 吸底条会盖住正文，主区域留出等量空间 */
+/* 吸底条会盖住正文：留白按吸底条**实测高度**算（ElderDock 写入 --e-dock-h）。
+   固定值在「特大字号 + 360px」下会不够——那时按钮折成两行，条高接近翻倍。 */
 .elder-theme main {
-  padding-bottom: 7rem;
+  padding-bottom: calc(var(--e-dock-h, 96px) + 24px);
 }
 
 /* --- 焦点环跟随主色 --- */

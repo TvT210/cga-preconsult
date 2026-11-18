@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -48,6 +49,7 @@ export function ElderDock() {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [sentAt, setSentAt] = useState("");
+  const dockRef = useRef<HTMLDivElement | null>(null);
 
   const setAssistContext = useCallback((next: { sessionId?: number; questionCode?: string } | null) => {
     setContext(next);
@@ -78,6 +80,26 @@ export function ElderDock() {
     void refresh();
   }, [open, refresh]);
 
+  /**
+   * 把吸底条实际高度写回主题元素。
+   *
+   * 固定写一个 padding 值不靠谱：特大字号 + 360px 窄屏时按钮会折成两行，
+   * 吸底条从 88px 涨到 160px，正文最后一段就被压在条下面。
+   * 用 ResizeObserver 实测高度，`main` 的 padding-bottom 跟着走。
+   */
+  useEffect(() => {
+    const el = dockRef.current;
+    if (!el) return;
+    const host = el.closest(".elder-theme") as HTMLElement | null;
+    if (!host) return;
+    const apply = () => host.style.setProperty("--e-dock-h", `${el.offsetHeight}px`);
+    apply();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(apply);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const sendRequest = useCallback(async () => {
     setSending(true);
     try {
@@ -98,7 +120,10 @@ export function ElderDock() {
   return (
     <AssistContext.Provider value={value}>
       {/* 吸底条：打印时隐藏（见 globals.css 的 @media print） */}
-      <div className="elder-dock fixed inset-x-0 bottom-0 z-40 border-t-2 border-slate-200 bg-white/95 backdrop-blur">
+      <div
+        ref={dockRef}
+        className="elder-dock fixed inset-x-0 bottom-0 z-40 border-t-2 border-slate-200 bg-white/95 backdrop-blur"
+      >
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-3 py-2">
           <FontScaleSwitch />
           <BigButton variant="warning" size="md" onClick={() => setOpen(true)}>
