@@ -221,7 +221,7 @@ python -c "from packages.medagent.llm import get_provider; print(get_provider().
 
 ```powershell
 cd backend
-.\.venv\Scripts\python.exe -m pytest -q   # 276 项：计分 / 匹配 / 对话 / 量表 / API 端到端
+.\.venv\Scripts\python.exe -m pytest -q   # 277 项：计分 / 匹配 / 对话 / 量表 / API 端到端
 ```
 
 `tests/conftest.py` 使用独立 SQLite（系统临时目录），不污染开发库。
