@@ -668,13 +668,21 @@ def _update_profile(
         profile.symptoms = list(profile.symptoms or []) + [symptom]
         existing.add(code)
     if chief_complaint_text and not (profile.chief_complaint or {}):
-        profile.chief_complaint = {
-            "text": chief_complaint_text,
-            "symptom_codes": [item.get("code") for item in symptoms if item.get("code")],
-            "onset": "",
-            "site": "",
-            "source": "dialogue",
-        }
+        # 主诉里不能出现被否认的症状：「我没有头晕」不是「因头晕就诊」，
+        # 否则下一轮再提否认时会拿它跟自己比对，报出一条自相矛盾的冲突。
+        affirmed = [
+            item.get("code")
+            for item in symptoms
+            if item.get("code") and item.get("code") not in denied
+        ]
+        if affirmed:
+            profile.chief_complaint = {
+                "text": chief_complaint_text,
+                "symptom_codes": affirmed,
+                "onset": "",
+                "site": "",
+                "source": "dialogue",
+            }
     profile.source = "dialogue"
     profile.updated_at = dt.datetime.now(dt.timezone.utc)
 

@@ -250,6 +250,29 @@ def test_greeting_does_not_become_chief_complaint(db_session):
     assert profile.chief_complaint["text"] == "我最近老是头晕"
 
 
+def test_denial_does_not_become_chief_complaint(db_session):
+    """「我没有头晕」不是「因头晕就诊」。
+
+    走查时发现的原实现会把否认句记成主诉，并把它否认的症状码一起写进去；
+    下一轮再提否认时，就会拿主诉跟自己比对，报出一条自相矛盾的冲突。
+    """
+    token = _token()
+    patient_id = _new_patient(token, "否认当主诉老人")
+    session_id = _new_session(token, patient_id)
+
+    _say(token, session_id, "我没有头晕")
+    second = _say(token, session_id, "真的没有头晕")
+
+    db_session.expire_all()
+    profile = (
+        db_session.query(PatientMedicalProfile)
+        .filter(PatientMedicalProfile.patient_id == patient_id)
+        .first()
+    )
+    assert profile.chief_complaint == {} or not profile.chief_complaint.get("symptom_codes")
+    assert second["conflict_flags"] == [], "没有主诉就不该拿否认去跟自己比"
+
+
 def test_conflict_flags_persist_on_turn_for_staff_review(db_session):
     """冲突标记要落到 turn 上：医护端从对话回放里读，不落库等于没检出。"""
     from app.db.models import DialogueTurn
