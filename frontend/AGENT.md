@@ -114,6 +114,14 @@ frontend/
     - 医护端用 `groupConflicts()`——它按类别去重，因为同一处矛盾**每轮对话都会重新检出**，
     不去重会让复核页堆出十几条一样的待办。
     冲突项的 `severity` 只影响排序，**任何情况下都不得据此自动改量表、画像或计分**。
+17. **评审凭据走同一个表单**：`components/ReviewEvidenceFields.tsx` 是签字人、职称、
+    凭据类型、签字日期、依据说明的**唯一**实现（配置页与 `/staff/plain-text` 共用），
+    校验用 `validateReviewEvidence()`。凭据类型的文案与后果在 `lib/reviewEvidence.ts`：
+    - `evidenceLabel()` 对未知值原样返回，便于发现后端新增了没同步的类型；
+    - `evidenceWarning()` 必须把后果说清（状态生效但判读仍标「签字件待补」），
+      不能只贴一个「口头确认」的标签；
+    - 勾选凭据**不设默认值**——默认成「签字件」等于替录入人做了判断。
+    A-4 的改写候选不得直接写进 `plain_text`，必须走 `/plain-text/apply` 审批。
 
 ## 常用命令
 

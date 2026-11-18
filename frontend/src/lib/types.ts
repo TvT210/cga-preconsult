@@ -233,6 +233,14 @@ export interface ScaleListItem {
   dimension: string;
   method: string;
   review_status: ReviewStatus;
+  /** 签字人姓名（不是点按钮的人） */
+  reviewer_name?: string;
+  reviewer_title?: string;
+  /** signed_document / in_system / verbal_confirmation */
+  review_evidence?: string;
+  /** 是否有签字件；口头确认时为 false，判读会保留凭据提示 */
+  has_signed_document?: boolean;
+  reviewed_at?: string;
   item_count: number;
   version: string;
   notes?: string;
@@ -989,4 +997,25 @@ export interface AuditLog {
   action?: string;
   created_at?: string;
   summary?: string;
+}
+
+/** A-4：题目口语化候选（存于题库 payload.plain_text_draft，审批通过才生效） */
+export interface PlainTextDraft {
+  question_code: string;
+  /** 原始题干，用于对照 */
+  source_text: string;
+  /** 当前已评审的口语版 */
+  current_plain_text: string;
+  /** 改写候选 */
+  candidate: string;
+  /** 自动护栏提示：引入/漏掉症状词、过长过短等 */
+  risk_notes: string[];
+  model: string;
+  generated_at: string;
+}
+
+export interface PlainTextDraftList {
+  code: string;
+  count: number;
+  items: PlainTextDraft[];
 }

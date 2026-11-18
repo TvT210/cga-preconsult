@@ -7,6 +7,7 @@ import {
   ClipboardList,
   LayoutDashboard,
   LogOut,
+  MessageSquareText,
   Settings,
   Users,
 } from "lucide-react";
@@ -40,6 +41,7 @@ const NAV: NavEntry[] = [
   { href: "/staff/quality", label: "质控看板", icon: LayoutDashboard },
   { href: "/staff/knowledge", label: "知识库", icon: Brain },
   { href: "/staff/config", label: "配置与质控", icon: Settings },
+  { href: "/staff/plain-text", label: "题目口语化", icon: MessageSquareText },
 ];
 
 export function StaffShell({

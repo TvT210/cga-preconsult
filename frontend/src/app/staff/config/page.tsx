@@ -24,6 +24,14 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/Toast";
 import { roleLabel } from "@/lib/session";
+import { evidenceSummary } from "@/lib/reviewEvidence";
+import {
+  EMPTY_REVIEW_EVIDENCE,
+  ReviewEvidenceFields,
+  toReviewBody,
+  validateReviewEvidence,
+  type ReviewEvidenceValue,
+} from "@/components/ReviewEvidenceFields";
 import {
   ClinEmpty,
   ClinError,
@@ -52,8 +60,9 @@ export default function StaffConfigPage() {
   const [scales, setScales] = useState<ScaleListItem[]>([]);
   const [versions, setVersions] = useState<Record<string, ScaleVersion[]>>({});
   const [reviewDraft, setReviewDraft] = useState<Record<string, ReviewStatus>>({});
-  const [reviewer, setReviewer] = useState("");
-  const [comment, setComment] = useState("");
+  /** 凭据表单与口语化页共用同一份结构与校验 */
+  const [evidence, setEvidence] = useState<ReviewEvidenceValue>(EMPTY_REVIEW_EVIDENCE);
+  const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [usersError, setUsersError] = useState("");
 
@@ -156,14 +165,25 @@ export default function StaffConfigPage() {
     [thresholdDraft, load, toast],
   );
 
+  const patchEvidence = useCallback((patch: Partial<ReviewEvidenceValue>) => {
+    setEvidence((prev) => ({ ...prev, ...patch }));
+  }, []);
+
+  const validateReview = useCallback(() => validateReviewEvidence(evidence), [evidence]);
+  const reviewBody = useCallback(() => toReviewBody(evidence), [evidence]);
+
   const saveReview = useCallback(
     async (code: string) => {
+      const problem = validateReview();
+      if (problem) {
+        toast(problem, "warning");
+        return;
+      }
       setBusy(true);
       try {
         await api.put(`/scales/${encodeURIComponent(code)}/review`, {
           review_status: reviewDraft[code],
-          reviewer: reviewer.trim() || "医护端操作人",
-          comment: comment.trim(),
+          ...reviewBody(),
         });
         toast("量表评审状态已更新。", "success");
         await load();
@@ -173,8 +193,50 @@ export default function StaffConfigPage() {
         setBusy(false);
       }
     },
-    [reviewDraft, reviewer, comment, load, toast],
+    [reviewDraft, reviewBody, validateReview, load, toast],
   );
+
+  const approveSelected = useCallback(async () => {
+    const problem = validateReview();
+    if (problem) {
+      toast(problem, "warning");
+      return;
+    }
+    if (selectedCodes.length === 0) {
+      toast("请先勾选要审批的量表。", "warning");
+      return;
+    }
+    setBusy(true);
+    try {
+      const result = await api.post<{
+        total: number;
+        applied: number;
+        unchanged: number;
+        rejected: number;
+      }>("/scales/reviews/batch", {
+        codes: selectedCodes,
+        review_status: "approved",
+        ...reviewBody(),
+      });
+      const tail = result.rejected ? `，${result.rejected} 张未通过` : "";
+      toast(
+        `已审批 ${result.applied} 张，未变化 ${result.unchanged} 张${tail}。`,
+        result.rejected ? "warning" : "success",
+      );
+      setSelectedCodes([]);
+      await load();
+    } catch {
+      /* 错误提示已由 api 层统一处理 */
+    } finally {
+      setBusy(false);
+    }
+  }, [selectedCodes, reviewBody, validateReview, load, toast]);
+
+  const toggleAll = useCallback(() => {
+    setSelectedCodes((prev) =>
+      prev.length === scales.length ? [] : scales.map((item) => item.code),
+    );
+  }, [scales]);
 
   if (loading) {
     return <ClinLoading label="正在加载配置…" />;
@@ -277,36 +339,41 @@ export default function StaffConfigPage() {
 
       {/* ------------------------------ 量表版本与评审 ------------------------------ */}
       <ClinSection title="量表版本与评审状态">
-        <div className="mb-4 grid gap-3 md:grid-cols-2">
-          <div>
-            <Label htmlFor="reviewer">评审人</Label>
-            <Input
-              id="reviewer"
-              className="mt-1"
-              value={reviewer}
-              onChange={(event) => setReviewer(event.target.value)}
-              placeholder="请填写评审人姓名"
-            />
-          </div>
-          <div>
-            <Label htmlFor="review-comment">评审意见</Label>
-            <Input
-              id="review-comment"
-              className="mt-1"
-              value={comment}
-              onChange={(event) => setComment(event.target.value)}
-              placeholder="例如：已按 WS/T 888—2026 附录 B 逐项核对"
-            />
-          </div>
+        <div className="mb-4">
+          <ReviewEvidenceFields value={evidence} onChange={patchEvidence} />
+        </div>
+
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" disabled={busy || scales.length === 0} onClick={toggleAll}>
+            {scales.length > 0 && selectedCodes.length === scales.length ? "取消全选" : "全选"}
+          </Button>
+          <span className="text-clin-xs text-clin-fg-muted">
+            已选 {selectedCodes.length} / {scales.length} 张
+          </span>
+          <Button
+            size="sm"
+            disabled={busy || selectedCodes.length === 0}
+            onClick={() => void approveSelected()}
+          >
+            将所选量表置为已评审
+          </Button>
         </div>
 
         {scales.length === 0 ? (
           <ClinEmpty message="暂无量表。" />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[840px] text-left">
+            <table className="w-full min-w-[980px] text-left">
               <thead className="border-b border-clin-border bg-clin-muted">
                 <tr>
+                  <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                    <input
+                      type="checkbox"
+                      aria-label="全选量表"
+                      checked={scales.length > 0 && selectedCodes.length === scales.length}
+                      onChange={toggleAll}
+                    />
+                  </th>
                   <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
                     编号
                   </th>
@@ -323,6 +390,9 @@ export default function StaffConfigPage() {
                     评审状态
                   </th>
                   <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
+                    评审凭据
+                  </th>
+                  <th className="px-3 py-2 text-clin-xs font-medium text-clin-fg-muted">
                     操作
                   </th>
                 </tr>
@@ -333,6 +403,20 @@ export default function StaffConfigPage() {
                     key={scale.code}
                     className="border-b border-clin-border transition-colors duration-150 last:border-0 hover:bg-clin-muted"
                   >
+                    <td className="px-3 py-2">
+                      <input
+                        type="checkbox"
+                        aria-label={`选择 ${scale.code}`}
+                        checked={selectedCodes.includes(scale.code)}
+                        onChange={() =>
+                          setSelectedCodes((prev) =>
+                            prev.includes(scale.code)
+                              ? prev.filter((item) => item !== scale.code)
+                              : [...prev, scale.code],
+                          )
+                        }
+                      />
+                    </td>
                     <td className="px-3 py-2 text-clin-sm tabular-nums text-clin-fg">
                       {scale.code}
                     </td>
@@ -367,6 +451,17 @@ export default function StaffConfigPage() {
                           ))}
                         </SelectContent>
                       </Select>
+                    </td>
+                    <td className="px-3 py-2 text-clin-xs text-clin-fg-muted">
+                      {evidenceSummary(
+                        scale.reviewer_name,
+                        scale.reviewer_title,
+                        scale.review_evidence,
+                        scale.reviewed_at,
+                      )}
+                      {scale.review_evidence && !scale.has_signed_document ? (
+                        <span className="ml-1 text-clin-warning">· 无签字件</span>
+                      ) : null}
                     </td>
                     <td className="px-3 py-2">
                       <div className="flex flex-wrap gap-2">
