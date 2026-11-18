@@ -220,8 +220,11 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
 ```json
 [ { "code": "B.1", "name": "基本日常生活活动能力评估量表", "dimension": "躯体功能",
     "method": "询问／他评", "review_status": "draft_pending_medical_review",
+    "reviewer_name": "", "reviewer_title": "", "review_evidence": "",
+    "has_signed_document": false, "reviewed_at": "",
     "version": "0.1.0-draft", "item_count": 10, "notes": "…" } ]
 ```
+评审凭据字段（**CA-20261118-02**）：`reviewer_name` 是**签字人**，`has_signed_document` 表示凭据是否为签字件。`review_status=approved` 且 `has_signed_document=false` 时，判读结论会附「签字件待补」提示（见 §5 判读提示分级）。
 
 ### GET `/scales/{code}` ✅
 返回完整量表定义（前端采集页的数据源）：
@@ -246,6 +249,27 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
   "branches": [ { "code": "B1-B1", "when": { "any": [ { "question": "B1-09", "op": "lt", "value": 15 } ] }, "target_scale": "B.3", "reason": "…" } ]
 }
 ```
+
+`review` 对象（**CA-20261118-02**，评审凭据）：
+
+```json
+"review": { "review_status": "approved",
+            "reviewer_name": "王建民", "reviewer_title": "老年医学科 主任医师",
+            "review_evidence": "verbal_confirmation", "review_evidence_label": "口头/线上确认",
+            "reviewed_at": "2026-11-18T00:00:00", "has_signed_document": false }
+```
+
+**评审状态以数据库为准**：题库 JSON 里写死的 `review_status` 不会盖掉评审结果（此前的实现有这个缺陷，表现为「评审完判读仍说待评审」）。
+
+**判读提示分级（`scoring.evaluate_scale`）**：
+
+| 评审态 | 凭据 | 判读行为 |
+| --- | --- | --- |
+| 非 `approved` | — | `needs_manual_review=true`，提示「题库条目待医护/专家评审，结论仅供演示，不作为正式临床结论」 |
+| `approved` | `signed_document` | 不附评审相关提示 |
+| `approved` | `in_system` / `verbal_confirmation` | `needs_manual_review=true`，提示「本题库评审凭据为「口头/线上确认」，签字件待补；结论可用于随访参考，正式出具前需医护确认」 |
+
+第三行的用意：口头确认足以让题库进入可用状态，但不能让结论在纸面上看起来像已由医护签字背书。
 
 **题目 `input_type` 约定（前端按此渲染）**：
 
@@ -317,11 +341,56 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
 ### POST `/scales` 🟡（admin/doctor）
 请求体 = 上面的完整量表定义（`code` 必填）。返回 `{ "code", "id", "review_status" }`。
 
-### PUT `/scales/{code}/review` ✅（admin/doctor）
+### PUT `/scales/{code}/review` ✅（admin/doctor）｜ **CA-20261118-02（破坏性变更）**
 ```json
-{ "review_status": "approved", "comment": "已按 WS/T 888—2026 附录 B 逐项核对" }
+{ "review_status": "approved",
+  "reviewer": "王建民",
+  "reviewer_title": "老年医学科 主任医师",
+  "evidence_type": "verbal_confirmation",
+  "comment": "2026-11-18 科室例会口头确认，按 WS/T 888—2026 附录 B 执行；签字件待补",
+  "reviewed_at": "2026-11-18" }
 ```
-`review_status` 取值：`draft_pending_medical_review` | `approved` | `deprecated`
+| 字段 | 必填 | 说明 |
+| --- | --- | --- |
+| `review_status` | ✅ | `draft_pending_medical_review` \| `approved` \| `deprecated` |
+| `reviewer` | ✅ | **签字人**姓名，不是操作人。`evidence_type=in_system` 时可留空，自动取当前账号 |
+| `reviewer_title` | `approved` 时必填 | 职称或科室 |
+| `evidence_type` | ✅ | `signed_document` \| `in_system` \| `verbal_confirmation` |
+| `comment` | 口头确认时必填 | 依据说明：何时、由谁、以何方式确认 |
+| `reviewed_at` | `approved` 时必填 | 签字日期，`YYYY-MM-DD` 或 ISO 时间 |
+
+**破坏性变更**：`evidence_type` 为必填，旧调用（只传 `review_status` + `comment`）会返回 400。原先 `reviewer` 字段被后端忽略、实际记录了操作账号，本次修正为记录签字人；操作人另记在 `template_approvals.operator`。
+
+返回：`{ "code", "review_status", "result": "applied"|"unchanged", "review": {…} }`
+
+### POST `/scales/reviews/batch` ✅（admin/doctor）｜ CA-20261118-02
+请求体同上，另加 `"codes": ["B.1", "B.2", …]`。**必须显式列出编号**，不支持「默认全部」——一次误操作把 21 张全推到 approved 的代价太大。
+```json
+{ "total": 21, "applied": 21, "unchanged": 0, "rejected": 0,
+  "evidence": "verbal_confirmation", "evidence_label": "口头/线上确认",
+  "items": [ { "code": "B.1", "result": "applied", "reason": "", "review": {…} } ] }
+```
+逐张落库，一张失败不影响其余。信息与上次完全一致时返回 `unchanged`，不重复写审批记录（幂等）。
+
+### GET `/scales/approvals` ✅ → 裸数组
+查询参数：`code`（可选，按量表过滤）、`limit`（默认 50，上限 300）。
+元素：`{ id, code, action, reviewer, reviewer_title, evidence_type, evidence_label, operator, reviewed_at, comment, created_at }`
+`reviewer` = 签字人；`operator` = 录入人。两者不同说明是代录。
+
+### 题目口语化（A-4）｜ CA-20261118-03
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/scales/{code}/plain-text/draft` | 查看候选池 → `{ code, count, items: PlainTextDraft[] }` |
+| POST | `/scales/{code}/plain-text/draft` | 生成候选（admin/doctor），请求 `{ question_codes?: string[] }`，返回 `{ code, model, count, items }` |
+| POST | `/scales/{code}/plain-text/apply` | 审批后回写（admin/doctor），请求 `{ items: [{question_code, plain_text}], …凭据字段同上 }` |
+
+`PlainTextDraft`：`{ question_code, source_text, current_plain_text, candidate, risk_notes: string[], model, generated_at }`
+
+**约束（前端可直接依赖）**：
+- 生成**不改动** `plain_text`，候选只进 `payload.plain_text_draft`；`apply` 才写入题库并留 `scale_versions` 与 `template_approvals(target_type="scale_plain_text")`。
+- 改写只碰 `plain_text`，`code` / `options` / `score` / `when` / `measure` 一律不动，**计分绑定不变**。
+- `risk_notes` 含「症状词」字样的条目在 `apply` 时被拒（引入或漏掉原题干的症状词 = 改变题意）。
+- 凭据校验与量表评审共用同一套规则（`scale_review.validate_evidence`）。
 
 ### GET `/scales/{code}/versions` ✅ → 裸数组
 元素：`{ id, scale_code, version, reviewer, comment, created_at }`

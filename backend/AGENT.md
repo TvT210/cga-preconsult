@@ -217,11 +217,32 @@ python -c "from packages.medagent.llm import get_provider; print(get_provider().
 改判定规则请同步 `tests/test_conflict_expand.py`——里面有 6 条是「不该报」的用例，
 它们比「该报」的更能防止误报蔓延。
 
+## 6.2 评审凭据与题目口语化（A-1 / A-4）
+
+审批记录的 `reviewer` 是**签字人**，`operator` 是**录入人**，两者不是一回事。
+外部专家没有系统账号时由同事代录，混成一个字段就等于把「同事点的按钮」记成
+「专家已签字」。四条硬约定：
+
+1. **凭据类型必填**（`signed_document` / `in_system` / `verbal_confirmation`），
+   口头确认必须写依据；校验只在 `scale_review.validate_evidence()` 一处实现，
+   量表评审与文案回写共用，不要在别处另写一份。
+2. **`approved` ≠ 已签字**。凭据非签字件时，`evaluate_scale` 仍置
+   `needs_manual_review=true` 并附「签字件待补」。要让提示消失，只有补签字件一条路。
+3. **评审态以数据库为准**。`scales_store.get_scale()` 里不能用 `setdefault` 取
+   `review_status`——题库 JSON 写死的 draft 会盖掉人工评审结果。
+4. **改写只进候选池**。`plain_text_draft` 与 `plain_text` 分开存，`apply` 才提升；
+   改写只碰文案，`code`/`options`/`score`/`when`/`measure` 一律不动。
+   候选增减症状词的会被拒绝（`plain_text.guard`）。
+
+评审结论落在 `docs/structured/scale-approvals.json`，启动时由
+`init_db.seed_scale_approvals()` 应用：只覆盖草稿态、`reviewer` 为空则跳过、
+按签字人与凭据去重。
+
 ## 7. 测试
 
 ```powershell
 cd backend
-.\.venv\Scripts\python.exe -m pytest -q   # 277 项：计分 / 匹配 / 对话 / 量表 / API 端到端
+.\.venv\Scripts\python.exe -m pytest -q   # 302 项：计分 / 匹配 / 对话 / 量表 / 评审 / API 端到端
 ```
 
 `tests/conftest.py` 使用独立 SQLite（系统临时目录），不污染开发库。
