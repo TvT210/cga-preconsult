@@ -4,11 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useCurrentUser } from "@/lib/useCurrentUser";
-import {
-  assessmentStatusLabel,
-  formatDateTime,
-  reviewStatusLabel,
-} from "@/lib/format";
+import { assessmentStatusLabel, formatDateTime, reviewStatusLabel } from "@/lib/format";
+import { normalizeSource } from "@/lib/responder";
 import type {
   AlertItem,
   AssessmentListItem,
@@ -132,6 +129,15 @@ export default function ElderHomePage() {
                     所属维度：{scale.dimension} · 采集方式：{scale.method} · 共{" "}
                     {scale.item_count} 题
                   </p>
+                  {ongoing ? (
+                    <p className="text-elder text-ink-soft">
+                      上次填写：
+                      {formatDateTime(ongoing.last_activity_at ?? ongoing.started_at)}
+                      {normalizeSource(ongoing.responder) === "proxy" && ongoing.proxy_name
+                        ? ` · ${ongoing.proxy_name} 代答`
+                        : ""}
+                    </p>
+                  ) : null}
                   <Link href={`/elder/scale/${encodeURIComponent(scale.code)}`}>
                     <BigButton size="lg" fullWidth>
                       {ongoing ? "继续上次进度" : "开始评估"}
@@ -164,6 +170,14 @@ export default function ElderHomePage() {
                     状态：{assessmentStatusLabel(item.status)} · 时间：
                     {formatDateTime(item.finished_at ?? item.started_at ?? item.created_at)}
                   </p>
+                  {item.status === "in_progress" ? (
+                    <p className="mt-1 text-elder text-ink-soft">
+                      上次填写：{formatDateTime(item.last_activity_at ?? item.started_at)}
+                      {normalizeSource(item.responder) === "proxy" && item.proxy_name
+                        ? ` · ${item.proxy_name} 代答`
+                        : ""}
+                    </p>
+                  ) : null}
                 </div>
                 {item.status === "in_progress" ? (
                   <Link

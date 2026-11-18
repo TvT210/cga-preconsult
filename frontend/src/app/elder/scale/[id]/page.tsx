@@ -7,6 +7,11 @@ import { api } from "@/lib/api";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { assessmentStatusLabel } from "@/lib/format";
 import { applicableQuestions, buildFacts } from "@/lib/conditions";
+import {
+  proxyNameError,
+  sessionResponder,
+  type AnswerSource,
+} from "@/lib/responder";
 import type {
   AnswerValue,
   AssessmentAnswer,
@@ -220,10 +225,10 @@ export default function ElderScalePage() {
         );
         if (position >= 0) setIndex(position);
       }
-      if (sessionDetail.proxy?.is_proxy) {
+      if (sessionResponder(sessionDetail) === "proxy") {
         setProxyMode(true);
-        setProxyName(sessionDetail.proxy.proxy_name ?? "");
-        setProxyRelation(sessionDetail.proxy.proxy_relation ?? "");
+        setProxyName(sessionDetail.proxy?.proxy_name ?? "");
+        setProxyRelation(sessionDetail.proxy?.proxy_relation ?? "");
       }
     } catch (err) {
       setError(
@@ -287,6 +292,9 @@ export default function ElderScalePage() {
       const body: Record<string, unknown> = {
         question_code: question.code,
         value: entry.value,
+        // 逐题声明来源（A-5）：家属代答只作用于之后的题，
+        // 之前本人答的题不能被一并算成代答，否则复核分不清哪些是转述。
+        answer_source: proxyMode ? "proxy" : "self",
       };
       if (entry.measured !== undefined) body.measured = entry.measured;
       if (proxyMode) {
@@ -298,11 +306,51 @@ export default function ElderScalePage() {
     [proxyMode, proxyName],
   );
 
+  /**
+   * 把代答状态同步到会话（A-5）。
+   *
+   * 只在本地记住开关是不够的：换设备续填时会话仍是「本人自答」，
+   * 复核页就看不到这份问卷其实是家属答的。服务端要求代答必须有姓名，
+   * 所以姓名没填时先不调用，等填完再同步。
+   */
+  const syncResponder = useCallback(
+    async (responder: AnswerSource, name: string, relation: string) => {
+      if (!session) return;
+      if (responder === "proxy" && !name.trim()) return;
+      try {
+        const updated = await api.patch<AssessmentSession>(
+          `/assessments/${session.id}/responder`,
+          {
+            responder,
+            ...(responder === "proxy"
+              ? { proxy_name: name.trim(), proxy_relation: relation.trim() }
+              : {}),
+          },
+        );
+        setSession((prev) => (prev ? { ...prev, ...updated } : updated));
+      } catch {
+        /* 错误提示已由 api 层统一处理，保持本地状态不变 */
+      }
+    },
+    [session],
+  );
+
+  const handleProxyToggle = useCallback(
+    (checked: boolean) => {
+      setProxyMode(checked);
+      // 打开代答时姓名可能还是空的，交给姓名输入框 blur 时同步
+      if (!checked) void syncResponder("self", proxyName, proxyRelation);
+    },
+    [proxyName, proxyRelation, syncResponder],
+  );
+
   const saveAnswer = useCallback(
     async (question: ScaleQuestion, entry: AnswerEntry) => {
       if (!session) return false;
-      if (proxyMode && !proxyName.trim()) {
-        toast("请先填写代答人姓名，或取消「由家属代答」。", "warning");
+      const responder: AnswerSource = proxyMode ? "proxy" : "self";
+      const invalid = proxyNameError(responder, proxyName);
+      if (invalid) {
+        toast(invalid, "warning");
         return false;
       }
       setBusy(true);
@@ -386,11 +434,22 @@ export default function ElderScalePage() {
   const handleSkip = useCallback(
     async (reason: string) => {
       if (!currentQuestion || !session) return;
+      // 跳过也是作答行为：家属说「记不清了」与老人自己说不是一回事，缺项同样要标来源
+      const responder: AnswerSource = proxyMode ? "proxy" : "self";
+      const invalid = proxyNameError(responder, proxyName);
+      if (invalid) {
+        toast(invalid, "warning");
+        return;
+      }
       setBusy(true);
       try {
         await api.post(`/assessments/${session.id}/skip`, {
           question_code: currentQuestion.code,
           reason,
+          answer_source: responder,
+          ...(responder === "proxy"
+            ? { proxy_flag: true, answered_by: proxyName.trim() }
+            : {}),
         });
         setSkipOpen(false);
         // 跳过的题目没有取值，适用条件不变，可见集合与当前一致
@@ -403,7 +462,7 @@ export default function ElderScalePage() {
         setBusy(false);
       }
     },
-    [currentQuestion, session, answers, advanceToNext, finishAssessment],
+    [currentQuestion, session, answers, advanceToNext, finishAssessment, proxyMode, proxyName, toast],
   );
 
   const handlePause = useCallback(async () => {
@@ -413,9 +472,21 @@ export default function ElderScalePage() {
         await saveAnswer(currentQuestion, entry);
       }
     }
+    // 代答状态随进度一并落库：否则换设备续填时会话又变回「本人自答」
+    await syncResponder(proxyMode ? "proxy" : "self", proxyName, proxyRelation);
     toast("已暂停并保存进度，下次可以继续填写。", "success");
     router.push("/elder");
-  }, [currentQuestion, answers, saveAnswer, router, toast]);
+  }, [
+    currentQuestion,
+    answers,
+    saveAnswer,
+    syncResponder,
+    proxyMode,
+    proxyName,
+    proxyRelation,
+    router,
+    toast,
+  ]);
 
   /* ------------------------------ 判读结果 ------------------------------ */
 
@@ -501,6 +572,13 @@ export default function ElderScalePage() {
               当前会话状态：{assessmentStatusLabel(session.status)}
             </p>
           ) : null}
+          {proxyMode && proxyName.trim() ? (
+            <p className="mt-2 rounded-xl border-2 border-amber-300 bg-amber-50 px-4 py-3 text-elder text-amber-900">
+              本次由 {proxyName.trim()}
+              {proxyRelation.trim() ? `（${proxyRelation.trim()}）` : ""} 代答，
+              工作人员复核时会看到这个标记。
+            </p>
+          ) : null}
         </div>
       </header>
 
@@ -556,10 +634,13 @@ export default function ElderScalePage() {
             type="checkbox"
             className="h-7 w-7"
             checked={proxyMode}
-            onChange={(event) => setProxyMode(event.target.checked)}
+            onChange={(event) => handleProxyToggle(event.target.checked)}
           />
           由家属代答
         </label>
+        <p className="text-elder text-ink-mute">
+          只有之后填写的题目会标记为代答，之前自己答的保持不变。
+        </p>
         {proxyMode ? (
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -571,6 +652,8 @@ export default function ElderScalePage() {
                 className="field-input"
                 value={proxyName}
                 onChange={(event) => setProxyName(event.target.value)}
+                // 姓名填完才同步：服务端不接受「代答但不知道谁答的」
+                onBlur={() => void syncResponder("proxy", proxyName, proxyRelation)}
                 placeholder="请填写代答人姓名"
               />
             </div>
@@ -583,6 +666,7 @@ export default function ElderScalePage() {
                 className="field-input"
                 value={proxyRelation}
                 onChange={(event) => setProxyRelation(event.target.value)}
+                onBlur={() => void syncResponder("proxy", proxyName, proxyRelation)}
                 placeholder="如：女儿、儿子、护工"
               />
             </div>

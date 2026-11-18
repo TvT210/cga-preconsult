@@ -5,6 +5,14 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { assessmentStatusLabel, formatDateTime } from "@/lib/format";
+import {
+  answerSourceLabel,
+  normalizeSource,
+  proxyBadgeText,
+  proxyCountText,
+  sessionResponder,
+  type AnswerSource,
+} from "@/lib/responder";
 import type {
   AnswerValue,
   AssessmentAnswer,
@@ -105,6 +113,8 @@ export default function StaffReviewPage() {
   const [edited, setEdited] = useState<Record<string, AnswerValue>>({});
   /** 实测项的原始测量值（秒数／词语数），仅供复核时对照，不参与改分 */
   const [measuredMap, setMeasuredMap] = useState<Record<string, number | undefined>>({});
+  /** 逐题作答来源（A-5）：self / proxy / staff */
+  const [answerSources, setAnswerSources] = useState<Record<string, AnswerSource>>({});
   const [comment, setComment] = useState("");
   const [activeCode, setActiveCode] = useState<string | null>(null);
   /** 复核前的判读结果，用于改分前后对比 */
@@ -167,9 +177,12 @@ export default function StaffReviewPage() {
       const answers: Record<string, AnswerValue> = {};
       const scores: Record<string, number> = {};
       const measured: Record<string, number | undefined> = {};
+      // 逐题作答来源（A-5）：复核时要能定位「哪几题的答案是家属转述的」
+      const sources: Record<string, AnswerSource> = {};
       (detail.answers ?? []).forEach((answer: AssessmentAnswer) => {
         if (!answer?.question_code) return;
         answers[answer.question_code] = answer.value ?? null;
+        sources[answer.question_code] = normalizeSource(answer.answer_source);
         if (typeof answer.score === "number") {
           scores[answer.question_code] = answer.score;
         }
@@ -180,6 +193,7 @@ export default function StaffReviewPage() {
       setOriginal(answers);
       setOriginalScores(scores);
       setMeasuredMap(measured);
+      setAnswerSources(sources);
       setEdited(answers);
       setActiveCode((prev) => prev ?? questionList[0]?.code ?? null);
     } catch (err) {
@@ -339,11 +353,15 @@ export default function StaffReviewPage() {
         >
           {assessmentStatusLabel(session.status)}
         </Badge>
-        {session.proxy?.is_proxy ? (
-          <Badge variant="warning">
-            家属代答：{session.proxy.proxy_name ?? ""}
-            {session.proxy.proxy_relation ? `（${session.proxy.proxy_relation}）` : ""}
-          </Badge>
+        <Badge variant={sessionResponder(session) === "proxy" ? "warning" : "secondary"}>
+          {sessionResponder(session) === "proxy"
+            ? proxyBadgeText(session.proxy)
+            : answerSourceLabel(sessionResponder(session))}
+        </Badge>
+        {sessionResponder(session) === "proxy" ? (
+          <span className="text-clin-xs text-clin-fg-muted">
+            {proxyCountText(session.proxy)}
+          </span>
         ) : null}
         {scale?.standard_ref ? (
           <span className="text-clin-xs text-clin-fg-muted">
@@ -641,6 +659,12 @@ export default function StaffReviewPage() {
                   {activeQuestion.plain_text ? (
                     <span className="text-clin-xs text-clin-fg-muted">
                       （{activeQuestion.plain_text}）
+                    </span>
+                  ) : null}
+                  {answerSources[activeQuestion.code] &&
+                  answerSources[activeQuestion.code] !== "self" ? (
+                    <span className="rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-clin-xs text-amber-900">
+                      {answerSourceLabel(answerSources[activeQuestion.code])}
                     </span>
                   ) : null}
                 </div>

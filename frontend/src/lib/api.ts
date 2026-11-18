@@ -44,7 +44,7 @@ export class ApiError extends Error {
 export type QueryValue = string | number | boolean | undefined | null;
 
 export interface RequestOptions {
-  method?: "GET" | "POST" | "PUT" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   query?: Record<string, QueryValue>;
   /** 401 时是否跳转登录页，默认 true；登录接口传 false */
@@ -145,6 +145,9 @@ export const api = {
   },
   put<T = unknown>(path: string, body?: unknown): Promise<T> {
     return request<T>(path, { method: "PUT", body });
+  },
+  patch<T = unknown>(path: string, body?: unknown): Promise<T> {
+    return request<T>(path, { method: "PATCH", body });
   },
   delete<T = unknown>(path: string): Promise<T> {
     return request<T>(path, { method: "DELETE" });

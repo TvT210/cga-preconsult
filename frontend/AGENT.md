@@ -101,6 +101,11 @@ frontend/
     - `lib/api.ts` 的 `streamDialogueMessage` 是手写的 SSE 帧缓冲状态机，
       帧被切断、CRLF、心跳、主动中断由 `api.stream.test.ts` 钉住。
     这两处出错都不会抛异常，只会静默多问一道题或少显示一段话，**新增同类逻辑请一并补测试**。
+15. **谁答的要标清楚**：`lib/responder.ts` 是主答人与逐题来源的**唯一**归一入口
+    （`normalizeSource` / `sessionResponder` / `proxyBadgeText` / `proxyCountText`）。
+    后端 `_responder_of` 与它同一套回推规则（`responder` 为空 → 看代答人姓名），
+    改任一侧都要同步另一侧。来源只用于展示与复核，**不得接进计分或条件求值**；
+    老人端提交答案/跳过时一律带 `answer_source`，代答未填姓名前后端都拦。
 
 ## 常用命令
 

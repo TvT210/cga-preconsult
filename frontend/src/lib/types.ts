@@ -134,6 +134,10 @@ export interface ProxyInfo {
   is_proxy?: boolean;
   proxy_name?: string;
   proxy_relation?: string;
+  /** 代答题数（A-5）：复核页据此判断结论里有多少来自家属转述 */
+  proxy_answered?: number;
+  /** 本人作答题数 */
+  self_answered?: number;
 }
 
 export interface Preconsult {
@@ -306,6 +310,8 @@ export interface AssessmentAnswer {
   /** 后端判定的本题得分 */
   score?: number;
   measured?: number;
+  /** 作答来源（A-5）：self / proxy / staff */
+  answer_source?: string;
   proxy_flag?: boolean;
   answered_by?: string;
   skipped?: boolean;
@@ -328,6 +334,8 @@ export interface AssessmentSession {
   answers?: AssessmentAnswer[];
   mode?: "patient" | "staff" | string;
   proxy?: ProxyInfo;
+  /** 主答人（A-5）：self / proxy / staff */
+  responder?: string;
   /** 本任务由哪次评估的哪条分支派发而来；患者自己新建的任务为 null */
   dispatched_from?: DispatchedFrom | null;
   /** 本次评估已派生出的后续任务，医护复核页与老人结果页共用 */
@@ -349,6 +357,11 @@ export interface AssessmentListItem {
   progress?: number | { answered?: number; total?: number; percent?: number };
   total_questions?: number;
   mode?: string;
+  /** 主答人（A-5）与代答人姓名：首页「继续填写」要能标出这份是谁答的 */
+  responder?: string;
+  proxy_name?: string;
+  /** 最后作答时间（A-5）：断点续填时显示「上次填到哪」 */
+  last_activity_at?: string;
   started_at?: string;
   finished_at?: string;
   created_at?: string;
