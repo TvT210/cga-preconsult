@@ -11,6 +11,7 @@ from __future__ import annotations
 import datetime as dt
 import re
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -54,8 +55,13 @@ SAFETY_RULES = [
 SAFETY_DISCLAIMER = "本系统不提供诊断与用药建议，结果仅供参考，不构成诊断，请及时咨询医生。"
 
 
-def _symptom_index() -> list[tuple[str, str]]:
-    """(标准词, 词表 code) 的可匹配索引。"""
+@lru_cache(maxsize=1)
+def _symptom_index() -> tuple[tuple[str, str], ...]:
+    """(标准词, 词表 code) 的可匹配索引。
+
+    词表是静态文件，索引只需建一次；加了缓存后返回元组，
+    避免调用方改到共享的列表（否定抽取里会逐分句取用）。
+    """
     table = load_symptoms()
     index: list[tuple[str, str]] = []
     for code, entry in table.items():
@@ -63,7 +69,7 @@ def _symptom_index() -> list[tuple[str, str]]:
         for synonym in entry.get("synonyms", []) or []:
             index.append((synonym, code))
     index.sort(key=lambda item: len(item[0]), reverse=True)
-    return index
+    return tuple(index)
 
 
 def extract_symptoms(text: str) -> list[dict[str, Any]]:
@@ -212,9 +218,10 @@ def extract_negations(
     found: dict[tuple[str, str], dict[str, Any]] = {}
     conditions = [term.strip() for term in (condition_names or []) if term and term.strip()]
     medications = [name.strip() for name in (medication_names or []) if name and name.strip()]
+    index = _symptom_index()
 
     for clause in _clauses(text):
-        for term, code in _symptom_index():
+        for term, code in index:
             if term and term in clause:
                 evidence = _negation_hit(clause, term)
                 if evidence:
