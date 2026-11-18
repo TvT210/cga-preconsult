@@ -12,6 +12,7 @@
 | 图表 | Recharts 3.10（仅质控看板使用，`/staff/quality` 路由单独打包） |
 | 包管理 | pnpm 10.x（Node 24） |
 | 校验 | ESLint 8 + `eslint-config-next`（`pnpm lint` 走 ESLint CLI，未用已废弃的 `next lint`） |
+| 测试 | Vitest 3 + Testing Library（jsdom 环境，`pnpm test`） |
 
 ## 目录结构
 
@@ -44,7 +45,8 @@ frontend/
 │  │  ├─ CompactTable.tsx        # 紧凑数据表（列排序 + 密度切换 + 多选）
 │  │  ├─ MatchCandidateCard.tsx  # 匹配候选卡（规则排序 / AI 建议排序 / 命中依据分层）
 │  │  └─ AlertCard.tsx           # 就医提醒卡（含「标记误报」）
-│  └─ lib/                       # api 封装、类型、会话、语音、格式化
+│  ├─ lib/                       # api 封装、类型、会话、语音、格式化（*.test.ts 与被测文件同目录）
+│  └─ test/setup.ts              # 测试全局准备（jest-dom matcher / RTL cleanup）
 └─ scripts/verify-render.mjs     # 无头浏览器渲染自检脚本
 ```
 
@@ -90,7 +92,15 @@ frontend/
    `mark_false` / `revoke_false`。`mark_false` 会关闭提醒并计入质控看板的误报率，
    界面上必须先弹确认并说明用途。
 13. **批量导出需脱敏**：导出内容不含身份证号与联系电话，导出前必须提示
-   「仍含个人健康相关信息，请按院内数据管理要求妥善保管与销毁」。
+    「仍含个人健康相关信息，请按院内数据管理要求妥善保管与销毁」。
+14. **单元测试**：`src` 下与被测文件同目录放 `*.test.ts(x)`，`pnpm test` 跑一次即退出
+    （jsdom 环境，未开 vitest `globals`，`describe/it/expect` 一律显式 import）。
+    两条硬约定：
+    - `lib/conditions.ts` 的条件语义**必须与后端 `scoring.evaluate_conditions` 逐条一致**，
+      改任一侧都要同步跑 `conditions.test.ts`（题库改动会在这里先失败）；
+    - `lib/api.ts` 的 `streamDialogueMessage` 是手写的 SSE 帧缓冲状态机，
+      帧被切断、CRLF、心跳、主动中断由 `api.stream.test.ts` 钉住。
+    这两处出错都不会抛异常，只会静默多问一道题或少显示一段话，**新增同类逻辑请一并补测试**。
 
 ## 常用命令
 
@@ -100,6 +110,8 @@ pnpm dev            # 开发模式（默认 3000 端口）
 pnpm build          # 生产构建
 pnpm start          # 运行生产构建
 pnpm lint           # ESLint 校验（--max-warnings=0）
+pnpm test           # 单元测试（Vitest，跑完即退出）
+pnpm test:watch     # 单元测试监听模式
 
 # 后端未启动时的渲染自检（需要先 pnpm build && pnpm start）
 node scripts/verify-render.mjs http://127.0.0.1:3111
