@@ -72,75 +72,57 @@
 
 ## 快速开始
 
-**前置条件**：Python 3.12、Node.js 20+、pnpm 9+。本机为 Windows 11 + PowerShell 5.1，**不支持 `&&` 连接符**，请逐条执行命令（可用 `;` 或分步执行）。
+**前置条件**：Python 3.12+、Node.js 20+、pnpm 9+。数据库默认 SQLite，**不需要安装 PostgreSQL、Redis 或 Docker**。
 
-### 后端（5 步）
+### 一键启动（推荐）
 
-1. 进入后端目录
+在仓库根目录执行：
 
 ```powershell
-cd D:\ALLCODE\work\word2\backend
+.\start.ps1
 ```
 
-2. 创建并激活虚拟环境
+脚本会自动完成：检查 python / node / pnpm → 缺虚拟环境就创建 → 缺依赖就安装 → 检查 8000 / 3000 端口 → 启动后端与前端 → 轮询 `/health` 直到就绪。启动后弹出两个终端窗口，关掉窗口即停止服务。
+
+只想检查环境、不启动：
 
 ```powershell
+.\start.ps1 -Check
+```
+
+Linux / macOS 用 `./start.sh`，参数为 `check` / `backend` / `frontend` / `reinstall`。
+
+### 手工启动（可选）
+
+想自己控制进程时，开两个终端：
+
+**终端 1 · 后端**
+
+```powershell
+cd backend
 python -m venv .venv
-```
-
-```powershell
 .\.venv\Scripts\Activate.ps1
-```
-
-3. 安装依赖
-
-```powershell
 pip install -r requirements.txt
-```
-
-4. 启动后端（默认 SQLite，自动建表并播种预置账号与草稿题库）
-
-```powershell
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
-5. 验证健康检查
+**终端 2 · 前端**
 
 ```powershell
-Invoke-RestMethod -Uri 'http://127.0.0.1:8000/health'
-```
-
-后端地址：`http://127.0.0.1:8000`；OpenAPI 交互文档：`http://127.0.0.1:8000/docs`。
-
-### 前端（4 步）
-
-1. 进入前端目录
-
-```powershell
-cd D:\ALLCODE\work\word2\frontend
-```
-
-2. 安装依赖
-
-```powershell
+cd frontend
 pnpm install
+pnpm dev --port 3000
 ```
 
-3. 配置接口地址（用编辑器新建 `frontend/.env.local`，写入一行；不要用 PowerShell 5.1 的 `Set-Content -Encoding UTF8` 写入，避免带入 BOM）
+前端接口地址由 `frontend/.env.local` 指定，默认即为本机后端：
 
 ```text
 NEXT_PUBLIC_API_BASE=http://127.0.0.1:8000/api/v1
 ```
 
-4. 启动前端
+> 后端默认使用 SQLite（`backend/data/cga.db`），首次启动自动建表并播种演示账号、21 张量表与疾病库。健康检查：`http://127.0.0.1:8000/health`；交互式接口文档：`http://127.0.0.1:8000/docs`。
 
-```powershell
-pnpm dev
-```
-
-前端地址：`http://127.0.0.1:3000`。
-
-> 环境变量、数据库切换、端口排查等详见 [`deploy/Install.md`](deploy/Install.md)。
+> 环境变量、数据库切换、端口排查等详见 [`deploy/Install.md`](deploy/Install.md)；系统设计、HTTP 接口与数据库设计的完整说明见 [`docs/技术设计说明.md`](docs/技术设计说明.md)。
 
 ---
 
@@ -186,11 +168,21 @@ pnpm dev
 
 ---
 
-## 重要状态声明：量表与疾病库条目为待评审草稿
+## 重要状态声明：量表已评审、疾病库仍为草稿
 
-- 当前仓库内的 **21 张量表条目**与**老年易发疾病库条目**均为**待评审草稿**，统一标记 `review_status: draft_pending_medical_review`。
-- 草稿状态下**不得据此出具正式医学结论**；医护与医学专家须逐条核对 **WS/T 888—2026 附录 B 原文**（及对应指南／文献来源）后审批发布（`review_status: approved`），审批与变更全程留痕。
-- 阈值、权重、鉴别要点等规则同样处于待评审状态，正式使用前必须完成评审；演示数据不代表医学结论。
+**21 张量表（2026-11-18）**
+
+- 已逐条核对 WS/T 888—2026 附录 B，评审结论落库为 `review_status: approved`。
+- 评审人：**王姣，副教授**；评审证据类型：**口头确认**（`verbal_confirmation`），**签字件待补**。
+- 每张量表的评审记录同时写入 `template_approvals`（共 21 条），操作人与评审人分离留痕。
+- 由于签字件尚未归档，正式对外出具医学结论前仍需补齐书面材料。
+
+**老年易发疾病库（28 条）**
+
+- 仍为**待评审草稿**，统一标记 `review_status: draft_pending_medical_review`。
+- 阈值、权重、鉴别要点等规则同样待评审，**不得据此出具正式医学结论**。
+
+> 本项目为课程作业与教学演示用途，所有判读结果仅供流程演示，**不构成医学诊断**。
 
 ---
 
@@ -198,6 +190,7 @@ pnpm dev
 
 | 文档 | 内容 |
 | --- | --- |
+| **`docs/技术设计说明.md`** | **系统架构、HTTP 接口设计、数据库设计、关键流程、安全与部署（课程作业主文档）** |
 | `AGENT.md` | 项目导航、跨模块约定、开发与 Git 规范、**领域红线** |
 | `docs/项目构想总需求.md` | 项目定位、角色、架构、模块设计、数据模型、MVP 与待确认问题 |
 | `docs/api-contract.md` | API 契约（`/api/v1`）：认证、预问诊、量表、评估会话、报告、疾病库与匹配、AI 对话、随访提醒、管理质控 |
@@ -208,7 +201,7 @@ pnpm dev
 | `docs/review/` | 代码审查记录（模板与索引见 `docs/review/README.md`） |
 | `docs/bug/` | 缺陷记录（模板与索引见 `docs/bug/README.md`） |
 | `deploy/Install.md` | 环境安装、启动、运维排查与生产部署建议 |
-| `tests/` | 跨模块集成测试 |
+| `start.ps1` / `start.sh` | 一键启动脚本（环境检查 + 依赖安装 + 双端拉起） |
 
 ---
 
