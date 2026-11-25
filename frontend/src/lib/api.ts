@@ -1,5 +1,6 @@
 import { toast } from "./toast";
 import { clearSession, getToken, setToken } from "./session";
+import { resolveApiBase } from "./apiBase";
 import type {
   AlertItem,
   AssessmentListItem,
@@ -25,9 +26,11 @@ import type {
  * - 响应统一解包 {code, message, data}，code != 0 抛错并 toast
  */
 
-export const API_BASE = (
-  process.env.NEXT_PUBLIC_API_BASE ?? "http://127.0.0.1:8000/api/v1"
-).replace(/\/+$/, "");
+export const API_BASE = resolveApiBase({
+  explicit: process.env.NEXT_PUBLIC_API_BASE,
+  pageHost: typeof window !== "undefined" ? window.location.hostname : "",
+  protocol: typeof window !== "undefined" ? window.location.protocol : "http:",
+});
 
 export class ApiError extends Error {
   code: number;

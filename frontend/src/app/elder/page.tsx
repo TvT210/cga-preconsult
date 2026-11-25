@@ -18,6 +18,7 @@ import { BigButton } from "@/components/BigButton";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ErrorState";
 import { PageHeader, SectionTitle } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
+import { ScanToPhone } from "@/components/ScanToPhone";
 
 /** 兼容后端返回数组或 {items,total,page,size} 两种列表结构 */
 function toItems<T>(payload: T[] | Paged<T> | null | undefined): T[] {
@@ -97,6 +98,7 @@ export default function ElderHomePage() {
       <PageHeader
         title={`您好，${user?.full_name || "老人"}`}
         description="这里可以开始新的健康评估、查看评估报告，以及接收就医提醒。遇到看不懂的地方，可以随时联系工作人员。"
+        actions={<ScanToPhone path="/elder" label="用手机填写" />}
       />
 
       {error ? <ErrorState message={error} onRetry={() => void load()} /> : null}
