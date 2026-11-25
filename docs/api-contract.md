@@ -874,6 +874,19 @@ data: {"reply":"完整全文","extracted":{…},"safety_note":"","conflict_flags
 
 ---
 
+### 未单独成节的接口（2026-11-25 补录）
+
+由 `tools/contract_diff.py` 扫出的契约漏项，一次性补上。**此后新增端点必须同步写进本文件，
+CI 会以 `--strict` 校验，漏写即红灯。**
+
+| 方法 | 路径 | 角色 | 说明 |
+| --- | --- | --- | --- |
+| PATCH | `/assessments/{session_id}/responder` | 本人 / 家属 / staff+ | 切换会话主答人：`{responder: "self"\|"proxy", proxy_name?, proxy_relation?}` → 会话 payload。会话已结束返回 400；`proxy` 且无姓名返回 400；切回 `self` **不清空** `proxy_name`（历史答案可能是代答，清空会丢溯源） |
+| POST | `/assessments/dispatch` | staff+ | 手动派发量表：`{patient_id, scale_code, reason?, source_session_id?, branch_code?}` → 派发结果。只建空壳任务、不代填不下结论；**不做环形防护**（机器派生才有环防护，医护补测是合法决策）；派发人、理由、来源评估均落库 |
+| PUT | `/admin/prompt-templates/{template_id}` | admin | 发布提示词新版本：`{content}`。**不覆盖历史行**：旧版置停用、新版另起一行，保证 `model_runs.prompt_version` 始终能对应真实内容 |
+
+---
+
 ## 10. 医护知识库可视化 `/knowledge`（staff+）
 
 ### GET `/knowledge/graph?node_type=&keyword=` ✅

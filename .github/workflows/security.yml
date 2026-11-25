@@ -1,0 +1,46 @@
+name: security
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+  schedule:
+    - cron: "0 1 * * 1"
+  workflow_dispatch:
+
+jobs:
+  python-audit:
+    name: pip-audit
+    runs-on: ubuntu-latest
+    # 新增依赖爆出漏洞时不阻断合并：先看得见，再逐条判定（有些是构建期依赖，
+    # 不随镜像发布）。等基线稳定后把 continue-on-error 去掉。
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q pip-audit
+      - run: pip-audit -r requirements.txt --desc
+
+  node-audit:
+    name: pnpm audit
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --audit-level high

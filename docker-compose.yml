@@ -45,6 +45,8 @@ services:
       CGA_DATABASE_URL: postgresql+psycopg://cga:cga@postgres:5432/cga
       CGA_REDIS_URL: redis://redis:6379/0
       CGA_JWT_SECRET: ${CGA_JWT_SECRET:-change-me-in-production}
+      # 表结构只认 alembic upgrade head（Dockerfile CMD 里先跑迁移）
+      CGA_AUTO_CREATE_TABLES: "false"
       CGA_LLM_PROVIDER: ${CGA_LLM_PROVIDER:-mock}
       CGA_LLM_BASE_URL: ${CGA_LLM_BASE_URL:-}
       CGA_LLM_API_KEY: ${CGA_LLM_API_KEY:-}
@@ -65,6 +67,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        # NEXT_PUBLIC_* 构建期内联，必须走 build-arg
+        NEXT_PUBLIC_API_BASE: http://127.0.0.1:8000/api/v1
     container_name: cga-frontend
     environment:
       NEXT_PUBLIC_API_BASE: http://127.0.0.1:8000/api/v1

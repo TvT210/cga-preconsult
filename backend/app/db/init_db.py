@@ -11,7 +11,7 @@ import json
 
 from sqlalchemy.orm import Session
 
-from app.core.config import REPO_ROOT
+from app.core.config import REPO_ROOT, settings
 from app.core.security import hash_password
 from app.db.base import Base, SessionLocal, engine
 from app.db.models import (
@@ -475,7 +475,9 @@ def seed_scale_approvals(db: Session) -> None:
 
 
 def init_db(seed: bool = True) -> None:
-    create_tables()
+    # 表结构归 Alembic 管；这里只在显式允许时兜底建表（本地/测试）。
+    if settings.auto_create_tables:
+        create_tables()
     if not seed:
         return
     db = SessionLocal()

@@ -1,0 +1,50 @@
+name: frontend
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+  workflow_dispatch:
+
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: lint + test + build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # 锁 pnpm 10：pnpm 12 默认启用 minimumReleaseAge（24h 内发布的包拒装），
+      # 会在依赖刚发版时把 CI 卡成红灯，与代码质量无关。
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 类型检查
+        run: pnpm exec tsc --noEmit
+
+      - name: ESLint
+        run: pnpm run lint
+
+      - name: 单元测试
+        run: pnpm test
+
+      - name: 构建
+        run: pnpm build

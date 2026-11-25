@@ -62,3 +62,6 @@ lose_time/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# alembic 验证用的临时库
+backend/.migration*.db

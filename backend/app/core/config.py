@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     # 数据层：默认 SQLite 便于本地演示，生产切 PostgreSQL
     database_url: str = ""
     data_dir: str = ""
+    # 启动时是否用 create_all 建表。本地与测试为 True（快），
+    # 容器/生产置 False：表结构只认 `alembic upgrade head`，避免两条建表路径打架。
+    auto_create_tables: bool = True
 
     # 鉴权
     jwt_secret: str = "cga-dev-secret-change-me"
