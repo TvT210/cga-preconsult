@@ -22,10 +22,18 @@ const STEP = 0.1;
 export interface VoiceBarProps {
   /** 需要朗读的内容（当前题目与选项 / 上一条回复） */
   speechText: string;
-  /** 语音输入识别结果 */
-  onTranscript?: (text: string) => void;
+  /**
+   * 识别结果回调。
+   *
+   * `final=false` 是「正在说」的实时预览，会随说话不断刷新，**不要**直接连字符串；
+   * `final=true` 是一段已定稿的话，可以安全追加到输入框。
+   * 旧实现把每轮累积文本都回调一次，对话页追加时会重复成「你好 你好 你好吗」。
+   */
+  onTranscript?: (text: string, final: boolean) => void;
   /** 是否允许语音输入（部分页面无输入框时关闭） */
   allowInput?: boolean;
+  /** 告诉老人「可以怎么说」，不传则用通用提示 */
+  inputHint?: string;
   className?: string;
   /** 吸顶常驻（量表页用）：滚动时朗读按钮始终可点 */
   sticky?: boolean;
@@ -47,6 +55,7 @@ export function VoiceBar({
   speechText,
   onTranscript,
   allowInput = true,
+  inputHint,
   className = "",
   sticky = false,
 }: VoiceBarProps) {
@@ -56,7 +65,13 @@ export function VoiceBar({
   const [listening, setListening] = useState(false);
   const [voices, setVoices] = useState<VoiceOption[]>([]);
   const [expanded, setExpanded] = useState(false);
+  /** 正在说的半句话：显示出来让老人确认「它听到的是不是我说的」 */
+  const [interim, setInterim] = useState("");
+  /** 最近一句定稿，识别结束后仍留在屏幕上，便于核对 */
+  const [lastHeard, setLastHeard] = useState("");
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  /** 已回调过的 final 结果条数：只把新增的部分交给调用方，避免重复追加 */
+  const finalCountRef = useRef(0);
   const lastAutoRef = useRef("");
   const supportSpeak = canSpeak();
   const supportInput = canRecognizeSpeech();
@@ -79,6 +94,12 @@ export function VoiceBar({
     sync();
     return onVoicesChanged(sync);
   }, [supportSpeak]);
+
+  // 换了一题就清掉上一题的「刚才听到」，否则配着新题目看着像新答案
+  useEffect(() => {
+    setInterim("");
+    setLastHeard("");
+  }, [speechText]);
 
   const handleSpeak = useCallback(() => {
     if (!supportSpeak) {
@@ -121,24 +142,52 @@ export function VoiceBar({
     }
     const Ctor = getSpeechRecognition();
     if (!Ctor) return;
+    // 朗读还没停就开始听，麦克风会把喇叭声再收一遍
+    stopSpeaking();
+    setSpeaking(false);
     try {
       const recognition = new Ctor();
       recognition.lang = "zh-CN";
       recognition.continuous = false;
       recognition.interimResults = true;
+      finalCountRef.current = 0;
+      setInterim("");
+      setLastHeard("");
       recognition.onresult = (event) => {
         const results = event.results;
-        let text = "";
+        let preview = "";
+        const fresh: string[] = [];
         for (let i = 0; i < results.length; i += 1) {
           const item = results[i];
-          if (item && item[0]) text += item[0].transcript;
+          const text = item?.[0]?.transcript ?? "";
+          if (!text) continue;
+          if (item.isFinal) {
+            // 同一段定稿只回调一次
+            if (i >= finalCountRef.current) {
+              finalCountRef.current = i + 1;
+              fresh.push(text.trim());
+            }
+          } else {
+            preview += text;
+          }
         }
-        if (text) onTranscript?.(text);
+        if (preview.trim()) setInterim(preview.trim());
+        fresh.forEach((text) => {
+          if (!text) return;
+          setInterim("");
+          setLastHeard(text);
+          onTranscript?.(text, true);
+        });
       };
       recognition.onerror = (event) => {
         setListening(false);
+        setInterim("");
         if (event.error === "not-allowed" || event.error === "service-not-allowed") {
           toast("麦克风未授权，请改用手动输入。", "warning");
+        } else if (event.error === "no-speech") {
+          toast("没有听到声音，请靠近一点再说一次。", "warning");
+        } else if (event.error === "network") {
+          toast("语音识别需要联网，网络不通时请手动填写。", "warning");
         } else {
           toast("语音识别未成功，请改用手动输入。", "warning");
         }
@@ -181,7 +230,7 @@ export function VoiceBar({
             onClick={startRecognition}
             disabled={!supportInput}
           >
-            {listening ? "停止说话…" : "语音输入"}
+            {listening ? "停止说话…" : lastHeard ? "再说一次" : "语音输入"}
           </BigButton>
         ) : null}
 
@@ -193,6 +242,33 @@ export function VoiceBar({
           {expanded ? "收起设置" : "语速与人声"}
         </BigButton>
       </div>
+
+      {/* 正在说的话 / 刚说完的话：老人要能看见「它听对了没有」 */}
+      {allowInput && (listening || lastHeard) ? (
+        <div
+          className={[
+            "rounded-xl border-2 px-4 py-3 text-elder",
+            listening
+              ? "border-amber-300 bg-amber-50 text-amber-900"
+              : "border-medical-200 bg-medical-50 text-medical-900",
+          ].join(" ")}
+          role="status"
+          aria-live="polite"
+        >
+          <span className="font-semibold">{listening ? "我在听：" : "刚才听到："}</span>
+          <span>{interim || lastHeard || "请慢慢说，说完稍等一下。"}</span>
+        </div>
+      ) : null}
+
+      {allowInput && supportInput ? (
+        <p className="text-elder text-ink-mute">
+          {inputHint ??
+            "可以直接说出答案，例如「第 2 个」或「有一点」；说完会自动选中。"}
+          <span className="block text-elder text-ink-mute">
+            语音由浏览器自带的识别服务处理，本系统不保存录音。
+          </span>
+        </p>
+      ) : null}
 
       {expanded ? (
         <div className="space-y-3 border-t border-slate-200 pt-3">

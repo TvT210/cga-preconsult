@@ -309,7 +309,12 @@ export default function ElderChatPage() {
       <VoiceBar
         speechText={lastReply}
         allowInput
-        onTranscript={(text) => setInput((prev) => (prev ? `${prev} ${text}` : text))}
+        inputHint="点一下「语音输入」，把想说的说完再停，文字会出现在下面的框里。"
+        onTranscript={(text, final) => {
+          // 只接收定稿片段：实时预览每刷新一次都会重发整段，追加会重复
+          if (!final) return;
+          setInput((prev) => (prev ? `${prev} ${text}` : text));
+        }}
       />
 
       <div className="card card-pad space-y-3">
