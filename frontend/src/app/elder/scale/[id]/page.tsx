@@ -8,6 +8,11 @@ import { useCurrentUser } from "@/lib/useCurrentUser";
 import { assessmentStatusLabel } from "@/lib/format";
 import { applicableQuestions, buildFacts } from "@/lib/conditions";
 import {
+  extractVoiceNumber,
+  matchVoiceOption,
+  matchVoiceOptions,
+} from "@/lib/voiceAnswer";
+import {
   proxyNameError,
   sessionResponder,
   type AnswerSource,
@@ -304,6 +309,89 @@ export default function ElderScalePage() {
     if (currentQuestion.unit) parts.push(`单位：${currentQuestion.unit}`);
     return parts.join("。");
   }, [currentQuestion]);
+
+  /** 语音条的提示语：说清「这道题可以怎么答」 */
+  const voiceHint = useMemo(() => {
+    if (!currentQuestion) return undefined;
+    if (currentQuestion.banded_input) return "直接说测得的数值就行，例如「十二秒」。";
+    if (currentQuestion.input_type === "number") {
+      return currentQuestion.unit
+        ? `直接说数字，例如「二十${currentQuestion.unit}」。`
+        : "直接说数字就行。";
+    }
+    if (currentQuestion.input_type === "multi") {
+      return "可以一次说几项，例如「能自己吃饭、能自己走路」，说完会自动选上。";
+    }
+    return "可以说「第 2 个」，也可以直接说选项原文。";
+  }, [currentQuestion]);
+
+  /**
+   * 语音作答：把说出的话落到当前题上。
+   *
+   * 只在识别**定稿**时写入——半句话就落答案，老人改口时容易留下错的分值。
+   * 匹配不上就提示重说，绝不猜一个接近的选项（那是会算进总分的）。
+   */
+  const applyVoiceAnswer = useCallback(
+    (text: string) => {
+      if (!currentQuestion) return;
+      const code = currentQuestion.code;
+
+      if (currentQuestion.input_type === "number" || currentQuestion.banded_input) {
+        const value = extractVoiceNumber(text);
+        if (value === null) {
+          toast(`没听清数字「${text}」，可以说「十二秒」或「二十」。`, "warning");
+          return;
+        }
+        if (currentQuestion.banded_input) {
+          // 实测分档题说出的数值是「实测值」，须交给服务端落档，不能当选项值
+          setAnswers((prev) => ({ ...prev, [code]: { value: null, measured: value } }));
+          toast(`已记下实测值 ${value}${currentQuestion.unit ?? ""}。`, "success");
+          return;
+        }
+        setAnswers((prev) => ({
+          ...prev,
+          [code]: { ...(prev[code] ?? { value: null }), value },
+        }));
+        toast(`已填入 ${value}${currentQuestion.unit ?? ""}。`, "success");
+        return;
+      }
+
+      const options = currentQuestion.options ?? [];
+      if (!options.length) return;
+
+      if (currentQuestion.input_type === "multi") {
+        const matches = matchVoiceOptions(text, options);
+        if (!matches.length) {
+          toast(`没听清「${text}」，可以点选项，或说出选项原文。`, "warning");
+          return;
+        }
+        const picked = matches.map((match) => match.option.value);
+        setAnswers((prev) => {
+          const current = prev[code]?.value;
+          const existing = Array.isArray(current) ? current.map(String) : [];
+          const merged = [...existing];
+          picked.forEach((value) => {
+            if (!merged.includes(value)) merged.push(value);
+          });
+          return { ...prev, [code]: { value: merged } };
+        });
+        toast(`已选上：${matches.map((match) => match.option.label).join("、")}。`, "success");
+        return;
+      }
+
+      const match = matchVoiceOption(text, options);
+      if (!match) {
+        toast(`没听清「${text}」，可以说「第 2 个」或选项原文。`, "warning");
+        return;
+      }
+      setAnswers((prev) => ({ ...prev, [code]: { value: match.option.value } }));
+      toast(
+        `已选：${match.option.label}${match.confidence === "high" ? "" : "（说的不是这个就点一下改）"}。`,
+        match.confidence === "high" ? "success" : "info",
+      );
+    },
+    [currentQuestion, toast],
+  );
 
   const buildAnswerBody = useCallback(
     (question: ScaleQuestion, entry: AnswerEntry) => {
@@ -642,29 +730,11 @@ export default function ElderScalePage() {
       <VoiceBar
         speechText={speechText}
         sticky
-        allowInput={
-          currentQuestion.input_type === "number" || Boolean(currentQuestion.banded_input)
-        }
-        onTranscript={(text) => {
-          const numeric = text.replace(/[^\d.]/g, "");
-          if (!numeric) return;
-          // 实测分档题说出的数值是「实测值」，须交给服务端落档，不能当选项值
-          if (currentQuestion.banded_input) {
-            setAnswers((prev) => ({
-              ...prev,
-              [currentQuestion.code]: { value: null, measured: Number(numeric) },
-            }));
-            return;
-          }
-          if (currentQuestion.input_type === "number") {
-            setAnswers((prev) => ({
-              ...prev,
-              [currentQuestion.code]: {
-                ...(prev[currentQuestion.code] ?? { value: null }),
-                value: Number(numeric),
-              },
-            }));
-          }
+        allowInput
+        inputHint={voiceHint}
+        onTranscript={(text, final) => {
+          // 半句话不落答案：等识别定稿再写，避免老人改口时留下错的分值
+          if (final) applyVoiceAnswer(text);
         }}
       />
 
