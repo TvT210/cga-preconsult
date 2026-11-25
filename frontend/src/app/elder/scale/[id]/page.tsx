@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { api } from "@/lib/api";
+import { api, downloadAssessmentEvidence } from "@/lib/api";
 import { useCurrentUser } from "@/lib/useCurrentUser";
 import { assessmentStatusLabel } from "@/lib/format";
 import { applicableQuestions, buildFacts } from "@/lib/conditions";
@@ -145,6 +145,7 @@ export default function ElderScalePage() {
   const [skipOpen, setSkipOpen] = useState(false);
   // 一步一屏：跳过/暂停/代答设置默认收起，减少同屏元素
   const [moreOpen, setMoreOpen] = useState(false);
+  const [savingEvidence, setSavingEvidence] = useState(false);
 
   // patient_id 保持后端原样（整数主键）：请求体按原类型发送
   const patientId = user?.patient_id ?? null;
@@ -408,6 +409,30 @@ export default function ElderScalePage() {
   }, [session]);
 
   /**
+   * 保存本次作答记录（CSV 明细）。
+   *
+   * 为什么要给老人这个按钮：报告是结论，明细才是「我当时到底答了什么」。老人或家属
+   * 想留着核对、或者换个医院再看时，报告未必生成，明细必须能独立拿到。
+   */
+  const saveEvidence = useCallback(async () => {
+    if (!session) return;
+    setSavingEvidence(true);
+    try {
+      const today = new Date();
+      const stamp = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(
+        today.getDate(),
+      ).padStart(2, "0")}`;
+      const scaleName = scale?.name ?? session.scale_code;
+      await downloadAssessmentEvidence(session.id, `作答记录_${scaleName}_${stamp}.csv`);
+      toast("作答记录已保存，请在下载文件夹中查看。", "success");
+    } catch {
+      /* 错误提示已由 api 层统一处理 */
+    } finally {
+      setSavingEvidence(false);
+    }
+  }, [session, scale, toast]);
+
+  /**
    * 推进到下一道可见题。
    *
    * 不能用 `index + 1` 直接推进：答完分流题后可见题目集合会变（B.15 选「未插管」
@@ -548,7 +573,19 @@ export default function ElderScalePage() {
               查看我的报告
             </BigButton>
           </Link>
+          <BigButton
+            variant="ghost"
+            size="lg"
+            loading={savingEvidence}
+            onClick={() => void saveEvidence()}
+          >
+            保存作答记录
+          </BigButton>
         </div>
+        <p className="text-elder-sm text-ink-soft">
+          保存后会得到一份逐题明细（表格文件），记录每道题答了什么、得了多少分，
+          需要核对或换医院就诊时可以带上。
+        </p>
       </div>
     );
   }
