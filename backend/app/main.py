@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from contextlib import asynccontextmanager
 
@@ -24,6 +25,7 @@ from app.api import (
     knowledge,
     matching,
     patients,
+    realtime,
     reports,
     reviews,
     scales,
@@ -35,8 +37,10 @@ from app.db.init_db import init_db
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """启动时建表并播种（幂等）。"""
+    """启动时建表并播种（幂等），并记录事件循环供实时通知投递。"""
     init_db(seed=True)
+    # 同步路由在线程池里执行，广播任务需要投递回主事件循环
+    realtime.manager.bind_loop(asyncio.get_running_loop())
     yield
 
 
@@ -110,6 +114,7 @@ for module in (
     knowledge,
     admin,
     system_info,
+    realtime,
 ):
     app.include_router(module.router, prefix=settings.api_prefix)
 

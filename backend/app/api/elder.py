@@ -20,6 +20,7 @@ from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api import new_router
+from app.api import realtime
 from app.core.config import settings
 from app.core.deps import (
     ROLE_ELDER,
@@ -124,6 +125,20 @@ def create_assistance(
     db.add(row)
     db.commit()
     db.refresh(row)
+
+    # 实时通知医护端：有人按了呼叫，页面应立刻出现提示，不必等刷新或轮询。
+    # 失败不影响主流程（notify 内部吞异常并记日志）。
+    realtime.manager.notify(
+        realtime.CLINICAL_ROLES,
+        "assistance.requested",
+        {
+            "id": row.id,
+            "patient_id": patient_id,
+            "patient_name": patient.name,
+            "question_code": row.question_code,
+            "note": row.note,
+        },
+    )
     return _serialize(row, patient.name)
 
 

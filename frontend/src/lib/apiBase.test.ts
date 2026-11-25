@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildLanUrl, isLoopbackHost, resolveApiBase } from "./apiBase";
+import { buildLanUrl, isLoopbackHost, resolveApiBase, toWsUrl } from "./apiBase";
 
 describe("resolveApiBase", () => {
   it("配置写的是回环地址、页面从局域网打开时，把 host 换成当前访问地址", () => {
@@ -91,5 +91,29 @@ describe("isLoopbackHost", () => {
 
   it.each(["192.168.1.5", "10.0.0.8", "api.example.com"])("%s 不是回环", (host) => {
     expect(isLoopbackHost(host)).toBe(false);
+  });
+});
+
+describe("toWsUrl", () => {
+  it("http 基址换成 ws", () => {
+    expect(toWsUrl("http://127.0.0.1:8000/api/v1")).toBe(
+      "ws://127.0.0.1:8000/api/v1/ws/notifications",
+    );
+  });
+
+  it("https 基址换成 wss，避免 HTTPS 页面连不安全 ws 被浏览器拒绝", () => {
+    expect(toWsUrl("https://cga.example.com/api/v1")).toBe(
+      "wss://cga.example.com/api/v1/ws/notifications",
+    );
+  });
+
+  it("基址末尾带斜杠也能正确拼接，不产生双斜杠", () => {
+    expect(toWsUrl("http://10.0.0.8:8000/api/v1/")).toBe(
+      "ws://10.0.0.8:8000/api/v1/ws/notifications",
+    );
+  });
+
+  it("空基址返回空串", () => {
+    expect(toWsUrl("")).toBe("");
   });
 });

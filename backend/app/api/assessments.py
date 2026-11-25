@@ -9,6 +9,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.api import new_router, paginate
+from app.api import realtime
 
 router = new_router()
 from app.core.deps import ROLE_ELDER, ensure_patient_access, get_current_user, require_staff
@@ -744,6 +745,26 @@ def finish_assessment(
         },
     )
     db.commit()
+
+    # 实时通知医护端：评估刚出分，异常或需人工确认的更应第一时间看到。
+    # 注意 session 上只有 scale_code，量表名要从量表定义里取。
+    patient = db.get(Patient, session.patient_id)
+    scale_def = get_scale(db, session.scale_code)
+    realtime.manager.notify(
+        realtime.CLINICAL_ROLES,
+        "assessment.submitted",
+        {
+            "session_id": session.id,
+            "patient_id": session.patient_id,
+            "patient_name": patient.name if patient else "",
+            "scale_code": score.scale_code,
+            "scale_name": (scale_def or {}).get("name") or session.scale_code,
+            "total": score.total,
+            "level": score.level,
+            "abnormal": score.abnormal,
+            "needs_manual_review": score.needs_manual_review,
+        },
+    )
     return {
         "scores": [
             {

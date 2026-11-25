@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Download, RefreshCw } from "lucide-react";
 import { api } from "@/lib/api";
+import { useRealtimeEvents, type RealtimeEvent, type RealtimeStatus } from "@/lib/realtime";
 import {
   assessmentStatusLabel,
   formatDateTime,
@@ -118,6 +119,31 @@ export default function StaffTaskPage() {
       .then(setStats)
       .catch(() => setStats(null));
   }, []);
+
+  // 实时通知：老人提交评估或按呼叫时，这里立刻提示并刷新列表，
+  // 不必手动点「刷新」才发现。
+  const handleRealtime = useCallback(
+    (event: RealtimeEvent) => {
+      const patientNameText = String(event.data?.patient_name || "有老人");
+      if (event.type === "assistance.requested") {
+        toast(`${patientNameText} 请求人工协助`, "warning");
+      } else if (event.type === "assessment.submitted") {
+        const scale = String(event.data?.scale_name || "评估");
+        const level = String(event.data?.level || "");
+        const abnormal = Boolean(event.data?.abnormal);
+        toast(
+          `${patientNameText} 完成「${scale}」${level ? `，结果：${level}` : ""}`,
+          abnormal ? "error" : "info",
+        );
+      } else {
+        return;
+      }
+      void load();
+    },
+    [load, toast],
+  );
+
+  const realtimeStatus = useRealtimeEvents({ onEvent: handleRealtime });
 
   const patientName = useMemo(() => {
     const map = new Map<string, string>();
@@ -359,6 +385,7 @@ export default function StaffTaskPage() {
         description="按患者、量表与状态筛选评估记录，支持多选后批量复核与脱敏导出。"
         actions={
           <>
+            <RealtimeBadge status={realtimeStatus} />
             <Button variant="outline" size="sm" onClick={() => void load()}>
               <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
               刷新
@@ -506,5 +533,26 @@ export default function StaffTaskPage() {
         )}
       </ClinSection>
     </div>
+  );
+}
+
+/** 实时通知连接状态：让医护知道「页面会不会自己更新」，避免误以为数据没变。 */
+const REALTIME_LABEL: Record<RealtimeStatus, { text: string; dot: string; hint: string }> = {
+  online: { text: "实时", dot: "bg-emerald-500", hint: "已连接，新评估与求助会自动提示" },
+  connecting: { text: "连接中", dot: "bg-amber-500 animate-pulse", hint: "正在连接实时通知" },
+  offline: { text: "未连接", dot: "bg-slate-400", hint: "实时通知未连接，点「刷新」获取最新数据" },
+};
+
+function RealtimeBadge({ status }: { status: RealtimeStatus }) {
+  const item = REALTIME_LABEL[status];
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 text-xs text-ink-soft"
+      title={item.hint}
+      aria-label={item.hint}
+    >
+      <span className={`h-2 w-2 rounded-full ${item.dot}`} aria-hidden="true" />
+      {item.text}
+    </span>
   );
 }
