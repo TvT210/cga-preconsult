@@ -525,6 +525,20 @@ PUT 支持部分字段更新；`birth_date` 传 `YYYY-MM-DD`。
 
 ### GET `/assessments/{session_id}` ✅ → 会话详情（同创建响应，另含 `score` 字段）
 
+### GET `/assessments/{session_id}/evidence` ✅ → 评估证据包
+把一次评估的作答与判读明细落成可直接留档的结构化数据。返回 `schema / exported_at / exported_by / patient / session / score / items / integrity` 六（八）块：
+
+- `items`：**按问卷顺序**逐题一行，含 `question_code / text / plain_text / section_title / raw_value / value_label / measured / score / max_score / status / skip_reason / answer_source / answered_by / answered_at`。未作答与已跳过的题**同样占行**（`status` 分别为 `unanswered` / `skipped`）——只导出已答题会让残缺评估看起来完整。
+- `integrity`：自洽校验。`rule_consistent` 按规则类型核算（`sum` 比逐题得分合计、`count_positive` 比阳性条数）；`warnings` 列出缺项、跳过、代答、作答过快、未完成等风险；`passed` 表示「算术对得上且无缺口」，跳过与未作答都会使其为 `false`。
+- `patient.id_card_masked` 只给脱敏值：证据包会被下载转发，不携带全量身份信息。
+- 权限同会话详情（老人仅限本人）。导出动作写审计日志（`action=export_evidence`）。
+
+### GET `/assessments/{session_id}/evidence.csv` ✅ → 同上，逐题明细表格
+返回 `text/csv; charset=utf-8`，**带 UTF-8 BOM**（否则 Excel 打开中文乱码）。表头：序号、题目编码、所属维度、题目、口语化问法、实测值、作答文本、得分、满分、作答状态、跳过原因、作答来源、作答人、作答时间。
+
+- `Content-Disposition` 同时给 ASCII 兜底 `filename="evidence_{id}.csv"` 与 RFC 5987 的 `filename*=UTF-8''评估证据_...csv`。
+- 响应头 `X-Evidence-Items` 为明细行数，便于导入方先校验再落库。
+
 ---
 
 ## 6. 报告 `/reports`
@@ -987,6 +1001,23 @@ CI 会以 `--strict` 校验，漏写即红灯。**
 ### GET `/admin/stats/overview` ✅ → 同 `stats` 对象 + `generated_at`
 ### GET `/admin/prompt-templates` ✅ → 裸数组
 元素：`{ id, code, name, version, content, active, created_at }`
+
+---
+
+## 11.9 终端接入与实时通道
+
+### GET `/system/lan-addresses` ✅
+返回 `{ hostname, addresses, has_lan }`，供老人端生成「手机扫码填写」的二维码。
+
+- `addresses` 按可用性排序：默认路由出口网卡排第一（虚拟机网卡的 `192.168.x.1` 会排在后面），否则手机扫到虚拟网卡地址必然连不上。
+- 永不包含回环（`127.*`）与链路本地（`169.254.*`）地址；`has_lan=false` 表示本机没有可被手机访问的地址，前端应提示改用本机填写而非给出无效二维码。
+
+### WS `/ws/notifications` ✅
+医护端实时通知。握手后**首帧**发送 `{"token": "<JWT>"}` 完成鉴权（浏览器 WebSocket 不支持自定义头，且 token 放 URL 会被网关日志记录），5 秒内未认证以 `4401` 关闭。
+
+- 服务端回 `{"type":"ready","data":{"role":"..."}}`；客户端可发 `{"type":"ping"}` 收 `{"type":"pong"}` 保活。
+- 事件：`assistance.requested`（老人一键呼叫）、`assessment.submitted`（评估出分，带患者名、量表名、得分、等级、是否异常、是否需人工复核）。
+- 只推给 `doctor` / `nurse` / `admin`，老人端连接不接收临床事件。
 
 ---
 

@@ -568,39 +568,63 @@ export async function fetchMatchScoreSeries(
 }
 
 /**
- * 下载报告文件（Word / PDF）。
- * 导出接口需要 Authorization 头，不能直接用浏览器地址栏跳转，故在此处带令牌取回二进制。
- */export async function downloadReportFile(
-  reportId: string | number,
-  format: "docx" | "pdf",
-  fileName: string,
-): Promise<void> {
+ * 带 Authorization 头取回二进制并触发浏览器下载。
+ * 导出类接口都不接受把令牌放地址栏，只能 fetch 拿 blob 再存盘。
+ */
+async function downloadAuthorized(url: string, fileName: string, failureMessage: string): Promise<void> {
   if (typeof document === "undefined") return;
 
   const headers: Record<string, string> = { Accept: "*/*" };
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const response = await fetch(
-    buildUrl(`/reports/${reportId}/export`, { format }),
-    { headers, cache: "no-store" },
-  );
+  const response = await fetch(url, { headers, cache: "no-store" });
 
   if (!response.ok) {
-    const error = new ApiError("报告导出失败，请稍后重试。", response.status, response.status);
+    const error = new ApiError(failureMessage, response.status, response.status);
     toast(error.message, "error");
     throw error;
   }
 
   const blob = await response.blob();
-  const url = URL.createObjectURL(blob);
+  const objectUrl = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
-  anchor.href = url;
+  anchor.href = objectUrl;
   anchor.download = fileName;
   document.body.appendChild(anchor);
   anchor.click();
   document.body.removeChild(anchor);
-  URL.revokeObjectURL(url);
+  URL.revokeObjectURL(objectUrl);
+}
+
+/** 下载报告文件（Word / PDF）。 */
+export async function downloadReportFile(
+  reportId: string | number,
+  format: "docx" | "pdf",
+  fileName: string,
+): Promise<void> {
+  await downloadAuthorized(
+    buildUrl(`/reports/${reportId}/export`, { format }),
+    fileName,
+    "报告导出失败，请稍后重试。",
+  );
+}
+
+/**
+ * 下载一次评估的作答与判读明细（CSV）。
+ *
+ * 这是 A 线「可信的结构化评估证据」的出口：不等报告生成就能留存原始记录。
+ * 报告是结论层（B 线），这份明细是采集层，两者不互为前提。
+ */
+export async function downloadAssessmentEvidence(
+  sessionId: string | number,
+  fileName: string,
+): Promise<void> {
+  await downloadAuthorized(
+    buildUrl(`/assessments/${sessionId}/evidence.csv`),
+    fileName,
+    "作答记录下载失败，请稍后重试。",
+  );
 }
 
 /* ------------------------------------------------------------------ */

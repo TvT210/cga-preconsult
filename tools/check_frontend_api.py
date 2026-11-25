@@ -50,6 +50,10 @@ PAT_REQ = re.compile(
 )
 PAT_METHOD = re.compile(r"""method:\s*"(\w+)\"""")
 
+# buildUrl(`/reports/${id}/export`, {...}) —— 封装过的下载类调用，不经过 api.*，
+# 若只扫 api.* 会把「导出」这类接口误判成「前端未使用」。这类调用一律按 GET 计。
+PAT_BUILD_URL = re.compile(r"""buildUrl\s*\(\s*\n?\s*[`"']([^`"']+)[`"']""", re.S)
+
 # 前端路径里的模板变量 `${...}` 归一化为 `{}`
 PAT_TPL = re.compile(r"\$\{[^}]+\}")
 
@@ -85,6 +89,9 @@ def load_backend_routes() -> set[tuple[str, str]]:
 def scan_frontend_calls() -> list[tuple[str, str, str]]:
     """扫描前端源码，返回 [(文件, 方法, 原始路径)]。"""
     calls: list[tuple[str, str, str]] = []
+    # buildUrl 出现在封装函数里时看不出方法，先单独收集，最后只补「别处没出现过」的路径，
+    # 否则像 /dialogue/sessions/{}/messages/stream 这种实际上是 POST 的会被误记成 GET。
+    url_calls: list[tuple[str, str, str]] = []
     if not FRONTEND_SRC.exists():
         return calls
     for file in sorted(list(FRONTEND_SRC.rglob("*.ts")) + list(FRONTEND_SRC.rglob("*.tsx"))):
@@ -98,6 +105,21 @@ def scan_frontend_calls() -> list[tuple[str, str, str]]:
             method_match = PAT_METHOD.search(opts)
             method = method_match.group(1).upper() if method_match else "GET"
             calls.append((file.name, method, m.group(1)))
+        for m in PAT_BUILD_URL.finditer(text):
+            # 方法写在紧随其后的选项对象里（fetch(buildUrl(...), { method: "POST" })），
+            # 取一小段窗口向后找；找不到就按 GET（下载类接口都是 GET）。
+            window = text[m.end() : m.end() + 240]
+            found = PAT_METHOD.search(window)
+            url_calls.append((file.name, found.group(1).upper() if found else "GET", m.group(1)))
+
+    # 只补录「还没有任何调用命中同一路径形状」的那些，避免生成假报错
+    seen = {_shape(PAT_TPL.sub("{}", raw)) for _, _, raw in calls}
+    for file_name, method, raw in url_calls:
+        shape = _shape(PAT_TPL.sub("{}", raw))
+        if shape in seen:
+            continue
+        seen.add(shape)
+        calls.append((file_name, method, raw))
     return calls
 
 
