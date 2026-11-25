@@ -88,3 +88,18 @@ export function buildLanUrl(options: {
   const suffix = port ? `:${port}` : "";
   return `${protocol}//${ip}${suffix}${path}`;
 }
+
+/**
+ * 把 HTTP API 基址换成 WebSocket 通知地址。
+ *
+ * `http://` → `ws://`，`https://` → `wss://`（浏览器不允许 HTTPS 页面连不安全的
+ * ws）。基址本身以 `/api/v1` 结尾，拼接 `/ws/notifications` 即可。
+ */
+export function toWsUrl(apiBase: string): string {
+  const base = stripTrailingSlash((apiBase ?? "").trim());
+  if (!base) return "";
+  const withProtocol = base.replace(/^http(s?):\/\//i, (_match, secure: string) =>
+    secure ? "wss://" : "ws://",
+  );
+  return `${withProtocol}/ws/notifications`;
+}
