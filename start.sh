@@ -123,8 +123,8 @@ if [ "$MODE" = "all" ] || [ "$MODE" = "backend" ] || [ "$MODE" = "reinstall" ]; 
   if port_busy 8000; then
     c_warn "端口 8000 已被占用，跳过后端启动"
   else
-    c_info "启动后端 http://127.0.0.1:8000"
-    (cd "$BACKEND_DIR" && exec "$VENV_PY" -m uvicorn app.main:app --reload --port 8000) &
+    c_info "启动后端 http://127.0.0.1:8000（同时监听局域网，供手机扫码访问）"
+    (cd "$BACKEND_DIR" && exec "$VENV_PY" -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000) &
     PIDS+=($!)
   fi
 fi
@@ -150,6 +150,9 @@ echo "  老人端      http://127.0.0.1:3000/elder"
 echo "  医护端      http://127.0.0.1:3000/staff"
 echo "  API 文档    http://127.0.0.1:8000/docs"
 echo "  健康检查    http://127.0.0.1:8000/health"
+echo ""
+echo "  想在手机上填：打开老人端，点右上角「用手机填写」，扫二维码即可。"
+echo "  首次使用若手机打不开，请放行防火墙 3000 与 8000 端口。"
 echo ""
 echo "  ---- 演示账号 ----"
 echo "  老人   elder   / elder12345"

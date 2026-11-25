@@ -174,9 +174,9 @@ if ($Backend -or $startAll) {
     if ($portBackend) {
         Write-Warn2 "端口 8000 已被占用，跳过后端启动"
     } else {
-        Write-Step "启动后端 http://127.0.0.1:8000"
+        Write-Step "启动后端 http://127.0.0.1:8000（同时监听局域网，供手机扫码访问）"
         Start-Process -FilePath 'powershell' `
-            -ArgumentList '-NoExit', '-Command', "Set-Location '$BackendDir'; & '$VenvPython' -m uvicorn app.main:app --reload --port 8000" `
+            -ArgumentList '-NoExit', '-Command', "Set-Location '$BackendDir'; & '$VenvPython' -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000" `
             -WindowStyle Normal
     }
 }
@@ -208,6 +208,9 @@ Write-Host "  老人端      http://127.0.0.1:3000/elder"    -ForegroundColor Gr
 Write-Host "  医护端      http://127.0.0.1:3000/staff"    -ForegroundColor Gray
 Write-Host "  API 文档    http://127.0.0.1:8000/docs"     -ForegroundColor Gray
 Write-Host "  健康检查    http://127.0.0.1:8000/health"   -ForegroundColor Gray
+Write-Host ""
+Write-Host "  想在手机上填：打开老人端，点右上角「用手机填写」，扫二维码即可。" -ForegroundColor Gray
+Write-Host "  首次使用若手机打不开，请在 Windows 防火墙放行 3000 与 8000 端口的专用网络访问。" -ForegroundColor DarkGray
 Write-Host ""
 Write-Host "  ---- 演示账号 ----" -ForegroundColor White
 Write-Host "  老人   elder   / elder12345"   -ForegroundColor Gray

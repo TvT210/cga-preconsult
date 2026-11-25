@@ -27,6 +27,7 @@ from app.api import (
     reports,
     reviews,
     scales,
+    system_info,
 )
 from app.core.config import settings
 from app.db.init_db import init_db
@@ -49,6 +50,9 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()],
+    # 放行局域网私有网段来源：手机扫码访问时 Origin 是 http://192.168.x.x:3000，
+    # 不在固定白名单里，不放行会被浏览器拦掉所有请求。
+    allow_origin_regex=settings.cors_origin_regex or None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -105,6 +109,7 @@ for module in (
     matching,
     knowledge,
     admin,
+    system_info,
 ):
     app.include_router(module.router, prefix=settings.api_prefix)
 
